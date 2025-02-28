@@ -17,8 +17,8 @@ readonly RELEASE_TARS="${LOCAL_OUTPUT_ROOT}/release-tars"
 readonly RELEASE_IMAGES="${LOCAL_OUTPUT_ROOT}/release-images"
 
 # APP github account info
-readonly APP_GITHUB_ORG=marmotedu
-readonly APP_GITHUB_REPO=app
+readonly APP_GITHUB_ORG=shiqinfeng1
+readonly APP_GITHUB_REPO=goframe-ddd
 
 readonly ARTIFACT=app.tar.gz
 readonly CHECKSUM=${ARTIFACT}.sha1sum
@@ -84,7 +84,6 @@ function release::package_tarballs() {
   rm -rf "${RELEASE_STAGE}" "${RELEASE_TARS}" "${RELEASE_IMAGES}"
   mkdir -p "${RELEASE_TARS}"
   release::package_src_tarball &
-  release::package_client_tarballs &
   release::package_app_manifests_tarball &
   release::package_server_tarballs &
   util::wait-for-jobs || { log::error "previous tarball phase failed"; return 1; }
@@ -157,46 +156,6 @@ function release::package_server_tarballs() {
 
     log::status "Waiting on tarballs"
     util::wait-for-jobs || { log::error "server tarball creation failed"; exit 1; }
-  }
-
-# Package up all of the cross compiled clients. Over time this should grow into
-# a full SDK
-function release::package_client_tarballs() {
-  # Find all of the built client binaries
-  local long_platforms=("${LOCAL_OUTPUT_BINPATH}"/*/*)
-  if [[ -n ${APP_BUILD_PLATFORMS-} ]]; then
-    read -ra long_platforms <<< "${APP_BUILD_PLATFORMS}"
-  fi
-
-  for platform_long in "${long_platforms[@]}"; do
-    local platform
-    local platform_tag
-    platform=${platform_long##${LOCAL_OUTPUT_BINPATH}/} # Strip LOCAL_OUTPUT_BINPATH
-    platform_tag=${platform/\//-} # Replace a "/" for a "-"
-    log::status "Starting tarball: client $platform_tag"
-
-    (
-    local release_stage="${RELEASE_STAGE}/client/${platform_tag}/app"
-    rm -rf "${release_stage}"
-    mkdir -p "${release_stage}/client/bin"
-
-    local client_bins=("${APP_CLIENT_BINARIES[@]}")
-
-      # This fancy expression will expand to prepend a path
-      # (${LOCAL_OUTPUT_BINPATH}/${platform}/) to every item in the
-      # client_bins array.
-      cp "${client_bins[@]/#/${LOCAL_OUTPUT_BINPATH}/${platform}/}" \
-        "${release_stage}/client/bin/"
-
-      release::clean_cruft
-
-      local package_name="${RELEASE_TARS}/app-client-${platform_tag}.tar.gz"
-      release::create_tarball "${package_name}" "${release_stage}/.."
-    ) &
-  done
-
-  log::status "Waiting on tarballs"
-  util::wait-for-jobs || { log::error "client tarball creation failed"; exit 1; }
 }
 
 # Package up all of the server binaries in docker images
@@ -215,12 +174,6 @@ function release::build_server_images() {
     release_stage="${RELEASE_STAGE}/server/${platform_tag}/app"
     rm -rf "${release_stage}"
     mkdir -p "${release_stage}/server/bin"
-
-    # This fancy expression will expand to prepend a path
-    # (${LOCAL_OUTPUT_BINPATH}/${platform}/) to every item in the
-    # APP_SERVER_IMAGE_BINARIES array.
-    cp "${APP_SERVER_IMAGE_BINARIES[@]/#/${LOCAL_OUTPUT_BINPATH}/${platform}/}" \
-      "${release_stage}/server/bin/"
 
     release::create_docker_images_for_server "${release_stage}/server/bin" "${arch}"
   done
@@ -364,10 +317,6 @@ function release::package_app_manifests_tarball() {
   local dst_dir="${release_stage}"
   mkdir -p "${dst_dir}"
   cp -r ${src_dir}/* "${dst_dir}"
-  #cp "${src_dir}/app-apiserver.yaml" "${dst_dir}"
-  #cp "${src_dir}/app-authz-server.yaml" "${dst_dir}"
-  #cp "${src_dir}/app-pump.yaml" "${dst_dir}"
-  #cp "${src_dir}/app-watcher.yaml" "${dst_dir}"
   #cp "${APP_ROOT}/cluster/gce/gci/health-monitor.sh" "${dst_dir}/health-monitor.sh"
 
   release::clean_cruft

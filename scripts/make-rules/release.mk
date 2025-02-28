@@ -6,7 +6,7 @@
 
 .PHONY: release.run
 release.run: release.verify release.ensure-tag
-# @scripts/release.sh
+	@scripts/release.sh
 
 .PHONY: release.verify
 release.verify: tools.verify.git-chglog tools.verify.github-release # tools.verify.coscmd
