@@ -17,6 +17,7 @@ gen.run: gen.clean gen.pb
 gen.pb: tools.verify.gf
 	@echo "===========> Generating pb files *.go from proto file through gf"
 	@gf gen pb -p ${ROOT_DIR}/api/grpc -a ${ROOT_DIR}/api/grpc -c ${ROOT_DIR}/internal/server/grpc
+	@gf gen ctrl -s ${ROOT_DIR}/api/restful -d ${ROOT_DIR}/internal/server/restful -m 
 
 .PHONY: gen.wire
 gen.wire: tools.verify.wire

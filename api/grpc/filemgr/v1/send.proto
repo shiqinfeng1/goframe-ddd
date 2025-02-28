@@ -1,12 +1,8 @@
-// Copyright @2025-2028 <SieYuan> . All rights reserved.
-// Use of this source code is governed by a MIT style
-// license that can be found in the LICENSE file.
-
 // Indicates the protocol buffer version that is being used
 syntax = "proto3";
 
 // Indicates the go package where the generated file will be produced
-option go_package = "github.com/shiqinfeng1/hellogofr/api/grpc/hello/v1";
+option go_package = "github.com/shiqinfeng1/goframe-ddd/api/grpc/filemgr/v1";
 
 service HelloService {
   rpc SayHello(SayHelloRequest) returns (SayHelloResponse) {}
