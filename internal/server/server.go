@@ -1,22 +1,35 @@
-// Copyright @2025-2028 <SieYuan> . All rights reserved.
-// Use of this source code is governed by a MIT style
-// license that can be found in the LICENSE file.
-
 package server
 
 import (
-	"gofr.dev/pkg/gofr"
+	"github.com/gogf/gf/contrib/rpc/grpcx/v2"
+	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/net/ghttp"
+	grpc_filemgr "github.com/shiqinfeng1/goframe-ddd/internal/server/grpc/filemgr"
+	http_filemgr "github.com/shiqinfeng1/goframe-ddd/internal/server/http/filemgr"
 )
 
-func New() *gofr.App {
-	app := gofr.New()
+func cors(r *ghttp.Request) {
+	r.Response.CORSDefault()
+	r.Middleware.Next()
+}
 
-	// app.UseMiddleware(response.UpdatePostStatusCode())
+func NewHttpServer() *ghttp.Server {
+	// 启动http服务
+	s := g.Server()
+	s.BindMiddlewareDefault(cors)
 
-	// register api for openapi
-	route.BindOpenapiHandler(app)
-	// register http api and initialize openapi
-	route.BindHandler(app, restful.GetConfig)
+	s.Group("/mgrid", func(group *ghttp.RouterGroup) {
+		group.Middleware(ghttp.MiddlewareHandlerResponse)
+		group.Bind(
+			http_filemgr.NewV1(),
+		)
+	})
+	return s
+}
 
-	return app
+func NewGrpcServer() *grpcx.GrpcServer {
+	s := grpcx.Server.New()
+	grpc_filemgr.Register(s)
+	s.Run()
+	return s
 }

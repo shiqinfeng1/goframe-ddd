@@ -3,6 +3,7 @@ package filemgr
 import (
 	"context"
 
+	"github.com/gogf/gf/contrib/rpc/grpcx/v2"
 	"github.com/gogf/gf/v2/errors/gcode"
 	"github.com/gogf/gf/v2/errors/gerror"
 	v1 "github.com/shiqinfeng1/goframe-ddd/api/grpc/filemgr/v1"

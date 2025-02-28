@@ -1,12 +1,8 @@
-# Copyright @2025-2028 <SieYuan>. All rights reserved.
-# Use of this source code is governed by a MIT style
-# license that can be found in the LICENSE file.
-
 # Build all by default, even if it's not first
 .DEFAULT_GOAL := all
 
 .PHONY: all
-all: tidy add-copyright  cover build #gen lint
+all: tidy gen cover build #gen lint  add-copyright 
 
 # ==============================================================================
 # Build options

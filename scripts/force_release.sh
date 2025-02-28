@@ -1,10 +1,5 @@
 #!/bin/bash
 
-# Copyright @2025-2028 <SieYuan> . All rights reserved.
-# Use of this source code is governed by a MIT style
-# license that can be found in the LICENSE file.
-
-
 APP_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 source "${APP_ROOT}/scripts/lib/init.sh"
 
