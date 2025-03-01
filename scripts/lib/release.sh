@@ -336,7 +336,7 @@ function release::package_app_manifests_tarball() {
 }
 
 function release::updload_tarballs() {
-  iam::log::info "upload ${RELEASE_TARS}/* ..."
+  log::info "upload ${RELEASE_TARS}/* ..."
   for file in $(ls ${RELEASE_TARS}/*)
   do
     echo "[TODO] upload ${file} to anywhere you want !!!"
