@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 
-# Copyright 2020 Lingfei Kong <colin404@foxmail.com>. All rights reserved.
-# Use of this source code is governed by a MIT style
-# license that can be found in the LICENSE file.
-
 # -----------------------------------------------------------------------------
 # Version management helpers.  These functions help to set, save and load the
 # following variables:
@@ -21,9 +17,9 @@
 #
 # If APP_GIT_VERSION_FILE, this function will load from that file instead of
 # querying git.
-app::version::get_version_vars() {
+version::get_version_vars() {
   if [[ -n ${APP_GIT_VERSION_FILE-} ]]; then
-    app::version::load_version_vars "${APP_GIT_VERSION_FILE}"
+    version::load_version_vars "${APP_GIT_VERSION_FILE}"
     return
   fi
 
@@ -41,9 +37,14 @@ app::version::get_version_vars() {
     if [[ '$Format:%D$' =~ tag:\ (v[^ ,]+) ]]; then
      APP_GIT_VERSION="${BASH_REMATCH[1]}"
     fi
+    log::info "1 APP_GIT_COMMIT = ${APP_GIT_COMMIT}"
+    log::info "1 APP_GIT_TREE_STATE = ${APP_GIT_TREE_STATE}"
+    log::info "1 APP_GIT_VERSION = ${APP_GIT_VERSION}"
   fi
 
   local git=(git --work-tree "${APP_ROOT}")
+  log::info "1 APP_ROOT = ${APP_ROOT}"
+  log::info "1 git = ${git}"
 
   if [[ -n ${APP_GIT_COMMIT-} ]] || APP_GIT_COMMIT=$("${git[@]}" rev-parse "HEAD^{commit}" 2>/dev/null); then
     if [[ -z ${APP_GIT_TREE_STATE-} ]]; then
@@ -53,6 +54,7 @@ app::version::get_version_vars() {
       else
         APP_GIT_TREE_STATE="dirty"
       fi
+      log::info "2 APP_GIT_TREE_STATE = ${APP_GIT_TREE_STATE}"
     fi
 
     # Use git describe to find the version based on tags.
@@ -85,7 +87,8 @@ app::version::get_version_vars() {
         #APP_GIT_VERSION+="-dirty"
         :
       fi
-
+      log::info "3 DASHES_IN_VERSION = ${DASHES_IN_VERSION}"
+      log::info "3 APP_GIT_VERSION = ${APP_GIT_VERSION}"
 
       # Try to match the "git describe" output to a regex to try to extract
       # the "major" and "minor" versions and whether this is the exact tagged
@@ -97,6 +100,8 @@ app::version::get_version_vars() {
           APP_GIT_MINOR+="+"
         fi
       fi
+      log::info "4 APP_GIT_MAJOR = ${APP_GIT_MAJOR}"
+      log::info "5 APP_GIT_MINOR = ${APP_GIT_MINOR}"
 
       # If APP_GIT_VERSION is not a valid Semantic Version, then refuse to build.
       if ! [[ "${APP_GIT_VERSION}" =~ ^v([0-9]+)\.([0-9]+)(\.[0-9]+)?(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
@@ -109,10 +114,10 @@ app::version::get_version_vars() {
 }
 
 # Saves the environment flags to $1
-app::version::save_version_vars() {
+version::save_version_vars() {
   local version_file=${1-}
   [[ -n ${version_file} ]] || {
-    echo "!!! Internal error.  No file specified in app::version::save_version_vars"
+    echo "!!! Internal error.  No file specified in version::save_version_vars"
     return 1
   }
 
@@ -126,10 +131,10 @@ EOF
 }
 
 # Loads up the version variables from file $1
-app::version::load_version_vars() {
+version::load_version_vars() {
   local version_file=${1-}
   [[ -n ${version_file} ]] || {
-    echo "!!! Internal error.  No file specified in app::version::load_version_vars"
+    echo "!!! Internal error.  No file specified in version::load_version_vars"
     return 1
   }
 

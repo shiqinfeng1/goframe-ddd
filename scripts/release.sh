@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 
-# Copyright 2020 Lingfei Kong <colin404@foxmail.com>. All rights reserved.
-# Use of this source code is governed by a MIT style
-# license that can be found in the LICENSE file.
-
 # Build a APP release.  This will build the binaries, create the Docker
 # images and other build artifacts.
 
@@ -26,6 +22,6 @@ release::package_tarballs
 # release::updload_tarballs
 git push origin ${VERSION}
 release::check_github_token
-release::generate_changelog
 release::github_release
+release::generate_changelog
 

@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 
-# Copyright 2020 Lingfei Kong <colin404@foxmail.com>. All rights reserved.
-# Use of this source code is governed by a MIT style
-# license that can be found in the LICENSE file.
-
 # shellcheck disable=SC2034 # Variables sourced in other scripts.
 
 # Common utilities, variables and checks for all build scripts.
@@ -126,21 +122,27 @@ function build::verify_prereqs() {
   fi
 
   APP_GIT_BRANCH=$(git symbolic-ref --short -q HEAD 2>/dev/null || true)
+  log::info "APP_GIT_BRANCH = ${APP_GIT_BRANCH}" 
   APP_ROOT_HASH=$(build::short_hash "${HOSTNAME:-}:${APP_ROOT}:${APP_GIT_BRANCH}")
+  log::info "APP_ROOT_HASH = ${APP_ROOT_HASH}" 
   APP_BUILD_IMAGE_TAG_BASE="build-${APP_ROOT_HASH}"
+  log::info "APP_BUILD_IMAGE_TAG_BASE = ${APP_BUILD_IMAGE_TAG_BASE}" 
   #APP_BUILD_IMAGE_TAG="${APP_BUILD_IMAGE_TAG_BASE}-${APP_BUILD_IMAGE_VERSION}"
   #APP_BUILD_IMAGE="${APP_BUILD_IMAGE_REPO}:${APP_BUILD_IMAGE_TAG}"
   APP_BUILD_CONTAINER_NAME_BASE="app-build-${APP_ROOT_HASH}"
+  log::info "APP_BUILD_CONTAINER_NAME_BASE = ${APP_BUILD_CONTAINER_NAME_BASE}" 
   #APP_BUILD_CONTAINER_NAME="${APP_BUILD_CONTAINER_NAME_BASE}-${APP_BUILD_IMAGE_VERSION}"
   APP_RSYNC_CONTAINER_NAME_BASE="app-rsync-${APP_ROOT_HASH}"
+  log::info "APP_RSYNC_CONTAINER_NAME_BASE = ${APP_RSYNC_CONTAINER_NAME_BASE}" 
   #APP_RSYNC_CONTAINER_NAME="${APP_RSYNC_CONTAINER_NAME_BASE}-${APP_BUILD_IMAGE_VERSION}"
   APP_DATA_CONTAINER_NAME_BASE="app-build-data-${APP_ROOT_HASH}"
+  log::info "APP_DATA_CONTAINER_NAME_BASE = ${APP_DATA_CONTAINER_NAME_BASE}" 
   #APP_DATA_CONTAINER_NAME="${APP_DATA_CONTAINER_NAME_BASE}-${APP_BUILD_IMAGE_VERSION}"
   #DOCKER_MOUNT_ARGS=(--volumes-from "${APP_DATA_CONTAINER_NAME}")
   #LOCAL_OUTPUT_BUILD_CONTEXT="${LOCAL_OUTPUT_IMAGE_STAGING}/${APP_BUILD_IMAGE}"
 
-  app::version::get_version_vars
-  #app::version::save_version_vars "${APP_ROOT}/.dockerized-app-version-defs"
+  version::get_version_vars
+  #version::save_version_vars "${APP_ROOT}/.dockerized-app-version-defs"
 }
 
 # ---------------------------------------------------------------------------
