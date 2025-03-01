@@ -432,7 +432,27 @@ function release::verify_prereqs(){
     fi
   fi
 }
+# details:
+# https://github.com/github-release/github-release
+function release::check_github_token() {
+  # 检查 GITHUB_TOKEN 是否已经导出
+  if [ -z "${GITHUB_TOKEN:-}" ]; then
+      echo "GITHUB_TOKEN 未设置，需要你手动输入。"
+      # 提示用户输入 GitHub 访问令牌
+      read -p "请输入你的 GitHub 访问令牌：" GITHUB_TOKEN
 
+      # 验证输入是否为空
+      if [ -z "$GITHUB_TOKEN" ]; then
+          echo "输入为空，请重新运行脚本并输入有效的令牌。"
+          exit 1
+      fi
+
+      # 导出为全局环境变量
+      export GITHUB_TOKEN
+  else
+      echo "GITHUB_TOKEN 已经设置，值为: $GITHUB_TOKEN"
+  fi
+}
 # Create a github release with specified tarballs.
 # NOTICE: Must export 'GITHUB_TOKEN' env in the shell, details:
 # https://github.com/github-release/github-release

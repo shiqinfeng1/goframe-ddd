@@ -25,6 +25,7 @@ build::build_command
 release::package_tarballs
 # release::updload_tarballs
 git push origin ${VERSION}
-release::github_release
+release::check_github_token
 release::generate_changelog
+release::github_release
 
