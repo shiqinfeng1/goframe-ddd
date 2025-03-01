@@ -492,6 +492,6 @@ function release::generate_changelog() {
   set +o errexit
   git add ${APP_ROOT}/CHANGELOG/CHANGELOG-${APP_GIT_VERSION#v}.md
   git commit -a -m "docs(changelog): add CHANGELOG-${APP_GIT_VERSION#v}.md"
-  git push -f origin master # 最后将 CHANGELOG 也 push 上去
+  git push -f origin main # 最后将 CHANGELOG 也 push 上去
 }
 
