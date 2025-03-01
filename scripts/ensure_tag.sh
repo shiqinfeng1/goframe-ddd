@@ -2,7 +2,7 @@
 
 version="${VERSION}"
 if [ "${version}" == "" ];then
-  version=v`gsemver bump 2>/dev/null`
+  version=v`gsemver bump`
 fi
 
 # 定义语义化版本号的正则表达式

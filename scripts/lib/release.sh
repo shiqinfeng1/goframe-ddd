@@ -122,11 +122,19 @@ function release::package_src_tarball() {
 # Package up all of the server binaries
 function release::package_server_tarballs() {
   # Find all of the built client binaries
+  # 将 LOCAL_OUTPUT_BINPATH 目录下的两级子目录列表赋值给数组变量 long_platforms
+  # 如果 LOCAL_OUTPUT_BINPATH 是 /path/to/bin，且该目录下有 linux/amd64 和 darwin/arm64 两个二级子目录，
+  # 那么 long_platforms 数组将包含这两个路径。
   local long_platforms=("${LOCAL_OUTPUT_BINPATH}"/*/*)
+  # 判断 APP_BUILD_PLATFORMS 是否有值时，避免出现未定义变量的错误
   if [[ -n ${APP_BUILD_PLATFORMS-} ]]; then
+    # 如果 APP_BUILD_PLATFORMS 有值，就将其值按空格分割后存储到 long_platforms 数组中。
     read -ra long_platforms <<< "${APP_BUILD_PLATFORMS}"
   fi
 
+  # 遍历 long_platforms 数组中的每个平台路径，为每个平台创建一个独立的发布目录结构，
+  # 将服务器二进制文件复制到相应的目录中，清理不必要的文件，然后将该平台的发布内容打包成一个压缩文件（.tar.gz）。
+  # 同时，为了提高效率，每个平台的处理过程会在后台以子进程的方式并行执行
   for platform_long in "${long_platforms[@]}"; do
     local platform
     local platform_tag
@@ -141,21 +149,25 @@ function release::package_server_tarballs() {
 
     local server_bins=("${APP_SERVER_BINARIES[@]}")
 
-      # This fancy expression will expand to prepend a path
-      # (${LOCAL_OUTPUT_BINPATH}/${platform}/) to every item in the
-      # server_bins array.
-      cp "${server_bins[@]/#/${LOCAL_OUTPUT_BINPATH}/${platform}/}" \
-        "${release_stage}/server/bin/"
+    # This fancy expression will expand to prepend a path
+    # (${LOCAL_OUTPUT_BINPATH}/${platform}/) to every item in the
+    # server_bins array.
+    # 为 server_bins 数组中的每个元素添加前缀 ${LOCAL_OUTPUT_BINPATH}/${platform}/
+    # 然后使用 cp 命令将这些文件复制到 release_stage/server/bin/ 目录中
+    set -x
+    cp "${server_bins[@]/#/${LOCAL_OUTPUT_BINPATH}/${platform}/}" \
+      "${release_stage}/server/bin/"
 
-      release::clean_cruft
+    release::clean_cruft
 
-      local package_name="${RELEASE_TARS}/app-server-${platform_tag}.tar.gz"
-      release::create_tarball "${package_name}" "${release_stage}/.."
-      ) &
-    done
+    local package_name="${RELEASE_TARS}/app-server-${platform_tag}.tar.gz"
+    release::create_tarball "${package_name}" "${release_stage}/.."
+    set +x
+    ) &
+  done
 
-    log::status "Waiting on tarballs"
-    util::wait-for-jobs || { log::error "server tarball creation failed"; exit 1; }
+  log::status "Waiting on tarballs"
+  util::wait-for-jobs || { log::error "server tarball creation failed"; exit 1; }
 }
 
 # Package up all of the server binaries in docker images
@@ -439,7 +451,7 @@ function release::check_github_token() {
   if [ -z "${GITHUB_TOKEN:-}" ]; then
       echo "GITHUB_TOKEN 未设置，需要你手动输入。"
       # 提示用户输入 GitHub 访问令牌
-      read -p "请输入你的 GitHub 访问令牌：" GITHUB_TOKEN
+      read -s -p "请输入你的 GitHub 访问令牌：" GITHUB_TOKEN
 
       # 验证输入是否为空
       if [ -z "$GITHUB_TOKEN" ]; then
