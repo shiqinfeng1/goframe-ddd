@@ -154,7 +154,6 @@ function release::package_server_tarballs() {
     # server_bins array.
     # 为 server_bins 数组中的每个元素添加前缀 ${LOCAL_OUTPUT_BINPATH}/${platform}/
     # 然后使用 cp 命令将这些文件复制到 release_stage/server/bin/ 目录中
-    set -x
     cp "${server_bins[@]/#/${LOCAL_OUTPUT_BINPATH}/${platform}/}" \
       "${release_stage}/server/bin/"
 
@@ -162,7 +161,6 @@ function release::package_server_tarballs() {
 
     local package_name="${RELEASE_TARS}/app-server-${platform_tag}.tar.gz"
     release::create_tarball "${package_name}" "${release_stage}/.."
-    set +x
     ) &
   done
 
@@ -337,6 +335,13 @@ function release::package_app_manifests_tarball() {
   release::create_tarball "${package_name}" "${release_stage}/.."
 }
 
+function release::updload_tarballs() {
+  iam::log::info "upload ${RELEASE_TARS}/* ..."
+  for file in $(ls ${RELEASE_TARS}/*)
+  do
+    echo "[TODO] upload ${file} to anywhere you want !!!"
+  done
+}
 # This is all the platform-independent stuff you need to run/install app.
 # Arch-specific binaries will need to be downloaded separately (possibly by
 # using the bundled cluster/get-app-binaries.sh script).

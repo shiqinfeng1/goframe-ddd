@@ -19,7 +19,7 @@ release::verify_prereqs
 #build::build_image
 build::build_command
 release::package_tarballs
-# release::updload_tarballs
+release::updload_tarballs
 git push origin ${VERSION}
 release::check_github_token
 release::github_release
