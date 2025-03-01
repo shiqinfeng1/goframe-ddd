@@ -8,15 +8,13 @@ import (
 	http_filemgr "github.com/shiqinfeng1/goframe-ddd/internal/server/http/filemgr"
 )
 
-func cors(r *ghttp.Request) {
-	r.Response.CORSDefault()
-	r.Middleware.Next()
-}
-
 func NewHttpServer() *ghttp.Server {
 	// 启动http服务
 	s := g.Server()
-	s.BindMiddlewareDefault(cors)
+	s.BindMiddlewareDefault(func(r *ghttp.Request) {
+		r.Response.CORSDefault()
+		r.Middleware.Next()
+	})
 
 	s.Group("/mgrid", func(group *ghttp.RouterGroup) {
 		group.Middleware(ghttp.MiddlewareHandlerResponse)
@@ -30,6 +28,5 @@ func NewHttpServer() *ghttp.Server {
 func NewGrpcServer() *grpcx.GrpcServer {
 	s := grpcx.Server.New()
 	grpc_filemgr.Register(s)
-	s.Run()
 	return s
 }

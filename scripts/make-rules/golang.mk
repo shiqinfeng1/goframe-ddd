@@ -53,7 +53,7 @@ ifeq (${BINS},)
 endif
 
 # 测试报告过滤的文件夹
-EXCLUDE_TESTS=github.com/shiqinfeng1/test
+EXCLUDE_TESTS=github.com/shiqinfeng1/goframe-ddd/api github.com/shiqinfeng1/goframe-ddd/cmd
 
 # Minimum test coverage
 ifeq ($(origin COVERAGE_TARGET——TARFGET),undefined)

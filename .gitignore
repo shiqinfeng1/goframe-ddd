@@ -33,4 +33,5 @@ _output/
 # IDE Cache
 .vscode
 .DS_Store
+log/*
 

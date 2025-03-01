@@ -1,6 +1,9 @@
 package main
 
 import (
+	"os"
+	"sync"
+
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/gproc"
@@ -10,18 +13,34 @@ import (
 
 func main() {
 	ctx := gctx.New()
+	wg := sync.WaitGroup{}
+	httpSrv := server.NewHttpServer()
+	grpcSrv := server.NewGrpcServer()
+
+	signalHandler := func(sig os.Signal) {
+		g.Log().Infof(ctx, "signal received: %v, gracefully shutting down grpc server", sig.String())
+		grpcSrv.Stop()
+	}
+	wg.Add(1)
 	go func() {
 		g.Log().Infof(ctx, "start http server ...")
-		server.NewHttpServer().Run()
+		httpSrv.Run()
 		g.Log().Infof(ctx, "exit http server ok")
+		wg.Done()
 	}()
 
+	wg.Add(1)
 	go func() {
 		g.Log().Infof(ctx, "start grpc server ...")
-		server.NewGrpcServer().Run()
+		grpcSrv.Run()
 		g.Log().Infof(ctx, "exit grpc server ok")
+		wg.Done()
 	}()
 
-	gproc.AddSigHandlerShutdown()
+	gproc.AddSigHandlerShutdown(
+		signalHandler,
+	)
 	gproc.Listen()
+	wg.Wait()
+	g.Log().Infof(ctx, "exit all ok")
 }

@@ -22,9 +22,9 @@ $cd ${APP_ROOT}
 ```bash
 $export APP_APISERVER_INSECURE_BIND_ADDRESS=0.0.0.0
 $export APP_AUTHZ_SERVER_INSECURE_BIND_ADDRESS=0.0.0.0
-$./scripts/genconfig.sh scripts/install/environment.sh configs/app-apiserver.yaml > deployments/app/configs/app-apiserver.yaml
-$./scripts/genconfig.sh scripts/install/environment.sh configs/app-authz-server.yaml > deployments/app/configs/app-authz-server.yaml
-$./scripts/genconfig.sh scripts/install/environment.sh configs/app-pump.yaml > deployments/app/configs/app-pump.yaml
+$./scripts/genconfig.sh scripts/install/environment.sh config/app-apiserver.yaml > deployments/app/config/app-apiserver.yaml
+$./scripts/genconfig.sh scripts/install/environment.sh config/app-authz-server.yaml > deployments/app/config/app-authz-server.yaml
+$./scripts/genconfig.sh scripts/install/environment.sh config/app-pump.yaml > deployments/app/config/app-pump.yaml
 ```
 
 ```bash
@@ -77,9 +77,9 @@ $./scripts/install/test.sh app::test::pump
 ```bash
 $export APP_APISERVER_INSECURE_BIND_ADDRESS=0.0.0.0
 $export APP_AUTHZ_SERVER_INSECURE_BIND_ADDRESS=0.0.0.0
-$./scripts/genconfig.sh scripts/install/environment.sh configs/app-apiserver.yaml > deployments/app/configs/app-apiserver.yaml
-$./scripts/genconfig.sh scripts/install/environment.sh configs/app-authz-server.yaml > deployments/app/configs/app-authz-server.yaml
-$./scripts/genconfig.sh scripts/install/environment.sh configs/app-pump.yaml > deployments/app/configs/app-pump.yaml
+$./scripts/genconfig.sh scripts/install/environment.sh config/app-apiserver.yaml > deployments/app/config/app-apiserver.yaml
+$./scripts/genconfig.sh scripts/install/environment.sh config/app-authz-server.yaml > deployments/app/config/app-authz-server.yaml
+$./scripts/genconfig.sh scripts/install/environment.sh config/app-pump.yaml > deployments/app/config/app-pump.yaml
 ```
 
 1) Helm install

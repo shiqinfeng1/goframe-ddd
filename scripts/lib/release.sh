@@ -346,8 +346,8 @@ function release::updload_tarballs() {
 # Arch-specific binaries will need to be downloaded separately (possibly by
 # using the bundled cluster/get-app-binaries.sh script).
 # Included in this tarball:
-#   - Cluster spin up/down scripts and configs for various cloud providers
-#   - Tarballs for manifest configs that are ready to be uploaded
+#   - Cluster spin up/down scripts and config for various cloud providers
+#   - Tarballs for manifest config that are ready to be uploaded
 #   - Examples (which may or may not still work)
 #   - The remnants of the docs/ directory
 function release::package_final_tarball() {
@@ -390,7 +390,7 @@ EOF
   #mkdir -p "${release_stage}/hack"
   #cp -R "${APP_ROOT}/hack/lib" "${release_stage}/hack/"
 
-  cp -R ${APP_ROOT}/{docs,configs,scripts,deployments,init,README.md,LICENSE} "${release_stage}/"
+  cp -R ${APP_ROOT}/{docs,config,scripts,deployments,init,README.md,LICENSE} "${release_stage}/"
 
   echo "${APP_GIT_VERSION}" > "${release_stage}/version"
 
