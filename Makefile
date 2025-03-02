@@ -29,18 +29,37 @@ define USAGE_OPTIONS
 Options:
   BINS             The binaries to build. Default is all of cmd.
                    This option is available when using: make build/build.multiarch
-                   Example: make build BINS="app-apiserver app-authz-server"
+                   Example: make build BINS="mgrid tool"
+				   要构建的二进制文件。默认是 cmd 目录下的所有文件。
+				   此选项在使用 make build 或 make build.multiarch 时可用。
+				   示例: make build BINS="mgrid tool"
+
   IMAGES           Backend images to make. Default is all of cmd starting with app-.
                    This option is available when using: make image/image.multiarch/push/push.multiarch
                    Example: make image.multiarch IMAGES="app-apiserver app-authz-server"
+				   要制作的后端镜像。默认是 cmd 目录下所有以 app- 开头的文件。
+				   此选项在使用 make image、make image.multiarch、make push 或 make push.multiarch 时可用。
+				   示例: make image.multiarch IMAGES="app-apiserver app-authz-server"
+						 
   REGISTRY_PREFIX  Docker registry prefix. Default is marmotedu. 
                    Example: make push REGISTRY_PREFIX=ccr.ccs.tencentyun.com/marmotedu VERSION=v1.6.2
+				   Docker 镜像仓库前缀。默认是 marmotedu。
+				   示例: make push REGISTRY_PREFIX=ccr.ccs.tencentyun.com/marmotedu VERSION=v1.6.2
+
   PLATFORMS        The multiple platforms to build. Default is linux_amd64 and linux_arm64.
                    This option is available when using: make build.multiarch/image.multiarch/push.multiarch
                    Example: make image.multiarch IMAGES="app-apiserver app-pump" PLATFORMS="linux_amd64 linux_arm64"
+				   要构建的多个平台。默认是 linux_amd64 和 linux_arm64。
+				   此选项在使用 make build.multiarch、make image.multiarch 或 make push.multiarch 时可用。
+				   示例: make image.multiarch IMAGES="app-apiserver app-pump" PLATFORMS="linux_amd64 linux_arm64"
+
   VERSION          The version information compiled into binaries.
                    The default is obtained from gsemver or git.
+				   编译到二进制文件中的版本信息。
+				   默认从 gsemver 或 git 获取。
+
   V                Set to 1 enable verbose build. Default is 0.
+				   设置为 1 可启用详细构建过程。默认值为 0。
 endef
 export USAGE_OPTIONS
 

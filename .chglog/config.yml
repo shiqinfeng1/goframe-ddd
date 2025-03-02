@@ -9,31 +9,17 @@ options:
     filters:
       Type:
         - feat
-        - "✨ feat"
         - fix
-        - "🐛 fix"
-        - "🐞 fix"
         - perf
-        - "⚡️ perf"
-        - "🎈 perf"
         - refactor
-        - "♻️ refactor"
-        - "🦄 refactor"
   commit_groups:
     title_maps:
       feat: "✨ Features"
-      "✨ feat": "✨ Features"
       fix: "🐛 Bug Fixes"
-      "🐛 fix": "🐛 Bug Fixes"
-      "🐞 fix": "🐞 Bug Fixes"
       perf: "⚡️ Performance Improvements"
-      "⚡️ perf": "⚡️ Performance Improvements"
-      "🎈 perf": "🎈 Performance Improvements"
       refactor: "♻️ Code Refactoring"
-      "🦄 refactor": "🦄 Code Refactoring"
-      "♻️ refactor": "♻️ Code Refactoring"
   header:
-    pattern: "^([\\w✨🐛🐞⚡️🎈♻️🦄]+)(?:\\(([\\w\\$\\.\\-\\*\\s]*)\\))?\\:\\s(.*)$"
+    pattern: "^(\\w*)(?:\\(([\\w\\$\\.\\-\\*\\s]*)\\))?\\:\\s(.*)$"
     pattern_maps:
       - Type
       - Scope
