@@ -120,3 +120,9 @@ logger:
   rotateCheckInterval:   "1h"                  # 滚动切分的时间检测间隔，一般不需要设置。默认为1小时
   stdoutColorDisabled:   false                 # 关闭终端的颜色打印。默认开启
   writerColorEnable:     false                 # 日志文件是否带上颜色。默认false，表示不带颜色
+
+  filemgr: 
+    isCloud: true  # true:cloud-side false:edge-side
+    transport: kcp # kcp tcp
+    maxTasks: 2 # 最大同时发送文件任务数量
+    addr: 192.168.1.10:30082

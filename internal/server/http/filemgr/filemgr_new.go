@@ -5,11 +5,18 @@
 package filemgr
 
 import (
+	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/shiqinfeng1/goframe-ddd/api/http/filemgr"
+	"github.com/shiqinfeng1/goframe-ddd/internal/application"
 )
 
-type ControllerV1 struct{}
+type ControllerV1 struct {
+	app *application.Application
+}
 
 func NewV1() filemgr.IFilemgrV1 {
-	return &ControllerV1{}
+	ctx := gctx.New()
+	return &ControllerV1{
+		app: application.New(ctx),
+	}
 }
