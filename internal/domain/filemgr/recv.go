@@ -34,8 +34,8 @@ func recvBody(ctx context.Context, stream *smux.Stream, bodyLen uint32) ([]byte,
 	if err != nil {
 		return nil, gerror.Wrap(err, "recv body fail")
 	}
-	if n != headerLen {
-		return nil, gerror.Wrapf(err, "recv body length invalid(%v)", n)
+	if n != int(bodyLen) {
+		return nil, gerror.Newf("recv body length invalid(%v)", n)
 	}
 	return bodyBytes, nil
 }

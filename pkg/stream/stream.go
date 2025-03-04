@@ -42,9 +42,9 @@ func (s *Stream) StartupServer(ctx context.Context, addr string, recvHandler Rec
 		}
 		go func() {
 			defer session.Close()
+			g.Log().Info(ctx, "session ready to accept stream ...")
 			for {
 				// 等待接收一个stream
-				g.Log().Info(ctx, "session ready to accept stream ...")
 				stream, err := session.AcceptStream()
 				if err != nil {
 					if errors.Is(err, io.ErrClosedPipe) {
