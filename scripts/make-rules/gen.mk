@@ -14,7 +14,7 @@ endif
 gen.run: gen.clean gen.pb  
 
 .PHONY: gen.pb
-gen.pb: tools.verify.gf
+gen.pb: tools.verify.gf tools.verify.protoc tools.verify.protoc-gen-go tools.verify.protoc-gen-go-grpc
 	@echo "===========> Generating pb files *.go from proto file through gf"
 	@gf gen pb -p ${ROOT_DIR}/api/grpc -a ${ROOT_DIR}/api/grpc -c ${ROOT_DIR}/internal/server/grpc
 	@gf gen ctrl -s ${ROOT_DIR}/api/http -d ${ROOT_DIR}/internal/server/http -m 

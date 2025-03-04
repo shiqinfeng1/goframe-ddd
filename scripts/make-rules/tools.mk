@@ -76,14 +76,17 @@ install.go-mod-outdated:
 install.gf:
 	@$(GO) install github.com/gogf/gf/cmd/gf/v2@latest
 
+.PHONY: install.protoc
+install.protoc:
+	@scripts/install_protoc.sh
 
-# .PHONY: install.protoc-gen-go
-# install.protoc-gen-go:
-# 	@$(GO) install github.com/golang/protobuf/protoc-gen-go@latest
+.PHONY: install.protoc-gen-go
+install.protoc-gen-go:
+	@$(GO) install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 
-# .PHONY: install.protoc-gen-go-grpc
-# install.protoc-gen-go-grpc:
-# 	@$(GO) install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+.PHONY: install.protoc-gen-go-grpc
+install.protoc-gen-go-grpc:
+	@$(GO) install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
 # .PHONY: install.protoc-gen-go-http
 # install.protoc-gen-go-http:
