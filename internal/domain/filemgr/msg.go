@@ -41,8 +41,8 @@ type MsgHandleFunc func(context.Context, []byte) error
 var (
 	headerLen            = 3 + 1 + 4
 	maxMsgBodyLen uint32 = 1024 * 1024 * 1024 // 1GB
-	sendMagic            = "seq"
-	recvMagic            = "ack"
+	reqMagic             = "req"
+	ackMagic             = "ack"
 	msgMap               = gmap.NewIntStrMap()
 	msgHandlerMap        = make(map[msgType]MsgHandleFunc)
 	msgHandshake         = newMsgType(1, "文件收发-握手消息")
@@ -50,7 +50,7 @@ var (
 )
 
 func init() {
-	msgHandlerMap[msgHandshake] = MsgHandleFunc(handshake)
+	msgHandlerMap[msgHeartbeat] = MsgHandleFunc(heartbeat)
 }
 
 func newMsgType(val int, desc string) msgType {
@@ -69,13 +69,17 @@ var invalidHeader = func(v int) header {
 	return header{magic: "unknow", typ: msgType{val: v, desc: "unknow"}}
 }
 
+func (h header) BodyLen() uint32 {
+	return h.length
+}
+
 func (h header) String() string {
 	return fmt.Sprintf("magic:%v type:%v", h.magic, h.typ)
 }
 
 func (h header) ErrIfInvalid() error {
 	s := garray.NewStrArray()
-	s.SetArray(g.SliceStr{sendMagic, recvMagic})
+	s.SetArray(g.SliceStr{reqMagic, ackMagic})
 	if !s.Contains(h.magic) {
 		return gerror.Newf("recv header magic invalid(%v)", h.magic)
 	}
@@ -88,7 +92,7 @@ func (h header) ErrIfInvalid() error {
 	return nil
 }
 
-func newHeader(b []byte) *header {
+func newHeaderFromBytes(b []byte) *header {
 	if !msgMap.Contains(int(b[3])) {
 		iv := invalidHeader(int(b[3]))
 		return &iv

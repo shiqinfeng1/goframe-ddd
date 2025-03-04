@@ -34,9 +34,9 @@ func (m *MockWriter) Write(p []byte) (n int, err error) {
 }
 
 func TestLimit(t *testing.T) {
-	speed := 1024 * 10 // 单位k
-	data := make([]byte, 0, 1024*100)
-	for range 1024 * 100 {
+	speed := 10 // 单位10k
+	data := make([]byte, 0, 1024*1000)
+	for range 1024 * 3 {
 		data = append(data, []byte("1234567890")...)
 	}
 	// 创建一个 MockWriter 实例

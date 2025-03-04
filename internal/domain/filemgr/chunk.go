@@ -44,8 +44,8 @@ func NewFileChunkHeader(b []byte) *fileChunkHeaderReq {
 }
 
 func ToFileChunkHeaderReq(fileId, hash string, chunkIdx int, chunkOffset, chunkSize int64) []byte {
-	b := make([]byte, headerLenReq)
-	copy(b[:4], sendMagic)
+	b := make([]byte, headerLen)
+	copy(b[:4], reqMagic)
 	copy(b[4:24], fileId)
 	binary.LittleEndian.PutUint32(b[24:28], uint32(chunkIdx))
 	binary.LittleEndian.PutUint64(b[28:36], uint64(chunkOffset))
@@ -55,8 +55,8 @@ func ToFileChunkHeaderReq(fileId, hash string, chunkIdx int, chunkOffset, chunkS
 }
 
 func ToFileChunkHeaderResp(fileId string, chunkIdx, status int) []byte {
-	b := make([]byte, headerLenReq)
-	copy(b[:4], sendMagic)
+	b := make([]byte, headerLen)
+	copy(b[:4], reqMagic)
 	copy(b[4:24], fileId)
 	binary.LittleEndian.PutUint32(b[24:28], uint32(chunkIdx))
 	binary.LittleEndian.PutUint32(b[28:32], uint32(status))

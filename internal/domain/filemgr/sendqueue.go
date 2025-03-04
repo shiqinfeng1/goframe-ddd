@@ -3,6 +3,8 @@ package filemgr
 import (
 	"context"
 	"sync"
+
+	"github.com/gogf/gf/v2/errors/gerror"
 )
 
 // FileSendQueue 表示文件发送队列
@@ -64,7 +66,8 @@ func (q *FileSendQueue) start() {
 				q.mu.Unlock()
 
 				// 模拟文件发送
-				err := q.sendFile(nextTask)
+				// err := q.sendFile(nextTask)
+				err := gerror.New("d")
 				q.mu.Lock()
 				if err != nil {
 					nextTask.Status = StatusFailed

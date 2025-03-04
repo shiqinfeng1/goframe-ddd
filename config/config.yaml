@@ -125,4 +125,5 @@ logger:
     isCloud: true  # true:cloud-side false:edge-side
     transport: kcp # kcp tcp
     maxTasks: 2 # 最大同时发送文件任务数量
-    addr: 192.168.1.10:30082
+    addr: 192.168.1.10:30082  # 文件传输的服务地址
+    streamDeadline: 0  # stream接收端的超时时间，单位：秒。 超过该时间，stream将会被关闭，0表示无超时时间，直到客户端关闭stream

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/gogf/gf/v2/errors/gerror"
+	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/xtaci/smux"
 )
 
@@ -19,7 +20,7 @@ func recvHeader(ctx context.Context, stream *smux.Stream) (*header, error) {
 		return nil, gerror.Wrapf(err, "recv header length invalid(%v)", n)
 	}
 	// 解析消息头
-	h := newHeader(headerBytes)
+	h := newHeaderFromBytes(headerBytes)
 	if err := h.ErrIfInvalid(); err != nil {
 		return nil, err
 	}
@@ -50,9 +51,21 @@ func StreamRecvHandler(ctx context.Context, sesion *smux.Session, stream *smux.S
 		if err != nil {
 			return err
 		}
-		handshake(ctx, body)
-		saveSession(ctx)
-
+		// 解析clientid
+		clientId := clientIdFromBytes(ctx, body)
+		if clientId == "" {
+			return gerror.Newf("handshake fail: clientId invalid(%v)", gconv.String(body))
+		}
+		// 回复握手确认消息
+		ack, _ := HandshakeAckToBytes(ctx, []byte(clientId))
+		if _, err := stream.Write(ack); err != nil {
+			return gerror.Wrap(err, "handshake fail")
+		}
+		// 缓存会话
+		if err := saveSession(ctx, clientId, sesion); err != nil {
+			return gerror.Wrap(err, "save session fail")
+		}
+		return nil
 	}
 	// 其他消息处理
 	if handler, ok := msgHandlerMap[header.typ]; ok {

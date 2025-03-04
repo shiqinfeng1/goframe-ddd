@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/gogf/gf/v2/errors/gerror"
+	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gcache"
 	"github.com/xtaci/smux"
 )
@@ -13,6 +14,7 @@ import (
 var serverSess = gcache.NewWithAdapter(gcache.NewAdapterMemory())
 
 func saveSession(ctx context.Context, clientId string, sess *smux.Session) error {
+	// 检查之前是否有会话
 	if exist, _ := serverSess.Contains(ctx, clientId); exist {
 		old, err := serverSess.Remove(ctx, clientId)
 		if err != nil {
@@ -26,8 +28,10 @@ func saveSession(ctx context.Context, clientId string, sess *smux.Session) error
 			if errors.Is(err, io.ErrClosedPipe) {
 				return nil
 			}
+			g.Log().Warningf(ctx, "delete old session of clientid=%v fail:%v", clientId, err)
 		}
 	}
+
 	if err := serverSess.Set(ctx, clientId, sess, 0); err != nil {
 		return gerror.Wrapf(err, "set new session fail. clientId=%v", clientId)
 	}
