@@ -10,7 +10,7 @@ import (
 	"github.com/xtaci/smux"
 )
 
-var myClientID string
+var MyClientID string
 
 func clientIdFromBytes(ctx context.Context, data []byte) string {
 	raw := gconv.String(data)
@@ -20,12 +20,12 @@ func clientIdFromBytes(ctx context.Context, data []byte) string {
 	return raw
 }
 
-func handshakeBody(ctx context.Context) ([]byte, error) {
+func handshakeBody(_ context.Context) ([]byte, error) {
 	uid, err := utils.GenUIDForHost()
 	if err != nil {
 		return nil, gerror.Wrap(err, "get uid fail")
 	}
-	myClientID = uid
+	MyClientID = uid
 	return []byte(uid), nil
 }
 
@@ -34,7 +34,7 @@ func HandshakeMsgToBytes(ctx context.Context) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	data := make([]byte, headerLen+len(body), headerLen+len(body))
+	data := make([]byte, headerLen+len(body))
 	copy(data[0:3], []byte(reqMagic))
 	data[3] = msgHandshake.Byte()
 	binary.LittleEndian.PutUint32(data[4:8], uint32(len(body)))
@@ -44,7 +44,7 @@ func HandshakeMsgToBytes(ctx context.Context) ([]byte, error) {
 }
 
 func HandshakeAckToBytes(ctx context.Context, body []byte) ([]byte, error) {
-	data := make([]byte, headerLen+len(body), headerLen+len(body))
+	data := make([]byte, headerLen+len(body))
 	copy(data[0:3], []byte(ackMagic))
 	data[3] = msgHandshake.Byte()
 	binary.LittleEndian.PutUint32(data[4:8], uint32(len(body)))

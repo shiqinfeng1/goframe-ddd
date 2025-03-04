@@ -17,7 +17,7 @@ type FileSendQueue struct {
 }
 
 // NewFileSendQueue 创建一个新的文件发送队列
-func NewfileTransferService(maxTasks int) *FileSendQueue {
+func NewFileTransferService(maxTasks int) *FileSendQueue {
 	q := &FileSendQueue{
 		maxTasks: maxTasks,
 		tasks:    make([]*TransferTask, 0),

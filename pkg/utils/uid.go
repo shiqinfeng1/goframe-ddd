@@ -6,21 +6,20 @@ import (
 	"os"
 
 	"github.com/gogf/gf/v2/text/gstr"
-	"github.com/rs/xid"
 )
 
 func UidIsValid(uid string) bool {
 	suid := gstr.Split(uid, "-")
 	// 检查uid格式
-	if len(suid) < 3 {
+	if len(suid) < 2 {
 		return false
 	}
-	// 检查xid
-	if _, err := xid.FromString(suid[len(suid)-1]); err != nil {
-		return false
-	}
+	// // 检查xid
+	// if _, err := xid.FromString(suid[len(suid)-1]); err != nil {
+	// 	return false
+	// }
 	// 检查mac
-	if _, err := net.ParseMAC(suid[len(suid)-2]); err != nil {
+	if _, err := net.ParseMAC(suid[len(suid)-1]); err != nil {
 		return false
 	}
 	return true
@@ -67,8 +66,6 @@ func GenUIDForHost() (string, error) {
 		return "", fmt.Errorf("未找到有效的 MAC 地址")
 	}
 
-	// 生成 UUID
-	uuidStr := xid.New().String()
 	// 组合信息
-	return fmt.Sprintf("%s-%s-%s", hostname, macAddr, uuidStr), nil
+	return fmt.Sprintf("%s-%s", hostname, macAddr), nil
 }

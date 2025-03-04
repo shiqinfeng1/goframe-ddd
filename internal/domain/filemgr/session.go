@@ -8,15 +8,34 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gcache"
+	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/xtaci/smux"
 )
 
-var serverSess = gcache.NewWithAdapter(gcache.NewAdapterMemory())
+type SessionMgr struct {
+	serverSess *gcache.Cache
+}
 
-func saveSession(ctx context.Context, clientId string, sess *smux.Session) error {
+var sessionMgr = &SessionMgr{
+	serverSess: gcache.NewWithAdapter(gcache.NewAdapterMemory()),
+}
+
+func Session() *SessionMgr {
+	return sessionMgr
+}
+
+func (s *SessionMgr) GetSessionList(ctx context.Context) ([]string, error) {
+	ids, err := s.serverSess.Keys(ctx)
+	if err != nil {
+		return []string{}, gerror.Wrap(err, "get sesson clientIds fail")
+	}
+	return gconv.Strings(ids), nil
+}
+
+func (s *SessionMgr) SaveSession(ctx context.Context, clientId string, sess *smux.Session) error {
 	// 检查之前是否有会话
-	if exist, _ := serverSess.Contains(ctx, clientId); exist {
-		old, err := serverSess.Remove(ctx, clientId)
+	if exist, _ := s.serverSess.Contains(ctx, clientId); exist {
+		old, err := s.serverSess.Remove(ctx, clientId)
 		if err != nil {
 			return gerror.Wrapf(err, "remove old session fail. clientId=%v", clientId)
 		}
@@ -32,20 +51,20 @@ func saveSession(ctx context.Context, clientId string, sess *smux.Session) error
 		}
 	}
 
-	if err := serverSess.Set(ctx, clientId, sess, 0); err != nil {
+	if err := s.serverSess.Set(ctx, clientId, sess, 0); err != nil {
 		return gerror.Wrapf(err, "set new session fail. clientId=%v", clientId)
 	}
 	return nil
 }
 
-func GetSession(ctx context.Context, clientId string) (*smux.Session, error) {
-	sess, err := serverSess.Get(ctx, clientId)
+func (s *SessionMgr) GetSession(ctx context.Context, clientId string) (*smux.Session, error) {
+	item, err := s.serverSess.Get(ctx, clientId)
 	if err != nil {
 		return nil, gerror.Wrapf(err, "get session fail. clientId=%v", clientId)
 	}
-	var s *smux.Session
-	if err := sess.Scan(&s); err != nil {
+	var sess *smux.Session
+	if err := item.Scan(&sess); err != nil {
 		return nil, gerror.Wrapf(err, "scan session fail. clientId=%v", clientId)
 	}
-	return s, nil
+	return sess, nil
 }

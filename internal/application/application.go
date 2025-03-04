@@ -24,7 +24,7 @@ func New(ctx context.Context) *Application {
 
 	// 实例化一个文件传输服务
 	maxTasks := g.Cfg().MustGet(ctx, "filemgr.maxTasks").Int()
-	fileTransferService := filemgr.NewfileTransferService(maxTasks)
+	fileTransferService := filemgr.NewFileTransferService(maxTasks)
 
 	// 实例化一个流通道管理服务，流通道支持2种传输层：tcp和kcp
 	var streamService *stream.Stream
@@ -44,7 +44,6 @@ func New(ctx context.Context) *Application {
 	} else {
 		streamService.StartupClient(ctx, addr)
 	}
-
 	return &Application{
 		Commands: command.NewHandler(repo, fileTransferService, streamService),
 		Queries:  query.NewHandler(repo),

@@ -103,6 +103,7 @@ func (s *Stream) StartupClient(ctx context.Context, addr string) {
 			if err := filemgr.CheckoutHandshakeAckFromBytes(ctx, stm); err != nil {
 				g.Log().Fatalf(ctx, "handshake ack from server fail:%v", err)
 			}
+			g.Log().Infof(ctx, "my clientId is %v, handshake to server:%v ok", filemgr.MyClientID, addr)
 			return nil
 		})
 		if err != nil {

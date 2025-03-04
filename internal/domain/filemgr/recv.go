@@ -4,12 +4,13 @@ import (
 	"context"
 
 	"github.com/gogf/gf/v2/errors/gerror"
+	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/xtaci/smux"
 )
 
 // 从kcp的stream中接收数据头
-func recvHeader(ctx context.Context, stream *smux.Stream) (*header, error) {
+func recvHeader(_ context.Context, stream *smux.Stream) (*header, error) {
 	// 读取消息头
 	headerBytes := make([]byte, headerLen)
 	n, err := stream.Read(headerBytes)
@@ -27,7 +28,7 @@ func recvHeader(ctx context.Context, stream *smux.Stream) (*header, error) {
 	return h, nil
 }
 
-func recvBody(ctx context.Context, stream *smux.Stream, bodyLen uint32) ([]byte, error) {
+func recvBody(_ context.Context, stream *smux.Stream, bodyLen uint32) ([]byte, error) {
 	// 读取消息头
 	bodyBytes := make([]byte, bodyLen)
 	n, err := stream.Read(bodyBytes)
@@ -62,9 +63,10 @@ func StreamRecvHandler(ctx context.Context, sesion *smux.Session, stream *smux.S
 			return gerror.Wrap(err, "handshake fail")
 		}
 		// 缓存会话
-		if err := saveSession(ctx, clientId, sesion); err != nil {
+		if err := Session().SaveSession(ctx, clientId, sesion); err != nil {
 			return gerror.Wrap(err, "save session fail")
 		}
+		g.Log().Infof(ctx, "handshake from:%v ok", clientId)
 		return nil
 	}
 	// 其他消息处理

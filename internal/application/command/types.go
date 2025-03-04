@@ -10,3 +10,7 @@ type StartSendFileInput struct {
 }
 
 type StartSendFileOutput struct{}
+
+type ClientIdsOutput struct {
+	Ids []string
+}

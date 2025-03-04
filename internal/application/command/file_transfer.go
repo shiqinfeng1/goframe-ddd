@@ -6,9 +6,8 @@ import (
 	"github.com/rs/xid"
 )
 
-func (f *Handler) StartSendFile(ctx context.Context, in *StartSendFileInput) (*StartSendFileOutput, error) {
+func (h *Handler) StartSendFile(ctx context.Context, in *StartSendFileInput) (*StartSendFileOutput, error) {
 	taskId := xid.New().String()
-
-	f.fileTransfer.AddTask(ctx, taskId, in.BaseName, in.Files)
+	h.fileTransfer.AddTask(ctx, taskId, in.BaseName, in.Files)
 	return nil, nil
 }
