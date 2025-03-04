@@ -96,10 +96,12 @@ func (s *Stream) StartupClient(ctx context.Context, addr string) {
 				return err
 			}
 			// 发送握手消息
-			stm.Write(bytes)
+			if _, err := stm.Write(bytes); err != nil {
+				g.Log().Fatalf(ctx, "handshake req to server fail:%v", err)
+			}
 			// 接收响应数据
 			if err := filemgr.CheckoutHandshakeAckFromBytes(ctx, stm); err != nil {
-				g.Log().Fatalf(ctx, "handshake ack from server fail")
+				g.Log().Fatalf(ctx, "handshake ack from server fail:%v", err)
 			}
 			return nil
 		})
