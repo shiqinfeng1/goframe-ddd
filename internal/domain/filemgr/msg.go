@@ -74,7 +74,7 @@ func (h header) BodyLen() uint32 {
 }
 
 func (h header) String() string {
-	return fmt.Sprintf("magic:%v type:%v", h.magic, h.typ)
+	return fmt.Sprintf("magic:%v type:%v bodyLen=%v", h.magic, h.typ, h.length)
 }
 
 func (h header) ErrIfInvalid() error {

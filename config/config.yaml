@@ -126,4 +126,4 @@ filemgr:
   transport: kcp # kcp tcp
   maxTasks: 2 # 最大同时发送文件任务数量
   addr: 10.17.11.13:30082  # 文件传输的服务地址
-  streamDeadline: 0  # stream接收端的超时时间，单位：秒。 超过该时间，stream将会被关闭，0表示无超时时间，直到客户端关闭stream
+  streamDeadline: 100  # stream接收端的超时时间，单位：秒。 超过该时间，stream将会被关闭
