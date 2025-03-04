@@ -20,39 +20,41 @@ func NewKcpTransport() *KcpTransport {
 }
 
 func (k *KcpTransport) NewServer(ctx context.Context, addr string, handler func(net.Conn)) error {
-	if !k.serverIsRunning.Load() {
-		listener, err := kcp.ListenWithOptions(addr, nil, 10, 3)
-		if err != nil {
-			return gerror.Wrapf(err, "kcp listen fail")
-		}
-		listener.SetReadBuffer(4 * 1024 * 1024)
-		listener.SetWriteBuffer(4 * 1024 * 1024)
-		listener.SetDSCP(46)
-		k.server = listener
-		k.serverIsRunning.Store(true)
-
-		go func() {
-			for {
-				conn, err := k.server.AcceptKCP()
-				if err != nil {
-					g.Log().Errorf(ctx, "kcp accept fail:%v", err)
-					k.server.Close()
-					k.serverIsRunning.Store(false)
-					return
-				}
-				conn.SetStreamMode(true)
-				conn.SetWindowSize(4096, 4096)
-				conn.SetNoDelay(1, 10, 2, 1)
-				conn.SetWriteDelay(false)
-				conn.SetDSCP(46)
-				conn.SetMtu(1400)
-				conn.SetACKNoDelay(false)
-				handler(conn)
-			}
-		}()
-		g.Log().Info(ctx, "kcp serevr is running at %v", addr)
+	if k.serverIsRunning.Load() {
+		g.Log().Warning(ctx, "start kcp server fail: kcp serevr is already running")
+		return nil
 	}
-	g.Log().Warning(ctx, "start kcp server fail: kcp serevr is already running")
+	listener, err := kcp.ListenWithOptions(addr, nil, 10, 3)
+	if err != nil {
+		return gerror.Wrapf(err, "kcp listen fail")
+	}
+	listener.SetReadBuffer(4 * 1024 * 1024)
+	listener.SetWriteBuffer(4 * 1024 * 1024)
+	listener.SetDSCP(46)
+	k.server = listener
+	k.serverIsRunning.Store(true)
+
+	go func() {
+		for {
+			conn, err := k.server.AcceptKCP()
+			if err != nil {
+				g.Log().Errorf(ctx, "kcp accept fail:%v", err)
+				k.server.Close()
+				k.serverIsRunning.Store(false)
+				return
+			}
+			conn.SetStreamMode(true)
+			conn.SetWindowSize(4096, 4096)
+			conn.SetNoDelay(1, 10, 2, 1)
+			conn.SetWriteDelay(false)
+			conn.SetDSCP(46)
+			conn.SetMtu(1400)
+			conn.SetACKNoDelay(false)
+			handler(conn)
+		}
+	}()
+	g.Log().Infof(ctx, "kcp serevr is running at %v", addr)
+
 	return nil
 }
 

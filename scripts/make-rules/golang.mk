@@ -106,7 +106,7 @@ go.test: tools.verify.go-junit-report
 # 把EXCLUDE_TESTS列表中的空格替换为|（在正则表达式中|表示或），再过滤掉当前项目下所有Go包中在EXCLUDE_TESTS中的包
 # 执行测试用例，并生成的代码覆盖率数据文件coverage.out
 # 将测试结果同时输出到终端和 JUnit 格式的 XML 报告文件
-	set -o pipefail;$(GO) test -race -cover -coverprofile=$(OUTPUT_DIR)/coverage.out \
+	@set -o pipefail;$(GO) test -race -cover -coverprofile=$(OUTPUT_DIR)/coverage.out \
 		-timeout=10m -shuffle=on -short -v `go list ./...|egrep -v $(EXCLUDE_TESTS)` 2>&1 | \
 		tee >(go-junit-report --set-exit-code >$(OUTPUT_DIR)/report.xml)
 # remove mock_.*.go files from test coverage
