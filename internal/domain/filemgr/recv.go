@@ -75,6 +75,7 @@ func StreamRecvHandler(ctx context.Context, sesion *smux.Session, stream io.Read
 		if err := ackHandshake(ctx, sesion, stream, body); err != nil {
 			return err
 		}
+		return nil
 	}
 	// 其他消息处理
 	if handler, ok := msgHandlerMap[header.typ]; ok {
