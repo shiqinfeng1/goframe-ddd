@@ -150,7 +150,7 @@ func (s *Stream) OpenStreamByClient(ctx context.Context, handler SendStreamHandl
 			g.Log().Errorf(ctx, "close stream.id=%v fail:%v", s.ID(), err)
 			return
 		}
-		g.Log().Infof(ctx, "close stream ok. remote:%v -> local:%v stream.id=%v", stream.RemoteAddr(), stream.LocalAddr(), stream.ID())
+		g.Log().Infof(ctx, "close stream ok. local:%v -> remote:%v stream.id=%v", stream.LocalAddr(), stream.RemoteAddr(), stream.ID())
 	}(stream)
 	return nil
 }
