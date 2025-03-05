@@ -122,8 +122,7 @@ logger:
   writerColorEnable:     false                 # 日志文件是否带上颜色。默认false，表示不带颜色
 
 filemgr: 
-  isCloud: true  # true:cloud-side false:edge-side
+  isCloud: false  # true:cloud-side false:edge-side
   transport: kcp # kcp tcp
   maxTasks: 2 # 最大同时发送文件任务数量
   addr: 10.17.11.13:31082  # 文件传输的服务地址
-  streamDeadline: 100  # stream接收端的超时时间，单位：秒。 超过该时间，stream将会被关闭

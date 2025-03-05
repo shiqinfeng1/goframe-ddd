@@ -54,10 +54,6 @@ func (s *Stream) StartupServer(ctx context.Context, addr string, recvHandler Rec
 					g.Log().Errorf(ctx, "session accept stream fail:%v", err)
 					return
 				}
-				// 收到一个stream， 需要在10s内完成收发数据（一个stream接收端数据是16M）
-				stream.SetDeadline(
-					time.Now().Add(time.Duration(g.Cfg().MustGet(ctx, "filemgr.streamDeadline").Int()) * time.Second),
-				)
 				g.Log().Infof(ctx, "accept stream ok. remote:%v -> local:%v stream.id=%v", stream.RemoteAddr(), stream.LocalAddr(), stream.ID())
 				// 在协程中处理数据
 				go func(s *smux.Stream) {
@@ -95,17 +91,18 @@ func (s *Stream) StartupClient(ctx context.Context, addr string) {
 		// 会话建立成功， 立即主动发起握手
 		err = s.OpenStreamByClient(ctx, func(ctx context.Context, stm *smux.Stream) error {
 			if err := filemgr.ReqHandshakeWithSync(ctx, stm); err != nil {
-				g.Log().Fatalf(ctx, "handshake ack from server fail:%v", err)
+				return gerror.Wrap(err, "handshake fail")
 			}
 			g.Log().Infof(ctx, "my nodeId is %v, handshake to server:%v ok", filemgr.MyClientID, addr)
 			return nil
 		})
 		if err != nil {
+			g.Log().Warningf(ctx, "handshake to server fail:%v", err)
 			session.Close()
 			conn.Close()
 			s.clientSessIsRunning.Store(false)
 		}
-		return nil
+		return err
 	}
 	// 定时3秒检查连通性
 	ticker := time.NewTicker(time.Second * 3)
@@ -142,10 +139,13 @@ func (s *Stream) OpenStreamByClient(ctx context.Context, handler SendStreamHandl
 	// 在协程中处理数据
 	go func(s *smux.Stream) {
 		if err := handler(ctx, s); err != nil {
-			g.Log().Error(ctx, err)
+			g.Log().Warning(ctx, err)
 			// 即使返回失败，也需要关闭stream
 		}
 		if err := s.Close(); err != nil {
+			if errors.Is(err, io.ErrClosedPipe) {
+				return
+			}
 			g.Log().Errorf(ctx, "close stream.id=%v fail:%v", s.ID(), err)
 			return
 		}
