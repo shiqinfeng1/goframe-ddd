@@ -7,7 +7,7 @@ type StartSendFileReq struct {
 	FilePath []string `p:"file_path" v:"required" dc:"文件/目录绝对路径"`
 }
 type StartSendFileRes struct {
-	g.Meta `mime:"application/json"`
+	g.Meta `status:"200"`
 }
 
 type PauseSendFileReq struct {
@@ -15,7 +15,7 @@ type PauseSendFileReq struct {
 	FilePath []string `p:"file_path" v:"required" dc:"文件绝对路径"`
 }
 type PauseSendFileRes struct {
-	g.Meta `mime:"application/json"`
+	g.Meta `status:"200"`
 }
 
 type CancelSendFileReq struct {
@@ -23,12 +23,12 @@ type CancelSendFileReq struct {
 	FilePath []string `p:"file_path" v:"required" dc:"文件绝对路径"`
 }
 type CancelSendFileRes struct {
-	g.Meta `mime:"application/json"`
+	g.Meta `status:"200"`
 }
 type ResumeSendFileReq struct {
 	g.Meta   `path:"/file/resume" tags:"文件收发" method:"post" summary:"继续发送文件"`
 	FilePath []string `p:"file_path" v:"required" dc:"文件绝对路径"`
 }
 type ResumeSendFileRes struct {
-	g.Meta `mime:"application/json"`
+	g.Meta `status:"200"`
 }
