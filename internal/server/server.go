@@ -22,6 +22,9 @@ func NewHttpServer() *ghttp.Server {
 			http_filemgr.NewV1(),
 		)
 	})
+	oai := s.GetOpenApi()
+	oai.Config.CommonResponse = ghttp.DefaultHandlerResponse{}
+	oai.Config.CommonResponseDataField = `Data`
 	return s
 }
 

@@ -31,48 +31,48 @@ func Session() *SessionMgr {
 	return sessionMgr
 }
 
-func (s *SessionMgr) GetSessionList(ctx context.Context) ([]string, error) {
+func (s *SessionMgr) GetNodeList(ctx context.Context) ([]string, error) {
 	ids, err := s.serverSess.Keys(ctx)
 	if err != nil {
-		return []string{}, gerror.Wrap(err, "get sesson clientIds fail")
+		return []string{}, gerror.Wrap(err, "get sesson nodeIds fail")
 	}
 	return gconv.Strings(ids), nil
 }
 
-func (s *SessionMgr) SaveSession(ctx context.Context, clientId string, sess *smux.Session) error {
+func (s *SessionMgr) SaveSession(ctx context.Context, nodeId string, sess *smux.Session) error {
 	// 检查之前是否有会话
-	if exist, _ := s.serverSess.Contains(ctx, clientId); exist {
-		old, err := s.serverSess.Remove(ctx, clientId)
+	if exist, _ := s.serverSess.Contains(ctx, nodeId); exist {
+		old, err := s.serverSess.Remove(ctx, nodeId)
 		if err != nil {
-			return gerror.Wrapf(err, "remove old session fail. clientId=%v", clientId)
+			return gerror.Wrapf(err, "remove old session fail. nodeId=%v", nodeId)
 		}
 		var s *smux.Session
 		if err := old.Scan(&s); err != nil {
-			return gerror.Wrapf(err, "scan old session fail. clientId=%v", clientId)
+			return gerror.Wrapf(err, "scan old session fail. nodeId=%v", nodeId)
 		}
 		if err := s.Close(); err != nil {
 			if errors.Is(err, io.ErrClosedPipe) {
-				g.Log().Warningf(ctx, "delete old session of clientid=%v:%v", clientId, err)
+				g.Log().Warningf(ctx, "delete old session of nodeid=%v:%v", nodeId, err)
 			} else {
-				g.Log().Warningf(ctx, "delete old session of clientid=%v fail:%v", clientId, err)
+				g.Log().Warningf(ctx, "delete old session of nodeid=%v fail:%v", nodeId, err)
 			}
 		}
 	}
 
-	if err := s.serverSess.Set(ctx, clientId, sess, 0); err != nil {
-		return gerror.Wrapf(err, "set new session fail. clientId=%v", clientId)
+	if err := s.serverSess.Set(ctx, nodeId, sess, 0); err != nil {
+		return gerror.Wrapf(err, "set new session fail. nodeId=%v", nodeId)
 	}
 	return nil
 }
 
-func (s *SessionMgr) GetSession(ctx context.Context, clientId string) (*smux.Session, error) {
-	item, err := s.serverSess.Get(ctx, clientId)
+func (s *SessionMgr) GetSession(ctx context.Context, nodeId string) (*smux.Session, error) {
+	item, err := s.serverSess.Get(ctx, nodeId)
 	if err != nil {
-		return nil, gerror.Wrapf(err, "get session fail. clientId=%v", clientId)
+		return nil, gerror.Wrapf(err, "get session fail. nodeId=%v", nodeId)
 	}
 	var sess *smux.Session
 	if err := item.Scan(&sess); err != nil {
-		return nil, gerror.Wrapf(err, "scan session fail. clientId=%v", clientId)
+		return nil, gerror.Wrapf(err, "scan session fail. nodeId=%v", nodeId)
 	}
 	return sess, nil
 }

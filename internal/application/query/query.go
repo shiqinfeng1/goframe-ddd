@@ -19,9 +19,9 @@ func NewHandler(
 }
 
 func (h *Handler) GetClientIds(ctx context.Context) ([]string, error) {
-	clientsIds, err := filemgr.Session().GetSessionList(ctx)
+	nodeIds, err := filemgr.Session().GetNodeList(ctx)
 	if err != nil {
 		return nil, nil
 	}
-	return clientsIds, nil
+	return nodeIds, nil
 }

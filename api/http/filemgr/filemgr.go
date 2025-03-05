@@ -15,5 +15,5 @@ type IFilemgrV1 interface {
 	PauseSendFile(ctx context.Context, req *v1.PauseSendFileReq) (res *v1.PauseSendFileRes, err error)
 	CancelSendFile(ctx context.Context, req *v1.CancelSendFileReq) (res *v1.CancelSendFileRes, err error)
 	ResumeSendFile(ctx context.Context, req *v1.ResumeSendFileReq) (res *v1.ResumeSendFileRes, err error)
-	SessionList(ctx context.Context, req *v1.SessionListReq) (res *v1.SessionListRes, err error)
+	SessionList(ctx context.Context, req *v1.NodeListReq) (res *v1.NodeListRes, err error)
 }

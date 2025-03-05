@@ -12,5 +12,7 @@ import (
 // 20：
 // --00：
 var (
-	ErrInvalidFile = func(f string) error { return gerror.NewCode(gcode.New(100001, "无效的文件:"+f, nil)) }
+	ErrNotAbsFilePath = func(f string) error { return gerror.NewCode(gcode.New(100001, "请输入绝对路径:"+f, nil)) }
+	ErrEmptyDir       = func(f string) error { return gerror.NewCode(gcode.New(100002, "文件夹内无有效文件:"+f, nil)) }
+	ErrInvalidFiles   = func(f string) error { return gerror.NewCode(gcode.New(100003, "无有效文件:"+f, nil)) }
 )

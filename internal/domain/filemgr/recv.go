@@ -44,20 +44,20 @@ func recvBody(_ context.Context, stream io.Reader, bodyLen uint32) ([]byte, erro
 
 func ackHandshake(ctx context.Context, sesion *smux.Session, stream io.Writer, body []byte) error {
 	// 解析clientid
-	clientId := clientIdFromBytes(ctx, body)
-	if clientId == "" {
-		return gerror.Newf("handshake fail: clientId invalid(%v)", gconv.String(body))
+	nodeId := clientIdFromBytes(ctx, body)
+	if nodeId == "" {
+		return gerror.Newf("handshake fail: nodeId invalid(%v)", gconv.String(body))
 	}
 	// 回复握手确认消息
-	ack, _ := handshakeAckToBytes(ctx, []byte(clientId))
+	ack, _ := handshakeAckToBytes(ctx, []byte(nodeId))
 	if _, err := stream.Write(ack); err != nil {
 		return gerror.Wrap(err, "handshake fail")
 	}
 	// 缓存会话
-	if err := Session().SaveSession(ctx, clientId, sesion); err != nil {
+	if err := Session().SaveSession(ctx, nodeId, sesion); err != nil {
 		return gerror.Wrap(err, "save session fail")
 	}
-	g.Log().Infof(ctx, "handshake from:%v ok", clientId)
+	g.Log().Infof(ctx, "handshake from:%v ok", nodeId)
 	return nil
 }
 

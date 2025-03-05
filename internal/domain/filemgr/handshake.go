@@ -76,7 +76,7 @@ func ReqHandshakeWithSync(ctx context.Context, stream io.ReadWriter) error {
 		return err
 	}
 	if clientIdFromBytes(ctx, body) == "" {
-		return gerror.New("handshake ack clientid invalid")
+		return gerror.New("handshake ack nodeid invalid")
 	}
 	return nil
 }

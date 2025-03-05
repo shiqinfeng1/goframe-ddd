@@ -2,6 +2,7 @@ package filemgr
 
 import (
 	"context"
+	"path/filepath"
 
 	"github.com/gogf/gf/v2/errors/gcode"
 	"github.com/gogf/gf/v2/errors/gerror"
@@ -15,6 +16,9 @@ import (
 
 func (c *ControllerV1) StartSendFile(ctx context.Context, req *v1.StartSendFileReq) (res *v1.StartSendFileRes, err error) {
 	for _, v := range req.FilePath {
+		if !filepath.IsAbs(v) {
+			return nil, errors.ErrNotAbsFilePath(v)
+		}
 		// 发送文件夹
 		if gfile.IsDir(v) {
 			var files []string
@@ -25,7 +29,7 @@ func (c *ControllerV1) StartSendFile(ctx context.Context, req *v1.StartSendFileR
 				return ""
 			})
 			if len(files) == 0 {
-				return nil, errors.ErrInvalidFile(gconv.String(req.FilePath))
+				return nil, errors.ErrEmptyDir(v)
 			}
 			_, err = c.app.Commands.StartSendFile(ctx, &command.StartSendFileInput{
 				IsDir:    true,
@@ -38,7 +42,7 @@ func (c *ControllerV1) StartSendFile(ctx context.Context, req *v1.StartSendFileR
 				files = append(files, v)
 			}
 			if len(files) == 0 {
-				return nil, errors.ErrInvalidFile(gconv.String(req.FilePath))
+				return nil, errors.ErrInvalidFiles(gconv.String(req.FilePath))
 			}
 			_, err = c.app.Commands.StartSendFile(ctx, &command.StartSendFileInput{
 				IsDir:    true,
