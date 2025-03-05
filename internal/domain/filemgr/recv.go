@@ -2,6 +2,7 @@ package filemgr
 
 import (
 	"context"
+	"io"
 
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
@@ -10,7 +11,7 @@ import (
 )
 
 // 从kcp的stream中接收数据头
-func recvHeader(_ context.Context, stream *smux.Stream) (*header, error) {
+func recvHeader(_ context.Context, stream io.Reader) (*header, error) {
 	// 读取消息头
 	headerBytes := make([]byte, headerLen)
 	n, err := stream.Read(headerBytes)
@@ -28,7 +29,7 @@ func recvHeader(_ context.Context, stream *smux.Stream) (*header, error) {
 	return h, nil
 }
 
-func recvBody(_ context.Context, stream *smux.Stream, bodyLen uint32) ([]byte, error) {
+func recvBody(_ context.Context, stream io.Reader, bodyLen uint32) ([]byte, error) {
 	// 读取消息头
 	bodyBytes := make([]byte, bodyLen)
 	n, err := stream.Read(bodyBytes)
@@ -41,45 +42,47 @@ func recvBody(_ context.Context, stream *smux.Stream, bodyLen uint32) ([]byte, e
 	return bodyBytes, nil
 }
 
-func StreamRecvHandler(ctx context.Context, sesion *smux.Session, stream *smux.Stream) error {
+func ackHandshake(ctx context.Context, sesion *smux.Session, stream io.Writer, body []byte) error {
+	// 解析clientid
+	clientId := clientIdFromBytes(ctx, body)
+	if clientId == "" {
+		return gerror.Newf("handshake fail: clientId invalid(%v)", gconv.String(body))
+	}
+	// 回复握手确认消息
+	ack, _ := handshakeAckToBytes(ctx, []byte(clientId))
+	if _, err := stream.Write(ack); err != nil {
+		return gerror.Wrap(err, "handshake fail")
+	}
+	// 缓存会话
+	if err := Session().SaveSession(ctx, clientId, sesion); err != nil {
+		return gerror.Wrap(err, "save session fail")
+	}
+	g.Log().Infof(ctx, "handshake from:%v ok", clientId)
+	return nil
+}
+
+func StreamRecvHandler(ctx context.Context, sesion *smux.Session, stream io.ReadWriter) error {
 	header, err := recvHeader(ctx, stream)
+	if err != nil {
+		return err
+	}
+	body, err := recvBody(ctx, stream, header.length)
 	if err != nil {
 		return err
 	}
 	// 首个消息是握手消息，单独处理，缓存session
 	if header.typ.Is(msgHandshake) {
-		body, err := recvBody(ctx, stream, header.length)
-		if err != nil {
+		if err := ackHandshake(ctx, sesion, stream, body); err != nil {
 			return err
 		}
-		// 解析clientid
-		clientId := clientIdFromBytes(ctx, body)
-		if clientId == "" {
-			return gerror.Newf("handshake fail: clientId invalid(%v)", gconv.String(body))
-		}
-		// 回复握手确认消息
-		ack, _ := HandshakeAckToBytes(ctx, []byte(clientId))
-		if _, err := stream.Write(ack); err != nil {
-			return gerror.Wrap(err, "handshake fail")
-		}
-		// 缓存会话
-		if err := Session().SaveSession(ctx, clientId, sesion); err != nil {
-			return gerror.Wrap(err, "save session fail")
-		}
-		g.Log().Infof(ctx, "handshake from:%v ok", clientId)
-		return nil
 	}
 	// 其他消息处理
 	if handler, ok := msgHandlerMap[header.typ]; ok {
-		body, err := recvBody(ctx, stream, header.length)
-		if err != nil {
-			return err
-		}
 		if err := handler(ctx, body); err != nil {
 			return err
 		}
 	} else {
-		return gerror.Newf("invald msg type:%v", header.typ)
+		return gerror.Newf("not register handler for msg type:%v", header.typ)
 	}
 
 	return nil

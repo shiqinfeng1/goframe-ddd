@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"sync"
 
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
@@ -16,11 +17,17 @@ type SessionMgr struct {
 	serverSess *gcache.Cache
 }
 
-var sessionMgr = &SessionMgr{
-	serverSess: gcache.NewWithAdapter(gcache.NewAdapterMemory()),
-}
+var (
+	sessionMgr *SessionMgr
+	once       sync.Once
+)
 
 func Session() *SessionMgr {
+	once.Do(func() {
+		sessionMgr = &SessionMgr{
+			serverSess: gcache.NewWithAdapter(gcache.NewAdapterMemory()),
+		}
+	})
 	return sessionMgr
 }
 
@@ -45,9 +52,10 @@ func (s *SessionMgr) SaveSession(ctx context.Context, clientId string, sess *smu
 		}
 		if err := s.Close(); err != nil {
 			if errors.Is(err, io.ErrClosedPipe) {
-				return nil
+				g.Log().Warningf(ctx, "delete old session of clientid=%v:%v", clientId, err)
+			} else {
+				g.Log().Warningf(ctx, "delete old session of clientid=%v fail:%v", clientId, err)
 			}
-			g.Log().Warningf(ctx, "delete old session of clientid=%v fail:%v", clientId, err)
 		}
 	}
 

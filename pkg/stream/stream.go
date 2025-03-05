@@ -15,7 +15,7 @@ import (
 )
 
 type (
-	RecvStreamHandleFunc func(context.Context, *smux.Session, *smux.Stream) error
+	RecvStreamHandleFunc func(context.Context, *smux.Session, io.ReadWriter) error
 	SendStreamHandleFunc func(context.Context, *smux.Stream) error
 )
 
@@ -65,7 +65,11 @@ func (s *Stream) StartupServer(ctx context.Context, addr string, recvHandler Rec
 						g.Log().Error(ctx, err)
 						return
 					}
-					// 注意：接收消息的流在处理完数据之后，不主动关闭，由发起方关闭stream
+					if err := s.Close(); err != nil {
+						g.Log().Errorf(ctx, "close stream.id=%v fail:%v", s.ID(), err)
+						return
+					}
+					g.Log().Infof(ctx, "close stream ok. remote:%v -> local:%v stream.id=%v", stream.RemoteAddr(), stream.LocalAddr(), stream.ID())
 				}(stream)
 			}
 		}()
@@ -90,17 +94,7 @@ func (s *Stream) StartupClient(ctx context.Context, addr string) {
 		s.clientSessIsRunning.Store(true)
 		// 会话建立成功， 立即主动发起握手
 		err = s.OpenStreamByClient(ctx, func(ctx context.Context, stm *smux.Stream) error {
-			// 构造握手消息
-			bytes, err := filemgr.HandshakeMsgToBytes(ctx)
-			if err != nil {
-				return err
-			}
-			// 发送握手消息
-			if _, err := stm.Write(bytes); err != nil {
-				g.Log().Fatalf(ctx, "handshake req to server fail:%v", err)
-			}
-			// 接收响应数据
-			if err := filemgr.CheckoutHandshakeAckFromBytes(ctx, stm); err != nil {
+			if err := filemgr.ReqHandshakeWithSync(ctx, stm); err != nil {
 				g.Log().Fatalf(ctx, "handshake ack from server fail:%v", err)
 			}
 			g.Log().Infof(ctx, "my clientId is %v, handshake to server:%v ok", filemgr.MyClientID, addr)

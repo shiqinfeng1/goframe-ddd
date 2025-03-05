@@ -3,16 +3,16 @@ package filemgr
 import (
 	"context"
 	"encoding/binary"
+	"io"
 
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/utils"
-	"github.com/xtaci/smux"
 )
 
 var MyClientID string
 
-func clientIdFromBytes(ctx context.Context, data []byte) string {
+func clientIdFromBytes(_ context.Context, data []byte) string {
 	raw := gconv.String(data)
 	if !utils.UidIsValid(raw) {
 		return ""
@@ -29,7 +29,7 @@ func handshakeBody(_ context.Context) ([]byte, error) {
 	return []byte(uid), nil
 }
 
-func HandshakeMsgToBytes(ctx context.Context) ([]byte, error) {
+func handshakeMsgToBytes(ctx context.Context) ([]byte, error) {
 	body, err := handshakeBody(ctx)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func HandshakeMsgToBytes(ctx context.Context) ([]byte, error) {
 	return data, nil
 }
 
-func HandshakeAckToBytes(ctx context.Context, body []byte) ([]byte, error) {
+func handshakeAckToBytes(ctx context.Context, body []byte) ([]byte, error) {
 	data := make([]byte, headerLen+len(body))
 	copy(data[0:3], []byte(ackMagic))
 	data[3] = msgHandshake.Byte()
@@ -53,7 +53,17 @@ func HandshakeAckToBytes(ctx context.Context, body []byte) ([]byte, error) {
 	return data, nil
 }
 
-func CheckoutHandshakeAckFromBytes(ctx context.Context, stream *smux.Stream) error {
+func ReqHandshakeWithSync(ctx context.Context, stream io.ReadWriter) error {
+	// 构造握手消息
+	bytes, err := handshakeMsgToBytes(ctx)
+	if err != nil {
+		return err
+	}
+	// 发送握手消息
+	if _, err := stream.Write(bytes); err != nil {
+		gerror.Wrapf(err, "handshake req to server fail:%v", err)
+	}
+	// 接收响应数据
 	header, err := recvHeader(ctx, stream)
 	if err != nil {
 		return err
