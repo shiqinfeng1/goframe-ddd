@@ -48,7 +48,7 @@ func (s *Stream) StartupServer(ctx context.Context, addr string, recvHandler Rec
 				stream, err := session.AcceptStream()
 				if err != nil {
 					if errors.Is(err, io.ErrClosedPipe) {
-						g.Log().Info(ctx, "stream pipe is closed")
+						g.Log().Warning(ctx, "accept stream fail: stream pipe is closed")
 						return
 					}
 					g.Log().Errorf(ctx, "session accept stream fail:%v", err)
@@ -130,7 +130,7 @@ func (s *Stream) OpenStreamByClient(ctx context.Context, handler SendStreamHandl
 	stream, err := s.clientSess.OpenStream()
 	if err != nil {
 		if errors.Is(err, io.ErrClosedPipe) {
-			g.Log().Info(ctx, "stream pipe is closed")
+			g.Log().Warning(ctx, "open stream fail: stream pipe is closed")
 			return nil
 		}
 		return err
@@ -144,6 +144,7 @@ func (s *Stream) OpenStreamByClient(ctx context.Context, handler SendStreamHandl
 		}
 		if err := s.Close(); err != nil {
 			if errors.Is(err, io.ErrClosedPipe) {
+				g.Log().Warningf(ctx, "client-side close stream.id=%v fail:%v", s.ID(), err)
 				return
 			}
 			g.Log().Errorf(ctx, "close stream.id=%v fail:%v", s.ID(), err)

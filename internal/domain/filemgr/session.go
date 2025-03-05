@@ -52,9 +52,9 @@ func (s *SessionMgr) SaveSession(ctx context.Context, nodeId string, sess *smux.
 		}
 		if err := s.Close(); err != nil {
 			if errors.Is(err, io.ErrClosedPipe) {
-				g.Log().Warningf(ctx, "delete old session of nodeid=%v:%v", nodeId, err)
+				g.Log().Warningf(ctx, "server-side close old session of nodeid=%v:%v", nodeId, err)
 			} else {
-				g.Log().Warningf(ctx, "delete old session of nodeid=%v fail:%v", nodeId, err)
+				g.Log().Warningf(ctx, "server-side close old session of nodeid=%v fail:%v", nodeId, err)
 			}
 		}
 	}
