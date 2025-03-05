@@ -17,7 +17,11 @@ type NodeListRes struct {
 func (r NodeListRes) EnhanceResponseStatus() (resList map[int]goai.EnhancedStatusType) {
 	return map[int]goai.EnhancedStatusType{
 		200: {
-			Examples: ghttp.DefaultHandlerResponse{},
+			Examples: ghttp.DefaultHandlerResponse{
+				Code:    0,
+				Message: "",
+				Data:    r,
+			},
 		},
 	}
 }
