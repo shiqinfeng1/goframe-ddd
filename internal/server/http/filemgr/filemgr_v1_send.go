@@ -32,7 +32,6 @@ func (c *ControllerV1) StartSendFile(ctx context.Context, req *v1.StartSendFileR
 				return nil, errors.ErrEmptyDir(v)
 			}
 			_, err = c.app.Commands.StartSendFile(ctx, &command.StartSendFileInput{
-				IsDir:    true,
 				BaseName: gfile.Basename(v),
 				Files:    files,
 			})
@@ -45,7 +44,6 @@ func (c *ControllerV1) StartSendFile(ctx context.Context, req *v1.StartSendFileR
 				return nil, errors.ErrInvalidFiles(gconv.String(req.FilePath))
 			}
 			_, err = c.app.Commands.StartSendFile(ctx, &command.StartSendFileInput{
-				IsDir:    true,
 				BaseName: gfile.Basename(v),
 				Files:    files,
 			})

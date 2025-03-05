@@ -51,7 +51,7 @@ func (s *SessionMgr) checkLiveness() {
 			}
 			if sess.IsClosed() {
 				_, err := s.serverSess.Remove(ctx, key)
-				g.Log().Info(ctx, "remove nodeId=%v session:%v", err)
+				g.Log().Infof(ctx, "remove nodeId=%v session:%v", key, err)
 			}
 		}
 		s.mutex.Unlock()

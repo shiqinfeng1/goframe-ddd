@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 
+	"github.com/shiqinfeng1/goframe-ddd/internal/domain/filemgr"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/stream"
 	"github.com/xtaci/smux"
 )
@@ -12,7 +13,7 @@ type FileTransferService interface {
 	AddTask(ctx context.Context, id string, name string, path []string)
 	PauseTask(ctx context.Context, id string)
 	ResumeTask(ctx context.Context, id string)
-	GetTaskStatus(ctx context.Context, id string) string
+	GetTaskStatus(ctx context.Context, id string) filemgr.Status
 }
 
 // 数据流管理
