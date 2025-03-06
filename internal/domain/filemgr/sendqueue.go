@@ -47,6 +47,7 @@ func (q *FileTransferMgr) start() {
 				q.cond.Wait() // 等待被通知，同时unlock q.mutex， 等到通知后，会重新lock
 			}
 			// 找到第一个等待发送的任务
+			var needRemove string
 			q.tasks.Iterator(func(k string, v any) bool {
 				task := v.(*TransferTask)
 				if task.status == StatusWaiting {
@@ -58,6 +59,7 @@ func (q *FileTransferMgr) start() {
 						defer q.mutex.Unlock()
 						if success {
 							task.status = StatusSuccessful
+							needRemove = k
 						} else {
 							task.status = StatusFailed
 						}
@@ -68,6 +70,9 @@ func (q *FileTransferMgr) start() {
 				}
 				return true
 			})
+			if needRemove != "" {
+				q.tasks.Remove(needRemove)
+			}
 			q.mutex.Unlock()
 		}
 	}()
@@ -96,6 +101,7 @@ func (q *FileTransferMgr) PauseTask(ctx context.Context, id string) {
 
 // CancelTask 取消指定 ID 的任务
 func (q *FileTransferMgr) CancelTask(ctx context.Context, id string) {
+	var needRemove bool
 	q.mutex.Lock()
 	defer q.mutex.Unlock()
 	q.tasks.Iterator(func(k string, v any) bool {
@@ -110,10 +116,14 @@ func (q *FileTransferMgr) CancelTask(ctx context.Context, id string) {
 				q.cond.Signal()
 				q.mutex.Unlock()
 			}
+			needRemove = true
 			return false
 		}
 		return true
 	})
+	if needRemove {
+		q.tasks.Remove(id)
+	}
 }
 
 // ResumeTask 恢复指定 ID 的任务

@@ -39,14 +39,16 @@ func (m msgType) Is(m2 msgType) bool {
 type MsgHandleFunc func(context.Context, []byte) error
 
 var (
-	headerLen            = 3 + 1 + 4
-	maxMsgBodyLen uint32 = 1024 * 1024 * 1024 // 1GB
-	reqMagic             = "req"
-	ackMagic             = "ack"
-	msgMap               = gmap.NewIntStrMap()
-	msgHandlerMap        = make(map[msgType]MsgHandleFunc)
-	msgHandshake         = newMsgType(1, "文件收发-握手消息")
-	msgHeartbeat         = newMsgType(2, "文件收发-心跳消息")
+	headerLen               = 3 + 1 + 4
+	maxMsgBodyLen    uint32 = 1024 * 1024 * 1024 // 1GB
+	reqMagic                = "req"
+	ackMagic                = "ack"
+	msgMap                  = gmap.NewIntStrMap()
+	msgHandlerMap           = make(map[msgType]MsgHandleFunc)
+	msgHandshake            = newMsgType(1, "文件收发-握手消息")
+	msgHeartbeat            = newMsgType(2, "文件收发-心跳消息")
+	msgFileInfo             = newMsgType(3, "文件收发-文件信息")
+	msgFileChunkInfo        = newMsgType(4, "文件收发-文件块数据")
 )
 
 func init() {

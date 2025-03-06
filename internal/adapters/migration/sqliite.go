@@ -1,0 +1,23 @@
+package migration
+
+import (
+	"context"
+
+	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent"
+
+	"github.com/gogf/gf/v2/frame/g"
+	_ "github.com/mattn/go-sqlite3"
+)
+
+func Do(ctx context.Context) *ent.Client {
+	// 连接文件模式的 SQLite 数据库
+	client, err := ent.Open("sqlite3", "file:gomg.db?_fk=1")
+	if err != nil {
+		g.Log().Fatalf(ctx, "failed opening connection to sqlite: %v", err)
+	}
+	// 自动迁移数据库，创建表结构
+	if err := client.Schema.Create(ctx); err != nil {
+		g.Log().Fatalf(ctx, "Failed to create schema: %v", err)
+	}
+	return client
+}

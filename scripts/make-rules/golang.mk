@@ -53,7 +53,7 @@ ifeq (${BINS},)
 endif
 
 # 测试报告过滤的文件夹
-EXCLUDE_TESTS=github.com/shiqinfeng1/goframe-ddd/api'|'github.com/shiqinfeng1/goframe-ddd/cmd
+EXCLUDE_TESTS=github.com/shiqinfeng1/goframe-ddd/api'|'github.com/shiqinfeng1/goframe-ddd/cmd'|'github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent
 
 # Minimum test coverage
 ifeq ($(origin COVERAGE_TARGET——TARFGET),undefined)
@@ -111,9 +111,8 @@ go.test: tools.verify.go-junit-report
 		tee >(go-junit-report --set-exit-code >$(OUTPUT_DIR)/report.xml)
 # remove mock_.*.go files from test coverage
 	@$(SED) '/api/d' $(OUTPUT_DIR)/coverage.out 
-	@$(SED) '/mock/d' $(OUTPUT_DIR)/coverage.out 
-	@$(SED) '/tools/d' $(OUTPUT_DIR)/coverage.out 
-	@$(SED) '/pkg/d' $(OUTPUT_DIR)/coverage.out
+	@$(SED) '/server/d' $(OUTPUT_DIR)/coverage.out 
+	@$(SED) '/adapters/d' $(OUTPUT_DIR)/coverage.out 
 # 根据指定的代码覆盖率数据文件coverage.out生成 HTML 格式的报告
 	@$(GO) tool cover -html=$(OUTPUT_DIR)/coverage.out -o $(OUTPUT_DIR)/coverage.html
 

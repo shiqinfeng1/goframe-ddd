@@ -1,6 +1,7 @@
 package filemgr
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"sync/atomic"
@@ -26,7 +27,7 @@ type StreamIntf interface {
 
 // 任务状态枚举
 type Status struct {
-	val  int
+	val  uint32
 	desc string
 }
 
@@ -39,6 +40,24 @@ var (
 	StatusFailed     = Status{val: 5, desc: "发送失败"}
 	StatusSuccessful = Status{val: 6, desc: "发送成功"}
 )
+
+func NewStatus(v uint32) Status {
+	switch v {
+	case StatusWaiting.val:
+		return StatusWaiting
+	case StatusSending.val:
+		return StatusSending
+	case StatusPaused.val:
+		return StatusPaused
+	case StatusCancel.val:
+		return StatusCancel
+	case StatusFailed.val:
+		return StatusFailed
+	case StatusSuccessful.val:
+		return StatusSuccessful
+	}
+	return StatusUndefined
+}
 
 type (
 	postSendFunc func(bool)
@@ -57,7 +76,7 @@ type TransferTask struct {
 	cancelChan               chan postFunc
 	stream                   StreamIntf
 	chunkOffsets, chunkSizes []int64
-	notifyStop               atomic.Bool
+	notifyStatus             atomic.Uint32
 }
 
 func NewTransferTask(ctx context.Context, id, name, nodeId string, paths []string, stream StreamIntf) *TransferTask {
@@ -76,7 +95,11 @@ func NewTransferTask(ctx context.Context, id, name, nodeId string, paths []strin
 	return task
 }
 
-func (t *TransferTask) openFile(filePath string) (*os.File, error) {
+func (t *TransferTask) String() string {
+	return fmt.Sprintf("taskId:%v taskName:%v nodeId:%v paths:%+v", t.taskId, t.taskName, t.nodeId, t.paths)
+}
+
+func (t *TransferTask) getFileAndChunks(filePath string) (*os.File, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, gerror.Wrapf(err, "open file fail:%v", filePath)
@@ -87,19 +110,22 @@ func (t *TransferTask) openFile(filePath string) (*os.File, error) {
 		file.Close()
 		return nil, gerror.Wrapf(err, "get file stat fail:%v", filePath)
 	}
+
+	// todo 从数据库读取断点信息，如果有，以数据库为准，如果没有，切割文件
 	t.chunkOffsets, t.chunkSizes, err = utils.SplitFile(info.Size())
 	if err != nil {
 		file.Close()
 		return nil, gerror.Wrapf(err, "get file chunk fail:%v", filePath)
 	}
+	// todo 文件和分块更新到数据库
 	return file, nil
 }
 
-func (t *TransferTask) sendChunk(ctx context.Context, file *os.File, stm *smux.Stream) error {
+func (t *TransferTask) sendChunk(ctx context.Context, file *os.File, stm *smux.Stream) (bool, error) {
 	for i, chunkSize := range t.chunkSizes {
-		if t.notifyStop.Load() {
-			t.notifyStop.Store(false)
-			return nil
+		status := NewStatus(t.notifyStatus.Load())
+		if status == StatusCancel || status == StatusPaused {
+			return true, nil
 		}
 		// todo 构造header
 		header := []byte{}
@@ -108,66 +134,84 @@ func (t *TransferTask) sendChunk(ctx context.Context, file *os.File, stm *smux.S
 		start := time.Now()
 		n, err := stm.Write(header)
 		if err != nil {
-			return gerror.Wrap(err, "header write stream fail")
+			return false, gerror.Wrap(err, "header write stream fail")
 		}
 		if n != len(header) {
-			return gerror.Newf("write stream fail:n(%v) != len(header)(%v)", n, len(header))
+			return false, gerror.Newf("write stream fail:n(%v) != len(header)(%v)", n, len(header))
 		}
 		written, err := io.CopyN(stm, section, section.Size()) // s.Write([]byte(msg))
 		if err != nil {
-			return gerror.Wrap(err, "write stream fail")
+			return false, gerror.Wrap(err, "write stream fail")
 		}
 		end := time.Since(start)
-		g.Log().Debugf(ctx, "stresm write %v bytes ok.  stream.id=%v elapsed:%v write-speed:%v MB/s", written, stm.ID(), end, float64(written)/1024/1024/end.Seconds())
+		g.Log().Debugf(ctx, "stresm write %v bytes ok.  stream.id=%v elapsed:%v write-speed:%v MB/s",
+			written, stm.ID(), end, float64(written)/1024/1024/end.Seconds())
 
 		recvd := make([]byte, 1024)
 		m, err := stm.Read(recvd)
 		if err != nil {
-			return gerror.Wrap(err, "read stream fail")
+			return false, gerror.Wrap(err, "read stream fail")
 		}
 		end2 := time.Since(start)
-		g.Log().Debugf(ctx, "client read resp %v bytes.  stream.id=%v elapsed:%v roundtrip-speed:%v MB/s", m, stm.ID(), end2, float64(written)/1024/1024/end2.Seconds())
-		// todo 文件和分块存储到数据库
+		g.Log().Debugf(ctx, "client read resp %v bytes.  stream.id=%v elapsed:%v roundtrip-speed:%v MB/s",
+			m, stm.ID(), end2, float64(written)/1024/1024/end2.Seconds())
+		// todo 更新分块存储到数据库
 	}
-	return nil
+	return false, nil
 }
 
 func (t *TransferTask) worker(ctx context.Context) {
+	finishChan := make(chan struct{})
 	for {
 		select {
+		case <-finishChan:
+			g.Log().Infof(ctx, "exit file-tranfer task by finish:%v", t)
 		case postHandle := <-t.cancelChan:
-			t.notifyStop.Store(true)
+			t.notifyStatus.Store(StatusCancel.val)
 			postHandle()
+			g.Log().Infof(ctx, "exit file-tranfer task by cancel:%v", t)
 		case postHandle := <-t.pauseChan:
-			t.notifyStop.Store(true)
+			t.notifyStatus.Store(StatusPaused.val)
 			postHandle()
+			g.Log().Infof(ctx, "exit file-tranfer task by pause:%v", t)
 		case postHandle := <-t.sendFileChan:
+			t.notifyStatus.Store(StatusSending.val)
+
 			doSend := func(ctx context.Context, stm *smux.Stream) error {
+				defer close(finishChan)
 				// 遍历所有待发送的文件
 				for _, filePath := range t.paths {
-					if t.notifyStop.Load() {
-						t.notifyStop.Store(false)
-						break
+					status := NewStatus(t.notifyStatus.Load())
+					if status == StatusCancel || status == StatusPaused {
+						return nil // 直接返回，不需要执行postHandle，因为cancel和pause已执行各自的postHandle
 					}
 					// 打开要发送的文件，如果失败，记录到本地，但不同步到对端
-					file, err := t.openFile(filePath)
+					file, err := t.getFileAndChunks(filePath)
 					if err != nil {
 						postHandle(false)
 						return err
 					}
-					// defer file.Close()
-					// todo 文件和分块存储到数据库
 					// todo 发送文件信息给对端
-
-					if err := t.sendChunk(ctx, file, stm); err != nil {
+					// 发送文件块
+					interrupt, err := t.sendChunk(ctx, file, stm)
+					if err != nil {
+						file.Close()
 						postHandle(false)
 						return err
 					}
+					if interrupt { // 在发送分块期间被取消或暂停
+						file.Close()
+						return nil // 直接返回，不需要执行postHandle，因为cancel和pause已执行各自的postHandle
+					}
+					file.Close()
 				}
+				// 所有文件发送完成
 				postHandle(true)
 				return nil
 			}
 
+			// 在协程中执行回调doSend
+			// 在回调doSend中执行成功后调用postHandle
 			if t.nodeId != "" { // 服务端需指定nodeid
 				sess, err := Session().GetSession(ctx, t.nodeId)
 				if err != nil {
