@@ -6,6 +6,7 @@ import (
 
 	"github.com/gogf/gf/v2/errors/gcode"
 	"github.com/gogf/gf/v2/errors/gerror"
+	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/gogf/gf/v2/util/gconv"
 
@@ -15,6 +16,13 @@ import (
 )
 
 func (c *ControllerV1) StartSendFile(ctx context.Context, req *v1.StartSendFileReq) (res *v1.StartSendFileRes, err error) {
+	if g.Cfg().MustGet(ctx, "filemgr.isCloud").Bool() {
+		if req.NodeId == "" {
+			return nil, errors.ErrInvalidNodeId
+		}
+	} else {
+		req.NodeId = ""
+	}
 	for _, v := range req.FilePath {
 		if !filepath.IsAbs(v) {
 			return nil, errors.ErrNotAbsFilePath(v)
@@ -34,6 +42,7 @@ func (c *ControllerV1) StartSendFile(ctx context.Context, req *v1.StartSendFileR
 			_, err = c.app.Commands.StartSendFile(ctx, &command.StartSendFileInput{
 				BaseName: gfile.Basename(v),
 				Files:    files,
+				NodeId:   req.NodeId,
 			})
 		} else { // 发送文件
 			var files []string
@@ -46,6 +55,7 @@ func (c *ControllerV1) StartSendFile(ctx context.Context, req *v1.StartSendFileR
 			_, err = c.app.Commands.StartSendFile(ctx, &command.StartSendFileInput{
 				BaseName: gfile.Basename(v),
 				Files:    files,
+				NodeId:   req.NodeId,
 			})
 		}
 	}

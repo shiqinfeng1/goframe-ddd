@@ -7,21 +7,23 @@ import (
 	"github.com/gogf/gf/v2/container/gmap"
 )
 
-// FileSendQueue 表示文件发送队列
-type FileSendQueue struct {
+// FileTransferMgr 表示文件发送队列
+type FileTransferMgr struct {
 	running  int
 	maxTasks int
 	tasks    gmap.StrAnyMap
 	mutex    sync.Mutex
 	cond     *sync.Cond
+	stream   StreamIntf
 }
 
 // NewFileSendQueue 创建一个新的文件发送队列
-func NewFileTransferService(maxTasks int) *FileSendQueue {
-	q := &FileSendQueue{
+func NewFileTransferService(maxTasks int, stream StreamIntf) *FileTransferMgr {
+	q := &FileTransferMgr{
 		maxTasks: maxTasks,
 		tasks:    *gmap.NewStrAnyMap(true),
 		running:  0,
+		stream:   stream,
 	}
 	q.cond = sync.NewCond(&q.mutex)
 	q.start()
@@ -29,23 +31,15 @@ func NewFileTransferService(maxTasks int) *FileSendQueue {
 }
 
 // AddTask 向队列中添加一个新的文件发送任务
-func (q *FileSendQueue) AddTask(ctx context.Context, id, name string, paths []string) {
+func (q *FileTransferMgr) AddTask(ctx context.Context, id, name, nodeId string, paths []string) {
 	q.mutex.Lock()
 	defer q.mutex.Unlock()
-	task := &TransferTask{
-		id:         id,
-		paths:      paths,
-		name:       name,
-		status:     StatusWaiting,
-		sendChan:   make(chan postSendFunc, 4),
-		pauseChan:  make(chan postFunc, 4),
-		cancelChan: make(chan postFunc, 4),
-	}
+	task := NewTransferTask(ctx, id, name, nodeId, paths, q.stream)
 	q.tasks.Set(id, task)
 }
 
 // Start 开始处理队列中的任务
-func (q *FileSendQueue) start() {
+func (q *FileTransferMgr) start() {
 	go func() {
 		for {
 			q.mutex.Lock()
@@ -59,7 +53,7 @@ func (q *FileSendQueue) start() {
 					// 更新状态
 					task.status = StatusSending
 					q.running++
-					task.sendChan <- func(success bool) {
+					task.sendFileChan <- func(success bool) {
 						q.mutex.Lock()
 						defer q.mutex.Unlock()
 						if success {
@@ -80,12 +74,12 @@ func (q *FileSendQueue) start() {
 }
 
 // PauseTask 暂停指定 ID 的任务
-func (q *FileSendQueue) PauseTask(ctx context.Context, id string) {
+func (q *FileTransferMgr) PauseTask(ctx context.Context, id string) {
 	q.mutex.Lock()
 	defer q.mutex.Unlock()
 	q.tasks.Iterator(func(k string, v any) bool {
 		task := v.(*TransferTask)
-		if task.id == id &&
+		if task.taskId == id &&
 			(task.status == StatusSending || task.status == StatusWaiting) {
 			task.pauseChan <- func() {
 				q.mutex.Lock()
@@ -101,12 +95,12 @@ func (q *FileSendQueue) PauseTask(ctx context.Context, id string) {
 }
 
 // CancelTask 取消指定 ID 的任务
-func (q *FileSendQueue) CancelTask(ctx context.Context, id string) {
+func (q *FileTransferMgr) CancelTask(ctx context.Context, id string) {
 	q.mutex.Lock()
 	defer q.mutex.Unlock()
 	q.tasks.Iterator(func(k string, v any) bool {
 		task := v.(*TransferTask)
-		if task.id == id &&
+		if task.taskId == id &&
 			(task.status == StatusSending || task.status == StatusWaiting || task.status == StatusPaused) {
 			task.status = StatusPaused
 			task.cancelChan <- func() {
@@ -123,12 +117,12 @@ func (q *FileSendQueue) CancelTask(ctx context.Context, id string) {
 }
 
 // ResumeTask 恢复指定 ID 的任务
-func (q *FileSendQueue) ResumeTask(ctx context.Context, id string) {
+func (q *FileTransferMgr) ResumeTask(ctx context.Context, id string) {
 	q.mutex.Lock()
 	defer q.mutex.Unlock()
 	q.tasks.Iterator(func(k string, v any) bool {
 		task := v.(*TransferTask)
-		if task.id == id && task.status == StatusPaused {
+		if task.taskId == id && task.status == StatusPaused {
 			task.status = StatusWaiting
 			return false
 		}
@@ -137,7 +131,7 @@ func (q *FileSendQueue) ResumeTask(ctx context.Context, id string) {
 }
 
 // GetTaskStatus 获取指定 ID 任务的状态
-func (q *FileSendQueue) GetTaskStatus(ctx context.Context, id string) Status {
+func (q *FileTransferMgr) GetTaskStatus(ctx context.Context, id string) Status {
 	val, found := q.tasks.Search(id)
 	if found {
 		task := val.(*TransferTask)
@@ -146,7 +140,7 @@ func (q *FileSendQueue) GetTaskStatus(ctx context.Context, id string) Status {
 	return StatusUndefined
 }
 
-func (q *FileSendQueue) GetTaskList(ctx context.Context) []*TransferTask {
+func (q *FileTransferMgr) GetTaskList(ctx context.Context) []*TransferTask {
 	vals := q.tasks.Values()
 	out := make([]*TransferTask, 0)
 	for _, v := range vals {

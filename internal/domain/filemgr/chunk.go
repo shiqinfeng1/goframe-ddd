@@ -1,11 +1,9 @@
 package filemgr
 
 import (
-	"context"
 	"crypto/md5"
 	"encoding/binary"
 
-	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/util/gconv"
 )
 
@@ -61,24 +59,4 @@ func ToFileChunkHeaderResp(fileId string, chunkIdx, status int) []byte {
 	binary.LittleEndian.PutUint32(b[24:28], uint32(chunkIdx))
 	binary.LittleEndian.PutUint32(b[28:32], uint32(status))
 	return b
-}
-
-// 计算文件块信息
-// 返回：文件块索引列表，每个块的偏移列表，每个文件块的大小
-func CalcChunks(ctx context.Context, totalSize int64) ([]int64, []int64) {
-	// 块大小默认16M
-	chunkSize := g.Cfg().MustGet(ctx, "chunksize", 16).Int64()
-	chunkSize = chunkSize * 1024 * 1024
-	offsets := make([]int64, 0)
-	sizes := make([]int64, 0)
-
-	for offset := int64(0); offset < totalSize; offset += chunkSize {
-		offsets = append(offsets, offset)
-		if offset+chunkSize > totalSize {
-			sizes = append(sizes, totalSize-offset)
-		} else {
-			sizes = append(sizes, chunkSize)
-		}
-	}
-	return offsets, sizes
 }
