@@ -1,6 +1,7 @@
 package filemgr
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/utils"
 	"github.com/xtaci/smux"
 	"golang.org/x/net/context"
@@ -66,20 +68,22 @@ type (
 
 // FileSendTask 表示文件发送任务
 type TransferTask struct {
-	taskName                 string
-	taskId                   string
-	nodeId                   string
-	paths                    []string
-	status                   Status
-	sendFileChan             chan postSendFunc
-	pauseChan                chan postFunc
-	cancelChan               chan postFunc
-	stream                   StreamIntf
-	chunkOffsets, chunkSizes []int64
-	notifyStatus             atomic.Uint32
+	repo         Repository
+	taskName     string
+	taskId       string
+	nodeId       string
+	paths        []string
+	status       Status
+	sendFileChan chan postSendFunc
+	pauseChan    chan postFunc
+	cancelChan   chan postFunc
+	stream       StreamIntf
+	chunkOffsets []int64
+	chunkSizes   []int
+	notifyStatus atomic.Uint32
 }
 
-func NewTransferTask(ctx context.Context, id, name, nodeId string, paths []string, stream StreamIntf) *TransferTask {
+func NewTransferTask(ctx context.Context, id, name, nodeId string, paths []string, stream StreamIntf, repo Repository) *TransferTask {
 	task := &TransferTask{
 		taskId:       id,
 		paths:        paths,
@@ -90,6 +94,7 @@ func NewTransferTask(ctx context.Context, id, name, nodeId string, paths []strin
 		pauseChan:    make(chan postFunc, 4),
 		cancelChan:   make(chan postFunc, 4),
 		stream:       stream,
+		repo:         repo,
 	}
 	go task.worker(ctx)
 	return task
@@ -99,63 +104,151 @@ func (t *TransferTask) String() string {
 	return fmt.Sprintf("taskId:%v taskName:%v nodeId:%v paths:%+v", t.taskId, t.taskName, t.nodeId, t.paths)
 }
 
-func (t *TransferTask) getFileAndChunks(filePath string) (*os.File, error) {
+func (t *TransferTask) getFileAndChunks(ctx context.Context, filePath string, stream io.ReadWriter) (*SendFile, *os.File, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
-		return nil, gerror.Wrapf(err, "open file fail:%v", filePath)
+		return nil, nil, gerror.Wrapf(err, "open file fail:%v", filePath)
 	}
 
 	info, err := file.Stat()
 	if err != nil {
 		file.Close()
-		return nil, gerror.Wrapf(err, "get file stat fail:%v", filePath)
+		return nil, nil, gerror.Wrapf(err, "get file stat fail:%v", filePath)
 	}
 
-	// todo 从数据库读取断点信息，如果有，以数据库为准，如果没有，切割文件
+	// 从数据库读取断点信息
+	sendFile, err := t.repo.GetSendFile(ctx, t.taskId, filePath)
+	if err != nil {
+		file.Close()
+		return nil, nil, gerror.Wrapf(err, "get file info from repo fail:%v", filePath)
+	}
+	// 切割文件块
 	t.chunkOffsets, t.chunkSizes, err = utils.SplitFile(info.Size())
 	if err != nil {
 		file.Close()
-		return nil, gerror.Wrapf(err, "get file chunk fail:%v", filePath)
+		return nil, nil, gerror.Wrapf(err, "get file chunk fail:%v", filePath)
 	}
-	// todo 文件和分块更新到数据库
-	return file, nil
+	// 数据库如果没有记录，说明需要发送全部文件, 同步信息给对端并记录这些文件信息到数据库，
+	// 注意： 同步成功才记录到数据库
+	if sendFile == nil {
+		sendFile = &SendFile{
+			TaskID:         t.taskId,
+			TaskName:       t.taskName,
+			FilePath:       filePath,
+			Fid:            "undefined",
+			FileSize:       info.Size(),
+			ChunkNumTotal:  len(t.chunkOffsets),
+			ChunkNumSended: 0,
+			Status:         -1,
+		}
+		if err := t.syncFileInfoToPeer(ctx, sendFile, stream); err != nil {
+			file.Close()
+			return nil, nil, gerror.Wrapf(err, "sync file info fail:%+v", sendFile)
+		}
+		// 文件和分块更新到数据库
+		recid, err := t.repo.SaveSendFile(ctx, sendFile)
+		if err != nil {
+			file.Close()
+			return nil, nil, gerror.Wrapf(err, "save send file fail:%v", filePath)
+		}
+		sendFile.ID = recid
+		return sendFile, file, nil
+	}
+	// 该文件已发送完成
+	if sendFile.ChunkNumSended == sendFile.ChunkNumTotal && sendFile.ChunkNumSended == len(t.chunkOffsets) {
+		file.Close()
+		return sendFile, nil, nil
+	}
+	// 数据库已记录文件块信息
+	if sendFile.ChunkNumTotal == len(t.chunkOffsets) && sendFile.ChunkNumSended < len(t.chunkOffsets) {
+		t.chunkOffsets = t.chunkOffsets[sendFile.ChunkNumSended:]
+		t.chunkSizes = t.chunkSizes[sendFile.ChunkNumSended:]
+	}
+
+	return sendFile, file, nil
 }
 
-func (t *TransferTask) sendChunk(ctx context.Context, file *os.File, stm *smux.Stream) (bool, error) {
+func (t *TransferTask) syncFileInfoToPeer(ctx context.Context, sendFile *SendFile, stm io.ReadWriter) error {
+	body, _ := json.Marshal(sendFile)
+	fiBytes := fileInfoMsgToBytes(ctx, body)
+	// 分块获取文件数据,串行发送
+	n, err := stm.Write(fiBytes)
+	if err != nil {
+		return gerror.Wrap(err, "fileinfo write stream fail")
+	}
+	if n != len(fiBytes) {
+		return gerror.Newf("fileinfo write stream fail:n(%v) != len(header)(%v)", n, len(fiBytes))
+	}
+	// 接收响应数据
+	respBody, err := recvAck(ctx, stm, msgFileInfo)
+	if err != nil {
+		return err
+	}
+	filePath := gconv.String(respBody)
+	if sendFile.FilePath != filePath {
+		return gerror.Newf("sync fileinfo fail. not match filepath: exp:%v fact:%v", sendFile.FilePath, filePath)
+	}
+	return nil
+}
+
+func (t *TransferTask) sendChunk(ctx context.Context, sendFile *SendFile, file *os.File, stm io.ReadWriter) (bool, error) {
 	for i, chunkSize := range t.chunkSizes {
 		status := NewStatus(t.notifyStatus.Load())
 		if status == StatusCancel || status == StatusPaused {
 			return true, nil
 		}
-		// todo 构造header
-		header := []byte{}
+		body, _ := json.Marshal(&SendChunk{
+			FileID:      0, // 对应sendfile表的id
+			ChunkIndex:  sendFile.ChunkNumSended,
+			ChunkOffset: t.chunkOffsets[i],
+			ChunkSize:   chunkSize,
+			Status:      0,
+		})
+		fcBytes := fileChunkMsgToBytes(ctx, body)
 		// 分块获取文件数据,串行发送
-		section := io.NewSectionReader(file, t.chunkOffsets[i], chunkSize)
-		start := time.Now()
-		n, err := stm.Write(header)
-		if err != nil {
-			return false, gerror.Wrap(err, "header write stream fail")
+		section := io.NewSectionReader(file, t.chunkOffsets[i], int64(chunkSize))
+		// 再次检查读取的数据是否一致
+		if int64(chunkSize) != section.Size() {
+			return false, gerror.Newf("read chunk fail: exp(%v) fac(%v)", chunkSize, section.Size())
 		}
-		if n != len(header) {
-			return false, gerror.Newf("write stream fail:n(%v) != len(header)(%v)", n, len(header))
+		start := time.Now()
+		n, err := stm.Write(fcBytes)
+		if err != nil {
+			return false, gerror.Wrap(err, "filechunk header write fail")
+		}
+		if n != len(fcBytes) {
+			return false, gerror.Newf("write stream fail:n(%v) != len(header)(%v)", n, len(fcBytes))
 		}
 		written, err := io.CopyN(stm, section, section.Size()) // s.Write([]byte(msg))
 		if err != nil {
-			return false, gerror.Wrap(err, "write stream fail")
+			return false, gerror.Wrap(err, "filechunk data write fail")
 		}
 		end := time.Since(start)
-		g.Log().Debugf(ctx, "stresm write %v bytes ok.  stream.id=%v elapsed:%v write-speed:%v MB/s",
-			written, stm.ID(), end, float64(written)/1024/1024/end.Seconds())
+		g.Log().Debugf(ctx, "stresm write %v bytes ok. elapsed:%v write-speed:%v MB/s",
+			written, end, float64(written)/1024/1024/end.Seconds())
 
-		recvd := make([]byte, 1024)
-		m, err := stm.Read(recvd)
+		respBody, err := recvAck(ctx, stm, msgFileChunk)
 		if err != nil {
-			return false, gerror.Wrap(err, "read stream fail")
+			return false, gerror.Wrap(err, "filechunk ack fail")
 		}
 		end2 := time.Since(start)
-		g.Log().Debugf(ctx, "client read resp %v bytes.  stream.id=%v elapsed:%v roundtrip-speed:%v MB/s",
-			m, stm.ID(), end2, float64(written)/1024/1024/end2.Seconds())
-		// todo 更新分块存储到数据库
+		g.Log().Debugf(ctx, "client read ack %v bytes. elapsed:%v roundtrip-speed:%v MB/s",
+			len(respBody), end2, float64(written)/1024/1024/end2.Seconds())
+
+		filePath := gconv.String(respBody)
+		if sendFile.FilePath != filePath {
+			return false, gerror.Newf("send filechunk fail. not match filepath: exp:%v fact:%v", sendFile.FilePath, filePath)
+		}
+		// 收到确认后， 更新本地数据库
+		if err := t.repo.UpdateSendChunk(ctx, &SendChunk{
+			FileID:      sendFile.ID, // 关联sendfile的i主键d
+			ChunkIndex:  i,
+			ChunkOffset: t.chunkOffsets[i],
+			ChunkSize:   chunkSize,
+			Status:      1, // todo 定义status
+		}); err != nil {
+			return false, gerror.Wrap(err, "filechunk save fail")
+		}
 	}
 	return false, nil
 }
@@ -177,6 +270,7 @@ func (t *TransferTask) worker(ctx context.Context) {
 		case postHandle := <-t.sendFileChan:
 			t.notifyStatus.Store(StatusSending.val)
 
+			// 执行发送任务
 			doSend := func(ctx context.Context, stm *smux.Stream) error {
 				defer close(finishChan)
 				// 遍历所有待发送的文件
@@ -186,14 +280,17 @@ func (t *TransferTask) worker(ctx context.Context) {
 						return nil // 直接返回，不需要执行postHandle，因为cancel和pause已执行各自的postHandle
 					}
 					// 打开要发送的文件，如果失败，记录到本地，但不同步到对端
-					file, err := t.getFileAndChunks(filePath)
+					sendFile, file, err := t.getFileAndChunks(ctx, filePath, stm)
 					if err != nil {
 						postHandle(false)
 						return err
 					}
-					// todo 发送文件信息给对端
+					if file == nil {
+						g.Log().Infof(ctx, "file is already sended:%v skip it!", filePath)
+						continue
+					}
 					// 发送文件块
-					interrupt, err := t.sendChunk(ctx, file, stm)
+					interrupt, err := t.sendChunk(ctx, sendFile, file, stm)
 					if err != nil {
 						file.Close()
 						postHandle(false)

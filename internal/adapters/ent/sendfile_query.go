@@ -299,12 +299,12 @@ func (sfq *SendFileQuery) WithSendChunks(opts ...func(*SendChunkQuery)) *SendFil
 // Example:
 //
 //	var v []struct {
-//		FilePath string `json:"file_path,omitempty"`
+//		TaskID string `json:"task_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.SendFile.Query().
-//		GroupBy(sendfile.FieldFilePath).
+//		GroupBy(sendfile.FieldTaskID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (sfq *SendFileQuery) GroupBy(field string, fields ...string) *SendFileGroupBy {
@@ -322,11 +322,11 @@ func (sfq *SendFileQuery) GroupBy(field string, fields ...string) *SendFileGroup
 // Example:
 //
 //	var v []struct {
-//		FilePath string `json:"file_path,omitempty"`
+//		TaskID string `json:"task_id,omitempty"`
 //	}
 //
 //	client.SendFile.Query().
-//		Select(sendfile.FieldFilePath).
+//		Select(sendfile.FieldTaskID).
 //		Scan(ctx, &v)
 func (sfq *SendFileQuery) Select(fields ...string) *SendFileSelect {
 	sfq.ctx.Fields = append(sfq.ctx.Fields, fields...)

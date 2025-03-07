@@ -9,7 +9,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func Do(ctx context.Context) *ent.Client {
+func NewEntClient(ctx context.Context) *ent.Client {
 	// 连接文件模式的 SQLite 数据库
 	client, err := ent.Open("sqlite3", "file:gomg.db?_fk=1")
 	if err != nil {

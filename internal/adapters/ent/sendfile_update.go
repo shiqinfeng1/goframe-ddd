@@ -29,6 +29,34 @@ func (sfu *SendFileUpdate) Where(ps ...predicate.SendFile) *SendFileUpdate {
 	return sfu
 }
 
+// SetTaskID sets the "task_id" field.
+func (sfu *SendFileUpdate) SetTaskID(s string) *SendFileUpdate {
+	sfu.mutation.SetTaskID(s)
+	return sfu
+}
+
+// SetNillableTaskID sets the "task_id" field if the given value is not nil.
+func (sfu *SendFileUpdate) SetNillableTaskID(s *string) *SendFileUpdate {
+	if s != nil {
+		sfu.SetTaskID(*s)
+	}
+	return sfu
+}
+
+// SetTaskName sets the "task_name" field.
+func (sfu *SendFileUpdate) SetTaskName(s string) *SendFileUpdate {
+	sfu.mutation.SetTaskName(s)
+	return sfu
+}
+
+// SetNillableTaskName sets the "task_name" field if the given value is not nil.
+func (sfu *SendFileUpdate) SetNillableTaskName(s *string) *SendFileUpdate {
+	if s != nil {
+		sfu.SetTaskName(*s)
+	}
+	return sfu
+}
+
 // SetFilePath sets the "file_path" field.
 func (sfu *SendFileUpdate) SetFilePath(s string) *SendFileUpdate {
 	sfu.mutation.SetFilePath(s)
@@ -40,32 +68,6 @@ func (sfu *SendFileUpdate) SetNillableFilePath(s *string) *SendFileUpdate {
 	if s != nil {
 		sfu.SetFilePath(*s)
 	}
-	return sfu
-}
-
-// ClearFilePath clears the value of the "file_path" field.
-func (sfu *SendFileUpdate) ClearFilePath() *SendFileUpdate {
-	sfu.mutation.ClearFilePath()
-	return sfu
-}
-
-// SetFileName sets the "file_name" field.
-func (sfu *SendFileUpdate) SetFileName(s string) *SendFileUpdate {
-	sfu.mutation.SetFileName(s)
-	return sfu
-}
-
-// SetNillableFileName sets the "file_name" field if the given value is not nil.
-func (sfu *SendFileUpdate) SetNillableFileName(s *string) *SendFileUpdate {
-	if s != nil {
-		sfu.SetFileName(*s)
-	}
-	return sfu
-}
-
-// ClearFileName clears the value of the "file_name" field.
-func (sfu *SendFileUpdate) ClearFileName() *SendFileUpdate {
-	sfu.mutation.ClearFileName()
 	return sfu
 }
 
@@ -280,6 +282,26 @@ func (sfu *SendFileUpdate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (sfu *SendFileUpdate) check() error {
+	if v, ok := sfu.mutation.TaskID(); ok {
+		if err := sendfile.TaskIDValidator(v); err != nil {
+			return &ValidationError{Name: "task_id", err: fmt.Errorf(`ent: validator failed for field "SendFile.task_id": %w`, err)}
+		}
+	}
+	if v, ok := sfu.mutation.TaskName(); ok {
+		if err := sendfile.TaskNameValidator(v); err != nil {
+			return &ValidationError{Name: "task_name", err: fmt.Errorf(`ent: validator failed for field "SendFile.task_name": %w`, err)}
+		}
+	}
+	if v, ok := sfu.mutation.FilePath(); ok {
+		if err := sendfile.FilePathValidator(v); err != nil {
+			return &ValidationError{Name: "file_path", err: fmt.Errorf(`ent: validator failed for field "SendFile.file_path": %w`, err)}
+		}
+	}
+	if v, ok := sfu.mutation.Fid(); ok {
+		if err := sendfile.FidValidator(v); err != nil {
+			return &ValidationError{Name: "fid", err: fmt.Errorf(`ent: validator failed for field "SendFile.fid": %w`, err)}
+		}
+	}
 	if v, ok := sfu.mutation.Elapsed(); ok {
 		if err := sendfile.ElapsedValidator(v); err != nil {
 			return &ValidationError{Name: "elapsed", err: fmt.Errorf(`ent: validator failed for field "SendFile.elapsed": %w`, err)}
@@ -305,17 +327,14 @@ func (sfu *SendFileUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := sfu.mutation.TaskID(); ok {
+		_spec.SetField(sendfile.FieldTaskID, field.TypeString, value)
+	}
+	if value, ok := sfu.mutation.TaskName(); ok {
+		_spec.SetField(sendfile.FieldTaskName, field.TypeString, value)
+	}
 	if value, ok := sfu.mutation.FilePath(); ok {
 		_spec.SetField(sendfile.FieldFilePath, field.TypeString, value)
-	}
-	if sfu.mutation.FilePathCleared() {
-		_spec.ClearField(sendfile.FieldFilePath, field.TypeString)
-	}
-	if value, ok := sfu.mutation.FileName(); ok {
-		_spec.SetField(sendfile.FieldFileName, field.TypeString, value)
-	}
-	if sfu.mutation.FileNameCleared() {
-		_spec.ClearField(sendfile.FieldFileName, field.TypeString)
 	}
 	if value, ok := sfu.mutation.Fid(); ok {
 		_spec.SetField(sendfile.FieldFid, field.TypeString, value)
@@ -418,6 +437,34 @@ type SendFileUpdateOne struct {
 	mutation *SendFileMutation
 }
 
+// SetTaskID sets the "task_id" field.
+func (sfuo *SendFileUpdateOne) SetTaskID(s string) *SendFileUpdateOne {
+	sfuo.mutation.SetTaskID(s)
+	return sfuo
+}
+
+// SetNillableTaskID sets the "task_id" field if the given value is not nil.
+func (sfuo *SendFileUpdateOne) SetNillableTaskID(s *string) *SendFileUpdateOne {
+	if s != nil {
+		sfuo.SetTaskID(*s)
+	}
+	return sfuo
+}
+
+// SetTaskName sets the "task_name" field.
+func (sfuo *SendFileUpdateOne) SetTaskName(s string) *SendFileUpdateOne {
+	sfuo.mutation.SetTaskName(s)
+	return sfuo
+}
+
+// SetNillableTaskName sets the "task_name" field if the given value is not nil.
+func (sfuo *SendFileUpdateOne) SetNillableTaskName(s *string) *SendFileUpdateOne {
+	if s != nil {
+		sfuo.SetTaskName(*s)
+	}
+	return sfuo
+}
+
 // SetFilePath sets the "file_path" field.
 func (sfuo *SendFileUpdateOne) SetFilePath(s string) *SendFileUpdateOne {
 	sfuo.mutation.SetFilePath(s)
@@ -429,32 +476,6 @@ func (sfuo *SendFileUpdateOne) SetNillableFilePath(s *string) *SendFileUpdateOne
 	if s != nil {
 		sfuo.SetFilePath(*s)
 	}
-	return sfuo
-}
-
-// ClearFilePath clears the value of the "file_path" field.
-func (sfuo *SendFileUpdateOne) ClearFilePath() *SendFileUpdateOne {
-	sfuo.mutation.ClearFilePath()
-	return sfuo
-}
-
-// SetFileName sets the "file_name" field.
-func (sfuo *SendFileUpdateOne) SetFileName(s string) *SendFileUpdateOne {
-	sfuo.mutation.SetFileName(s)
-	return sfuo
-}
-
-// SetNillableFileName sets the "file_name" field if the given value is not nil.
-func (sfuo *SendFileUpdateOne) SetNillableFileName(s *string) *SendFileUpdateOne {
-	if s != nil {
-		sfuo.SetFileName(*s)
-	}
-	return sfuo
-}
-
-// ClearFileName clears the value of the "file_name" field.
-func (sfuo *SendFileUpdateOne) ClearFileName() *SendFileUpdateOne {
-	sfuo.mutation.ClearFileName()
 	return sfuo
 }
 
@@ -682,6 +703,26 @@ func (sfuo *SendFileUpdateOne) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (sfuo *SendFileUpdateOne) check() error {
+	if v, ok := sfuo.mutation.TaskID(); ok {
+		if err := sendfile.TaskIDValidator(v); err != nil {
+			return &ValidationError{Name: "task_id", err: fmt.Errorf(`ent: validator failed for field "SendFile.task_id": %w`, err)}
+		}
+	}
+	if v, ok := sfuo.mutation.TaskName(); ok {
+		if err := sendfile.TaskNameValidator(v); err != nil {
+			return &ValidationError{Name: "task_name", err: fmt.Errorf(`ent: validator failed for field "SendFile.task_name": %w`, err)}
+		}
+	}
+	if v, ok := sfuo.mutation.FilePath(); ok {
+		if err := sendfile.FilePathValidator(v); err != nil {
+			return &ValidationError{Name: "file_path", err: fmt.Errorf(`ent: validator failed for field "SendFile.file_path": %w`, err)}
+		}
+	}
+	if v, ok := sfuo.mutation.Fid(); ok {
+		if err := sendfile.FidValidator(v); err != nil {
+			return &ValidationError{Name: "fid", err: fmt.Errorf(`ent: validator failed for field "SendFile.fid": %w`, err)}
+		}
+	}
 	if v, ok := sfuo.mutation.Elapsed(); ok {
 		if err := sendfile.ElapsedValidator(v); err != nil {
 			return &ValidationError{Name: "elapsed", err: fmt.Errorf(`ent: validator failed for field "SendFile.elapsed": %w`, err)}
@@ -724,17 +765,14 @@ func (sfuo *SendFileUpdateOne) sqlSave(ctx context.Context) (_node *SendFile, er
 			}
 		}
 	}
+	if value, ok := sfuo.mutation.TaskID(); ok {
+		_spec.SetField(sendfile.FieldTaskID, field.TypeString, value)
+	}
+	if value, ok := sfuo.mutation.TaskName(); ok {
+		_spec.SetField(sendfile.FieldTaskName, field.TypeString, value)
+	}
 	if value, ok := sfuo.mutation.FilePath(); ok {
 		_spec.SetField(sendfile.FieldFilePath, field.TypeString, value)
-	}
-	if sfuo.mutation.FilePathCleared() {
-		_spec.ClearField(sendfile.FieldFilePath, field.TypeString)
-	}
-	if value, ok := sfuo.mutation.FileName(); ok {
-		_spec.SetField(sendfile.FieldFileName, field.TypeString, value)
-	}
-	if sfuo.mutation.FileNameCleared() {
-		_spec.ClearField(sendfile.FieldFileName, field.TypeString)
 	}
 	if value, ok := sfuo.mutation.Fid(); ok {
 		_spec.SetField(sendfile.FieldFid, field.TypeString, value)

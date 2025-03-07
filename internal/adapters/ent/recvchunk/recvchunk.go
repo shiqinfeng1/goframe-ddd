@@ -69,7 +69,7 @@ var (
 	// DefaultChunkOffset holds the default value on creation for the "chunk_offset" field.
 	DefaultChunkOffset int64
 	// DefaultChunkSize holds the default value on creation for the "chunk_size" field.
-	DefaultChunkSize int64
+	DefaultChunkSize int
 	// DefaultStatus holds the default value on creation for the "status" field.
 	DefaultStatus int
 	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.

@@ -56,13 +56,13 @@ func (rcc *RecvChunkCreate) SetNillableChunkOffset(i *int64) *RecvChunkCreate {
 }
 
 // SetChunkSize sets the "chunk_size" field.
-func (rcc *RecvChunkCreate) SetChunkSize(i int64) *RecvChunkCreate {
+func (rcc *RecvChunkCreate) SetChunkSize(i int) *RecvChunkCreate {
 	rcc.mutation.SetChunkSize(i)
 	return rcc
 }
 
 // SetNillableChunkSize sets the "chunk_size" field if the given value is not nil.
-func (rcc *RecvChunkCreate) SetNillableChunkSize(i *int64) *RecvChunkCreate {
+func (rcc *RecvChunkCreate) SetNillableChunkSize(i *int) *RecvChunkCreate {
 	if i != nil {
 		rcc.SetChunkSize(*i)
 	}
@@ -244,7 +244,7 @@ func (rcc *RecvChunkCreate) createSpec() (*RecvChunk, *sqlgraph.CreateSpec) {
 		_node.ChunkOffset = value
 	}
 	if value, ok := rcc.mutation.ChunkSize(); ok {
-		_spec.SetField(recvchunk.FieldChunkSize, field.TypeInt64, value)
+		_spec.SetField(recvchunk.FieldChunkSize, field.TypeInt, value)
 		_node.ChunkSize = value
 	}
 	if value, ok := rcc.mutation.Status(); ok {

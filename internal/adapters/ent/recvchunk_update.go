@@ -86,14 +86,14 @@ func (rcu *RecvChunkUpdate) AddChunkOffset(i int64) *RecvChunkUpdate {
 }
 
 // SetChunkSize sets the "chunk_size" field.
-func (rcu *RecvChunkUpdate) SetChunkSize(i int64) *RecvChunkUpdate {
+func (rcu *RecvChunkUpdate) SetChunkSize(i int) *RecvChunkUpdate {
 	rcu.mutation.ResetChunkSize()
 	rcu.mutation.SetChunkSize(i)
 	return rcu
 }
 
 // SetNillableChunkSize sets the "chunk_size" field if the given value is not nil.
-func (rcu *RecvChunkUpdate) SetNillableChunkSize(i *int64) *RecvChunkUpdate {
+func (rcu *RecvChunkUpdate) SetNillableChunkSize(i *int) *RecvChunkUpdate {
 	if i != nil {
 		rcu.SetChunkSize(*i)
 	}
@@ -101,7 +101,7 @@ func (rcu *RecvChunkUpdate) SetNillableChunkSize(i *int64) *RecvChunkUpdate {
 }
 
 // AddChunkSize adds i to the "chunk_size" field.
-func (rcu *RecvChunkUpdate) AddChunkSize(i int64) *RecvChunkUpdate {
+func (rcu *RecvChunkUpdate) AddChunkSize(i int) *RecvChunkUpdate {
 	rcu.mutation.AddChunkSize(i)
 	return rcu
 }
@@ -224,10 +224,10 @@ func (rcu *RecvChunkUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.AddField(recvchunk.FieldChunkOffset, field.TypeInt64, value)
 	}
 	if value, ok := rcu.mutation.ChunkSize(); ok {
-		_spec.SetField(recvchunk.FieldChunkSize, field.TypeInt64, value)
+		_spec.SetField(recvchunk.FieldChunkSize, field.TypeInt, value)
 	}
 	if value, ok := rcu.mutation.AddedChunkSize(); ok {
-		_spec.AddField(recvchunk.FieldChunkSize, field.TypeInt64, value)
+		_spec.AddField(recvchunk.FieldChunkSize, field.TypeInt, value)
 	}
 	if value, ok := rcu.mutation.Status(); ok {
 		_spec.SetField(recvchunk.FieldStatus, field.TypeInt, value)
@@ -344,14 +344,14 @@ func (rcuo *RecvChunkUpdateOne) AddChunkOffset(i int64) *RecvChunkUpdateOne {
 }
 
 // SetChunkSize sets the "chunk_size" field.
-func (rcuo *RecvChunkUpdateOne) SetChunkSize(i int64) *RecvChunkUpdateOne {
+func (rcuo *RecvChunkUpdateOne) SetChunkSize(i int) *RecvChunkUpdateOne {
 	rcuo.mutation.ResetChunkSize()
 	rcuo.mutation.SetChunkSize(i)
 	return rcuo
 }
 
 // SetNillableChunkSize sets the "chunk_size" field if the given value is not nil.
-func (rcuo *RecvChunkUpdateOne) SetNillableChunkSize(i *int64) *RecvChunkUpdateOne {
+func (rcuo *RecvChunkUpdateOne) SetNillableChunkSize(i *int) *RecvChunkUpdateOne {
 	if i != nil {
 		rcuo.SetChunkSize(*i)
 	}
@@ -359,7 +359,7 @@ func (rcuo *RecvChunkUpdateOne) SetNillableChunkSize(i *int64) *RecvChunkUpdateO
 }
 
 // AddChunkSize adds i to the "chunk_size" field.
-func (rcuo *RecvChunkUpdateOne) AddChunkSize(i int64) *RecvChunkUpdateOne {
+func (rcuo *RecvChunkUpdateOne) AddChunkSize(i int) *RecvChunkUpdateOne {
 	rcuo.mutation.AddChunkSize(i)
 	return rcuo
 }
@@ -512,10 +512,10 @@ func (rcuo *RecvChunkUpdateOne) sqlSave(ctx context.Context) (_node *RecvChunk, 
 		_spec.AddField(recvchunk.FieldChunkOffset, field.TypeInt64, value)
 	}
 	if value, ok := rcuo.mutation.ChunkSize(); ok {
-		_spec.SetField(recvchunk.FieldChunkSize, field.TypeInt64, value)
+		_spec.SetField(recvchunk.FieldChunkSize, field.TypeInt, value)
 	}
 	if value, ok := rcuo.mutation.AddedChunkSize(); ok {
-		_spec.AddField(recvchunk.FieldChunkSize, field.TypeInt64, value)
+		_spec.AddField(recvchunk.FieldChunkSize, field.TypeInt, value)
 	}
 	if value, ok := rcuo.mutation.Status(); ok {
 		_spec.SetField(recvchunk.FieldStatus, field.TypeInt, value)

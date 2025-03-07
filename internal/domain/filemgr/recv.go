@@ -29,15 +29,19 @@ func recvHeader(_ context.Context, stream io.Reader) (*header, error) {
 	return h, nil
 }
 
-func recvBody(_ context.Context, stream io.Reader, bodyLen uint32) ([]byte, error) {
-	// 读取消息头
+func recvBody(ctx context.Context, stream io.Reader, bodyLen uint32) ([]byte, error) {
 	bodyBytes := make([]byte, bodyLen)
-	n, err := stream.Read(bodyBytes)
-	if err != nil {
-		return nil, gerror.Wrap(err, "recv body fail")
-	}
-	if n != int(bodyLen) {
-		return nil, gerror.Newf("recv body length invalid(%v)", n)
+	var m int = 0
+	for {
+		n, err := stream.Read(bodyBytes[m:])
+		if err != nil {
+			return nil, gerror.Wrap(err, "recv body fail")
+		}
+		m += n
+		// g.Log().Infof(ctx, "server recv %v bytes  stream.id=%v", n, s.ID())
+		if m == int(bodyLen) {
+			break
+		}
 	}
 	return bodyBytes, nil
 }
@@ -61,7 +65,7 @@ func ackHandshake(ctx context.Context, sesion *smux.Session, stream io.Writer, b
 	return nil
 }
 
-func StreamRecvHandler(ctx context.Context, sesion *smux.Session, stream io.ReadWriter) error {
+func (f *FileTransferMgr) StreamRecvHandler(ctx context.Context, sesion *smux.Session, stream io.ReadWriter) error {
 	header, err := recvHeader(ctx, stream)
 	if err != nil {
 		return err
@@ -79,8 +83,10 @@ func StreamRecvHandler(ctx context.Context, sesion *smux.Session, stream io.Read
 	}
 	// 其他消息处理
 	if handler, ok := msgHandlerMap[header.typ]; ok {
-		if err := handler(ctx, body); err != nil {
-			return err
+		ack := handler(ctx, body, f.repo)
+		// 回复握手确认消息
+		if _, err := stream.Write(ack); err != nil {
+			return gerror.Wrap(err, "handshake fail")
 		}
 	} else {
 		return gerror.Newf("not register handler for msg type:%v", header.typ)

@@ -56,13 +56,13 @@ func (scc *SendChunkCreate) SetNillableChunkOffset(i *int64) *SendChunkCreate {
 }
 
 // SetChunkSize sets the "chunk_size" field.
-func (scc *SendChunkCreate) SetChunkSize(i int64) *SendChunkCreate {
+func (scc *SendChunkCreate) SetChunkSize(i int) *SendChunkCreate {
 	scc.mutation.SetChunkSize(i)
 	return scc
 }
 
 // SetNillableChunkSize sets the "chunk_size" field if the given value is not nil.
-func (scc *SendChunkCreate) SetNillableChunkSize(i *int64) *SendChunkCreate {
+func (scc *SendChunkCreate) SetNillableChunkSize(i *int) *SendChunkCreate {
 	if i != nil {
 		scc.SetChunkSize(*i)
 	}
@@ -244,7 +244,7 @@ func (scc *SendChunkCreate) createSpec() (*SendChunk, *sqlgraph.CreateSpec) {
 		_node.ChunkOffset = value
 	}
 	if value, ok := scc.mutation.ChunkSize(); ok {
-		_spec.SetField(sendchunk.FieldChunkSize, field.TypeInt64, value)
+		_spec.SetField(sendchunk.FieldChunkSize, field.TypeInt, value)
 		_node.ChunkSize = value
 	}
 	if value, ok := scc.mutation.Status(); ok {

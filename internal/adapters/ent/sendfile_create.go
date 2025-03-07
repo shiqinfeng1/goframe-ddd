@@ -21,31 +21,21 @@ type SendFileCreate struct {
 	hooks    []Hook
 }
 
+// SetTaskID sets the "task_id" field.
+func (sfc *SendFileCreate) SetTaskID(s string) *SendFileCreate {
+	sfc.mutation.SetTaskID(s)
+	return sfc
+}
+
+// SetTaskName sets the "task_name" field.
+func (sfc *SendFileCreate) SetTaskName(s string) *SendFileCreate {
+	sfc.mutation.SetTaskName(s)
+	return sfc
+}
+
 // SetFilePath sets the "file_path" field.
 func (sfc *SendFileCreate) SetFilePath(s string) *SendFileCreate {
 	sfc.mutation.SetFilePath(s)
-	return sfc
-}
-
-// SetNillableFilePath sets the "file_path" field if the given value is not nil.
-func (sfc *SendFileCreate) SetNillableFilePath(s *string) *SendFileCreate {
-	if s != nil {
-		sfc.SetFilePath(*s)
-	}
-	return sfc
-}
-
-// SetFileName sets the "file_name" field.
-func (sfc *SendFileCreate) SetFileName(s string) *SendFileCreate {
-	sfc.mutation.SetFileName(s)
-	return sfc
-}
-
-// SetNillableFileName sets the "file_name" field if the given value is not nil.
-func (sfc *SendFileCreate) SetNillableFileName(s *string) *SendFileCreate {
-	if s != nil {
-		sfc.SetFileName(*s)
-	}
 	return sfc
 }
 
@@ -253,8 +243,37 @@ func (sfc *SendFileCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (sfc *SendFileCreate) check() error {
+	if _, ok := sfc.mutation.TaskID(); !ok {
+		return &ValidationError{Name: "task_id", err: errors.New(`ent: missing required field "SendFile.task_id"`)}
+	}
+	if v, ok := sfc.mutation.TaskID(); ok {
+		if err := sendfile.TaskIDValidator(v); err != nil {
+			return &ValidationError{Name: "task_id", err: fmt.Errorf(`ent: validator failed for field "SendFile.task_id": %w`, err)}
+		}
+	}
+	if _, ok := sfc.mutation.TaskName(); !ok {
+		return &ValidationError{Name: "task_name", err: errors.New(`ent: missing required field "SendFile.task_name"`)}
+	}
+	if v, ok := sfc.mutation.TaskName(); ok {
+		if err := sendfile.TaskNameValidator(v); err != nil {
+			return &ValidationError{Name: "task_name", err: fmt.Errorf(`ent: validator failed for field "SendFile.task_name": %w`, err)}
+		}
+	}
+	if _, ok := sfc.mutation.FilePath(); !ok {
+		return &ValidationError{Name: "file_path", err: errors.New(`ent: missing required field "SendFile.file_path"`)}
+	}
+	if v, ok := sfc.mutation.FilePath(); ok {
+		if err := sendfile.FilePathValidator(v); err != nil {
+			return &ValidationError{Name: "file_path", err: fmt.Errorf(`ent: validator failed for field "SendFile.file_path": %w`, err)}
+		}
+	}
 	if _, ok := sfc.mutation.Fid(); !ok {
 		return &ValidationError{Name: "fid", err: errors.New(`ent: missing required field "SendFile.fid"`)}
+	}
+	if v, ok := sfc.mutation.Fid(); ok {
+		if err := sendfile.FidValidator(v); err != nil {
+			return &ValidationError{Name: "fid", err: fmt.Errorf(`ent: validator failed for field "SendFile.fid": %w`, err)}
+		}
 	}
 	if _, ok := sfc.mutation.FileSize(); !ok {
 		return &ValidationError{Name: "file_size", err: errors.New(`ent: missing required field "SendFile.file_size"`)}
@@ -316,13 +335,17 @@ func (sfc *SendFileCreate) createSpec() (*SendFile, *sqlgraph.CreateSpec) {
 		_node = &SendFile{config: sfc.config}
 		_spec = sqlgraph.NewCreateSpec(sendfile.Table, sqlgraph.NewFieldSpec(sendfile.FieldID, field.TypeInt))
 	)
+	if value, ok := sfc.mutation.TaskID(); ok {
+		_spec.SetField(sendfile.FieldTaskID, field.TypeString, value)
+		_node.TaskID = value
+	}
+	if value, ok := sfc.mutation.TaskName(); ok {
+		_spec.SetField(sendfile.FieldTaskName, field.TypeString, value)
+		_node.TaskName = value
+	}
 	if value, ok := sfc.mutation.FilePath(); ok {
 		_spec.SetField(sendfile.FieldFilePath, field.TypeString, value)
-		_node.FilePath = &value
-	}
-	if value, ok := sfc.mutation.FileName(); ok {
-		_spec.SetField(sendfile.FieldFileName, field.TypeString, value)
-		_node.FileName = &value
+		_node.FilePath = value
 	}
 	if value, ok := sfc.mutation.Fid(); ok {
 		_spec.SetField(sendfile.FieldFid, field.TypeString, value)

@@ -105,7 +105,7 @@ func TestSplitFile(t *testing.T) {
 		}
 
 		// 检查分块大小
-		if !equalInt64Slice(sizes, tc.expectedSizes) {
+		if !equalIntSlice(sizes, tc.expectedSizes) {
 			t.Errorf("输入大小 %d: 分块大小\n期望 %v \n得到 %v", tc.size, tc.expectedSizes, sizes)
 		}
 
@@ -123,6 +123,18 @@ func equalInt64Slice(a, b []int64) bool {
 	}
 	for i := range a {
 		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func equalIntSlice(a []int, b []int64) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if int64(a[i]) != b[i] {
 			return false
 		}
 	}

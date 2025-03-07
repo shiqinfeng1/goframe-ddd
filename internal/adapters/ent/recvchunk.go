@@ -25,7 +25,7 @@ type RecvChunk struct {
 	// ChunkOffset holds the value of the "chunk_offset" field.
 	ChunkOffset int64 `json:"chunk_offset,omitempty"`
 	// ChunkSize holds the value of the "chunk_size" field.
-	ChunkSize int64 `json:"chunk_size,omitempty"`
+	ChunkSize int `json:"chunk_size,omitempty"`
 	// Status holds the value of the "status" field.
 	Status int `json:"status,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
@@ -110,7 +110,7 @@ func (rc *RecvChunk) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field chunk_size", values[i])
 			} else if value.Valid {
-				rc.ChunkSize = value.Int64
+				rc.ChunkSize = int(value.Int64)
 			}
 		case recvchunk.FieldStatus:
 			if value, ok := values[i].(*sql.NullInt64); !ok {

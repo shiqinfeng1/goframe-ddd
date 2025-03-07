@@ -17,10 +17,12 @@ type SendFile struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// TaskID holds the value of the "task_id" field.
+	TaskID string `json:"task_id,omitempty"`
+	// TaskName holds the value of the "task_name" field.
+	TaskName string `json:"task_name,omitempty"`
 	// FilePath holds the value of the "file_path" field.
-	FilePath *string `json:"file_path,omitempty"`
-	// FileName holds the value of the "file_name" field.
-	FileName *string `json:"file_name,omitempty"`
+	FilePath string `json:"file_path,omitempty"`
 	// Fid holds the value of the "fid" field.
 	Fid string `json:"fid,omitempty"`
 	// FileSize holds the value of the "file_size" field.
@@ -70,7 +72,7 @@ func (*SendFile) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case sendfile.FieldID, sendfile.FieldFileSize, sendfile.FieldChunkNumTotal, sendfile.FieldChunkNumSended, sendfile.FieldStatus:
 			values[i] = new(sql.NullInt64)
-		case sendfile.FieldFilePath, sendfile.FieldFileName, sendfile.FieldFid, sendfile.FieldElapsed, sendfile.FieldSpeed:
+		case sendfile.FieldTaskID, sendfile.FieldTaskName, sendfile.FieldFilePath, sendfile.FieldFid, sendfile.FieldElapsed, sendfile.FieldSpeed:
 			values[i] = new(sql.NullString)
 		case sendfile.FieldUpdatedAt, sendfile.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -95,19 +97,23 @@ func (sf *SendFile) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			sf.ID = int(value.Int64)
+		case sendfile.FieldTaskID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field task_id", values[i])
+			} else if value.Valid {
+				sf.TaskID = value.String
+			}
+		case sendfile.FieldTaskName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field task_name", values[i])
+			} else if value.Valid {
+				sf.TaskName = value.String
+			}
 		case sendfile.FieldFilePath:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field file_path", values[i])
 			} else if value.Valid {
-				sf.FilePath = new(string)
-				*sf.FilePath = value.String
-			}
-		case sendfile.FieldFileName:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field file_name", values[i])
-			} else if value.Valid {
-				sf.FileName = new(string)
-				*sf.FileName = value.String
+				sf.FilePath = value.String
 			}
 		case sendfile.FieldFid:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -204,15 +210,14 @@ func (sf *SendFile) String() string {
 	var builder strings.Builder
 	builder.WriteString("SendFile(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", sf.ID))
-	if v := sf.FilePath; v != nil {
-		builder.WriteString("file_path=")
-		builder.WriteString(*v)
-	}
+	builder.WriteString("task_id=")
+	builder.WriteString(sf.TaskID)
 	builder.WriteString(", ")
-	if v := sf.FileName; v != nil {
-		builder.WriteString("file_name=")
-		builder.WriteString(*v)
-	}
+	builder.WriteString("task_name=")
+	builder.WriteString(sf.TaskName)
+	builder.WriteString(", ")
+	builder.WriteString("file_path=")
+	builder.WriteString(sf.FilePath)
 	builder.WriteString(", ")
 	builder.WriteString("fid=")
 	builder.WriteString(sf.Fid)

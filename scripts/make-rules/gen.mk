@@ -11,7 +11,7 @@ endif
 
 .PHONY: gen.run
 # gen.run: gen.wire gen.pb gen.clean 
-gen.run: gen.clean gen.pb  
+gen.run: gen.clean gen.pb gen.ent
 
 .PHONY: gen.pb
 gen.pb: tools.verify.gf tools.verify.protoc tools.verify.protoc-gen-go tools.verify.protoc-gen-go-grpc
@@ -28,3 +28,7 @@ gen.wire: tools.verify.wire
 gen.clean:
 # @rm -rf ./api/client/{clientset,informers,listers}
 	@find ${ROOT_DIR}/api/grpc -type f -name '*.go' -delete
+
+.PHONY: gen.ent
+gen.ent:
+	@go generate ./internal/adapters/ent

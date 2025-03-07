@@ -21,6 +21,7 @@ type StreamMgr struct {
 	clientSessIsRunning atomic.Bool
 	transport           Transport
 	IsCloud             bool
+	recvHandler         filemgr.RecvStreamHandleFunc
 }
 
 func NewStream() *StreamMgr {
@@ -28,28 +29,36 @@ func NewStream() *StreamMgr {
 	var stm *StreamMgr
 
 	// 实例化一个流通道管理服务，流通道支持2种传输层：tcp和kcp
-	addr := g.Cfg().MustGet(ctx, "filemgr.addr").String()
 	transType := g.Cfg().MustGet(ctx, "filemgr.transport").String()
 	switch transType {
 	case "kcp":
-		stm = &StreamMgr{transport: transport.NewKcpTransport()}
+		stm = &StreamMgr{
+			transport: transport.NewKcpTransport(),
+		}
 	case "tcp":
-		stm = &StreamMgr{transport: transport.NewTcpTransport()}
+		stm = &StreamMgr{
+			transport: transport.NewTcpTransport(),
+		}
 	default:
 		g.Log().Fatalf(ctx, "config of filemgr.transport is invalid:%v", transType)
 	}
 	stm.IsCloud = g.Cfg().MustGet(ctx, "filemgr.isCloud").Bool()
 
-	if stm.IsCloud {
-		stm.StartupServer(ctx, addr, filemgr.StreamRecvHandler)
-	} else {
-		stm.StartupClient(ctx, addr)
-	}
 	return stm
 }
 
+func (s *StreamMgr) Startup(ctx context.Context, recvHandler filemgr.RecvStreamHandleFunc) {
+	addr := g.Cfg().MustGet(ctx, "filemgr.addr").String()
+	s.recvHandler = recvHandler
+	if s.IsCloud {
+		s.StartupServer(ctx, addr)
+	} else {
+		s.StartupClient(ctx, addr)
+	}
+}
+
 // 服务端接收一个数据流，首次接收握手消息时，会先启动服务，每个客户端的连接会被缓存
-func (s *StreamMgr) StartupServer(ctx context.Context, addr string, recvHandler filemgr.RecvStreamHandleFunc) error {
+func (s *StreamMgr) StartupServer(ctx context.Context, addr string) error {
 	return s.transport.NewServer(ctx, addr, func(conn net.Conn) {
 		session, err := newSessoinByServer(conn)
 		if err != nil {
@@ -72,16 +81,16 @@ func (s *StreamMgr) StartupServer(ctx context.Context, addr string, recvHandler 
 				}
 				g.Log().Infof(ctx, "accept stream ok. remote:%v -> local:%v stream.id=%v", stream.RemoteAddr(), stream.LocalAddr(), stream.ID())
 				// 在协程中处理数据
-				go func(s *smux.Stream) {
-					if err := recvHandler(ctx, session, s); err != nil {
+				go func(stm *smux.Stream) {
+					if err := s.recvHandler(ctx, session, stm); err != nil {
 						g.Log().Error(ctx, err)
 						return
 					}
-					if err := s.Close(); err != nil {
-						g.Log().Errorf(ctx, "close stream.id=%v fail:%v", s.ID(), err)
+					if err := stm.Close(); err != nil {
+						g.Log().Errorf(ctx, "close stream.id=%v fail:%v", stm.ID(), err)
 						return
 					}
-					g.Log().Infof(ctx, "close stream ok. remote:%v -> local:%v stream.id=%v", stream.RemoteAddr(), stream.LocalAddr(), stream.ID())
+					g.Log().Infof(ctx, "close stream ok. remote:%v -> local:%v stream.id=%v", stm.RemoteAddr(), stm.LocalAddr(), stream.ID())
 				}(stream)
 			}
 		}()

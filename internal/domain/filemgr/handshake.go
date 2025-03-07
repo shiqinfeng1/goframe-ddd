@@ -43,7 +43,7 @@ func handshakeMsgToBytes(ctx context.Context) ([]byte, error) {
 	return data, nil
 }
 
-func handshakeAckToBytes(ctx context.Context, body []byte) ([]byte, error) {
+func handshakeAckToBytes(_ context.Context, body []byte) ([]byte, error) {
 	data := make([]byte, headerLen+len(body))
 	copy(data[0:3], []byte(ackMagic))
 	data[3] = msgHandshake.Byte()
@@ -51,6 +51,21 @@ func handshakeAckToBytes(ctx context.Context, body []byte) ([]byte, error) {
 
 	copy(data[8:], body)
 	return data, nil
+}
+
+func recvAck(ctx context.Context, stream io.ReadWriter, mtype msgType) ([]byte, error) {
+	header, err := recvHeader(ctx, stream)
+	if err != nil {
+		return nil, err
+	}
+	if !header.typ.Is(mtype) {
+		return nil, gerror.New("ack fail: msg type not match")
+	}
+	body, err := recvBody(ctx, stream, header.BodyLen())
+	if err != nil {
+		return nil, err
+	}
+	return body, nil
 }
 
 func ReqHandshakeWithSync(ctx context.Context, stream io.ReadWriter) error {
@@ -64,14 +79,7 @@ func ReqHandshakeWithSync(ctx context.Context, stream io.ReadWriter) error {
 		gerror.Wrapf(err, "handshake req to server fail:%v", err)
 	}
 	// 接收响应数据
-	header, err := recvHeader(ctx, stream)
-	if err != nil {
-		return err
-	}
-	if !header.typ.Is(msgHandshake) {
-		return gerror.New("not handshake ack")
-	}
-	body, err := recvBody(ctx, stream, header.BodyLen())
+	body, err := recvAck(ctx, stream, msgHandshake)
 	if err != nil {
 		return err
 	}

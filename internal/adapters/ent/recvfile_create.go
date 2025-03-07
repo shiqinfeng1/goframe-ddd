@@ -21,17 +21,15 @@ type RecvFileCreate struct {
 	hooks    []Hook
 }
 
-// SetFileName sets the "file_name" field.
-func (rfc *RecvFileCreate) SetFileName(s string) *RecvFileCreate {
-	rfc.mutation.SetFileName(s)
+// SetTaskID sets the "task_id" field.
+func (rfc *RecvFileCreate) SetTaskID(s string) *RecvFileCreate {
+	rfc.mutation.SetTaskID(s)
 	return rfc
 }
 
-// SetNillableFileName sets the "file_name" field if the given value is not nil.
-func (rfc *RecvFileCreate) SetNillableFileName(s *string) *RecvFileCreate {
-	if s != nil {
-		rfc.SetFileName(*s)
-	}
+// SetTaskName sets the "task_name" field.
+func (rfc *RecvFileCreate) SetTaskName(s string) *RecvFileCreate {
+	rfc.mutation.SetTaskName(s)
 	return rfc
 }
 
@@ -41,25 +39,9 @@ func (rfc *RecvFileCreate) SetFilePathSave(s string) *RecvFileCreate {
 	return rfc
 }
 
-// SetNillableFilePathSave sets the "file_path_save" field if the given value is not nil.
-func (rfc *RecvFileCreate) SetNillableFilePathSave(s *string) *RecvFileCreate {
-	if s != nil {
-		rfc.SetFilePathSave(*s)
-	}
-	return rfc
-}
-
 // SetFilePathOrigin sets the "file_path_origin" field.
 func (rfc *RecvFileCreate) SetFilePathOrigin(s string) *RecvFileCreate {
 	rfc.mutation.SetFilePathOrigin(s)
-	return rfc
-}
-
-// SetNillableFilePathOrigin sets the "file_path_origin" field if the given value is not nil.
-func (rfc *RecvFileCreate) SetNillableFilePathOrigin(s *string) *RecvFileCreate {
-	if s != nil {
-		rfc.SetFilePathOrigin(*s)
-	}
 	return rfc
 }
 
@@ -231,6 +213,38 @@ func (rfc *RecvFileCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (rfc *RecvFileCreate) check() error {
+	if _, ok := rfc.mutation.TaskID(); !ok {
+		return &ValidationError{Name: "task_id", err: errors.New(`ent: missing required field "RecvFile.task_id"`)}
+	}
+	if v, ok := rfc.mutation.TaskID(); ok {
+		if err := recvfile.TaskIDValidator(v); err != nil {
+			return &ValidationError{Name: "task_id", err: fmt.Errorf(`ent: validator failed for field "RecvFile.task_id": %w`, err)}
+		}
+	}
+	if _, ok := rfc.mutation.TaskName(); !ok {
+		return &ValidationError{Name: "task_name", err: errors.New(`ent: missing required field "RecvFile.task_name"`)}
+	}
+	if v, ok := rfc.mutation.TaskName(); ok {
+		if err := recvfile.TaskNameValidator(v); err != nil {
+			return &ValidationError{Name: "task_name", err: fmt.Errorf(`ent: validator failed for field "RecvFile.task_name": %w`, err)}
+		}
+	}
+	if _, ok := rfc.mutation.FilePathSave(); !ok {
+		return &ValidationError{Name: "file_path_save", err: errors.New(`ent: missing required field "RecvFile.file_path_save"`)}
+	}
+	if v, ok := rfc.mutation.FilePathSave(); ok {
+		if err := recvfile.FilePathSaveValidator(v); err != nil {
+			return &ValidationError{Name: "file_path_save", err: fmt.Errorf(`ent: validator failed for field "RecvFile.file_path_save": %w`, err)}
+		}
+	}
+	if _, ok := rfc.mutation.FilePathOrigin(); !ok {
+		return &ValidationError{Name: "file_path_origin", err: errors.New(`ent: missing required field "RecvFile.file_path_origin"`)}
+	}
+	if v, ok := rfc.mutation.FilePathOrigin(); ok {
+		if err := recvfile.FilePathOriginValidator(v); err != nil {
+			return &ValidationError{Name: "file_path_origin", err: fmt.Errorf(`ent: validator failed for field "RecvFile.file_path_origin": %w`, err)}
+		}
+	}
 	if _, ok := rfc.mutation.Fid(); !ok {
 		return &ValidationError{Name: "fid", err: errors.New(`ent: missing required field "RecvFile.fid"`)}
 	}
@@ -278,17 +292,21 @@ func (rfc *RecvFileCreate) createSpec() (*RecvFile, *sqlgraph.CreateSpec) {
 		_node = &RecvFile{config: rfc.config}
 		_spec = sqlgraph.NewCreateSpec(recvfile.Table, sqlgraph.NewFieldSpec(recvfile.FieldID, field.TypeInt))
 	)
-	if value, ok := rfc.mutation.FileName(); ok {
-		_spec.SetField(recvfile.FieldFileName, field.TypeString, value)
-		_node.FileName = &value
+	if value, ok := rfc.mutation.TaskID(); ok {
+		_spec.SetField(recvfile.FieldTaskID, field.TypeString, value)
+		_node.TaskID = value
+	}
+	if value, ok := rfc.mutation.TaskName(); ok {
+		_spec.SetField(recvfile.FieldTaskName, field.TypeString, value)
+		_node.TaskName = value
 	}
 	if value, ok := rfc.mutation.FilePathSave(); ok {
 		_spec.SetField(recvfile.FieldFilePathSave, field.TypeString, value)
-		_node.FilePathSave = &value
+		_node.FilePathSave = value
 	}
 	if value, ok := rfc.mutation.FilePathOrigin(); ok {
 		_spec.SetField(recvfile.FieldFilePathOrigin, field.TypeString, value)
-		_node.FilePathOrigin = &value
+		_node.FilePathOrigin = value
 	}
 	if value, ok := rfc.mutation.Fid(); ok {
 		_spec.SetField(recvfile.FieldFid, field.TypeString, value)

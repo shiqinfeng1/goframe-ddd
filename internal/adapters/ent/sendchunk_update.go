@@ -86,14 +86,14 @@ func (scu *SendChunkUpdate) AddChunkOffset(i int64) *SendChunkUpdate {
 }
 
 // SetChunkSize sets the "chunk_size" field.
-func (scu *SendChunkUpdate) SetChunkSize(i int64) *SendChunkUpdate {
+func (scu *SendChunkUpdate) SetChunkSize(i int) *SendChunkUpdate {
 	scu.mutation.ResetChunkSize()
 	scu.mutation.SetChunkSize(i)
 	return scu
 }
 
 // SetNillableChunkSize sets the "chunk_size" field if the given value is not nil.
-func (scu *SendChunkUpdate) SetNillableChunkSize(i *int64) *SendChunkUpdate {
+func (scu *SendChunkUpdate) SetNillableChunkSize(i *int) *SendChunkUpdate {
 	if i != nil {
 		scu.SetChunkSize(*i)
 	}
@@ -101,7 +101,7 @@ func (scu *SendChunkUpdate) SetNillableChunkSize(i *int64) *SendChunkUpdate {
 }
 
 // AddChunkSize adds i to the "chunk_size" field.
-func (scu *SendChunkUpdate) AddChunkSize(i int64) *SendChunkUpdate {
+func (scu *SendChunkUpdate) AddChunkSize(i int) *SendChunkUpdate {
 	scu.mutation.AddChunkSize(i)
 	return scu
 }
@@ -224,10 +224,10 @@ func (scu *SendChunkUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.AddField(sendchunk.FieldChunkOffset, field.TypeInt64, value)
 	}
 	if value, ok := scu.mutation.ChunkSize(); ok {
-		_spec.SetField(sendchunk.FieldChunkSize, field.TypeInt64, value)
+		_spec.SetField(sendchunk.FieldChunkSize, field.TypeInt, value)
 	}
 	if value, ok := scu.mutation.AddedChunkSize(); ok {
-		_spec.AddField(sendchunk.FieldChunkSize, field.TypeInt64, value)
+		_spec.AddField(sendchunk.FieldChunkSize, field.TypeInt, value)
 	}
 	if value, ok := scu.mutation.Status(); ok {
 		_spec.SetField(sendchunk.FieldStatus, field.TypeInt, value)
@@ -344,14 +344,14 @@ func (scuo *SendChunkUpdateOne) AddChunkOffset(i int64) *SendChunkUpdateOne {
 }
 
 // SetChunkSize sets the "chunk_size" field.
-func (scuo *SendChunkUpdateOne) SetChunkSize(i int64) *SendChunkUpdateOne {
+func (scuo *SendChunkUpdateOne) SetChunkSize(i int) *SendChunkUpdateOne {
 	scuo.mutation.ResetChunkSize()
 	scuo.mutation.SetChunkSize(i)
 	return scuo
 }
 
 // SetNillableChunkSize sets the "chunk_size" field if the given value is not nil.
-func (scuo *SendChunkUpdateOne) SetNillableChunkSize(i *int64) *SendChunkUpdateOne {
+func (scuo *SendChunkUpdateOne) SetNillableChunkSize(i *int) *SendChunkUpdateOne {
 	if i != nil {
 		scuo.SetChunkSize(*i)
 	}
@@ -359,7 +359,7 @@ func (scuo *SendChunkUpdateOne) SetNillableChunkSize(i *int64) *SendChunkUpdateO
 }
 
 // AddChunkSize adds i to the "chunk_size" field.
-func (scuo *SendChunkUpdateOne) AddChunkSize(i int64) *SendChunkUpdateOne {
+func (scuo *SendChunkUpdateOne) AddChunkSize(i int) *SendChunkUpdateOne {
 	scuo.mutation.AddChunkSize(i)
 	return scuo
 }
@@ -512,10 +512,10 @@ func (scuo *SendChunkUpdateOne) sqlSave(ctx context.Context) (_node *SendChunk, 
 		_spec.AddField(sendchunk.FieldChunkOffset, field.TypeInt64, value)
 	}
 	if value, ok := scuo.mutation.ChunkSize(); ok {
-		_spec.SetField(sendchunk.FieldChunkSize, field.TypeInt64, value)
+		_spec.SetField(sendchunk.FieldChunkSize, field.TypeInt, value)
 	}
 	if value, ok := scuo.mutation.AddedChunkSize(); ok {
-		_spec.AddField(sendchunk.FieldChunkSize, field.TypeInt64, value)
+		_spec.AddField(sendchunk.FieldChunkSize, field.TypeInt, value)
 	}
 	if value, ok := scuo.mutation.Status(); ok {
 		_spec.SetField(sendchunk.FieldStatus, field.TypeInt, value)

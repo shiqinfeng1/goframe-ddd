@@ -299,12 +299,12 @@ func (rfq *RecvFileQuery) WithRecvChunks(opts ...func(*RecvChunkQuery)) *RecvFil
 // Example:
 //
 //	var v []struct {
-//		FileName string `json:"file_name,omitempty"`
+//		TaskID string `json:"task_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.RecvFile.Query().
-//		GroupBy(recvfile.FieldFileName).
+//		GroupBy(recvfile.FieldTaskID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (rfq *RecvFileQuery) GroupBy(field string, fields ...string) *RecvFileGroupBy {
@@ -322,11 +322,11 @@ func (rfq *RecvFileQuery) GroupBy(field string, fields ...string) *RecvFileGroup
 // Example:
 //
 //	var v []struct {
-//		FileName string `json:"file_name,omitempty"`
+//		TaskID string `json:"task_id,omitempty"`
 //	}
 //
 //	client.RecvFile.Query().
-//		Select(recvfile.FieldFileName).
+//		Select(recvfile.FieldTaskID).
 //		Scan(ctx, &v)
 func (rfq *RecvFileQuery) Select(fields ...string) *RecvFileSelect {
 	rfq.ctx.Fields = append(rfq.ctx.Fields, fields...)

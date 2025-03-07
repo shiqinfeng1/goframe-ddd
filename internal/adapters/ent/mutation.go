@@ -43,8 +43,8 @@ type RecvChunkMutation struct {
 	addchunk_index   *int
 	chunk_offset     *int64
 	addchunk_offset  *int64
-	chunk_size       *int64
-	addchunk_size    *int64
+	chunk_size       *int
+	addchunk_size    *int
 	status           *int
 	addstatus        *int
 	updated_at       *time.Time
@@ -304,13 +304,13 @@ func (m *RecvChunkMutation) ResetChunkOffset() {
 }
 
 // SetChunkSize sets the "chunk_size" field.
-func (m *RecvChunkMutation) SetChunkSize(i int64) {
+func (m *RecvChunkMutation) SetChunkSize(i int) {
 	m.chunk_size = &i
 	m.addchunk_size = nil
 }
 
 // ChunkSize returns the value of the "chunk_size" field in the mutation.
-func (m *RecvChunkMutation) ChunkSize() (r int64, exists bool) {
+func (m *RecvChunkMutation) ChunkSize() (r int, exists bool) {
 	v := m.chunk_size
 	if v == nil {
 		return
@@ -321,7 +321,7 @@ func (m *RecvChunkMutation) ChunkSize() (r int64, exists bool) {
 // OldChunkSize returns the old "chunk_size" field's value of the RecvChunk entity.
 // If the RecvChunk object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecvChunkMutation) OldChunkSize(ctx context.Context) (v int64, err error) {
+func (m *RecvChunkMutation) OldChunkSize(ctx context.Context) (v int, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldChunkSize is only allowed on UpdateOne operations")
 	}
@@ -336,7 +336,7 @@ func (m *RecvChunkMutation) OldChunkSize(ctx context.Context) (v int64, err erro
 }
 
 // AddChunkSize adds i to the "chunk_size" field.
-func (m *RecvChunkMutation) AddChunkSize(i int64) {
+func (m *RecvChunkMutation) AddChunkSize(i int) {
 	if m.addchunk_size != nil {
 		*m.addchunk_size += i
 	} else {
@@ -345,7 +345,7 @@ func (m *RecvChunkMutation) AddChunkSize(i int64) {
 }
 
 // AddedChunkSize returns the value that was added to the "chunk_size" field in this mutation.
-func (m *RecvChunkMutation) AddedChunkSize() (r int64, exists bool) {
+func (m *RecvChunkMutation) AddedChunkSize() (r int, exists bool) {
 	v := m.addchunk_size
 	if v == nil {
 		return
@@ -659,7 +659,7 @@ func (m *RecvChunkMutation) SetField(name string, value ent.Value) error {
 		m.SetChunkOffset(v)
 		return nil
 	case recvchunk.FieldChunkSize:
-		v, ok := value.(int64)
+		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -746,7 +746,7 @@ func (m *RecvChunkMutation) AddField(name string, value ent.Value) error {
 		m.AddChunkOffset(v)
 		return nil
 	case recvchunk.FieldChunkSize:
-		v, ok := value.(int64)
+		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -891,7 +891,8 @@ type RecvFileMutation struct {
 	op                  Op
 	typ                 string
 	id                  *int
-	file_name           *string
+	task_id             *string
+	task_name           *string
 	file_path_save      *string
 	file_path_origin    *string
 	fid                 *string
@@ -1012,53 +1013,76 @@ func (m *RecvFileMutation) IDs(ctx context.Context) ([]int, error) {
 	}
 }
 
-// SetFileName sets the "file_name" field.
-func (m *RecvFileMutation) SetFileName(s string) {
-	m.file_name = &s
+// SetTaskID sets the "task_id" field.
+func (m *RecvFileMutation) SetTaskID(s string) {
+	m.task_id = &s
 }
 
-// FileName returns the value of the "file_name" field in the mutation.
-func (m *RecvFileMutation) FileName() (r string, exists bool) {
-	v := m.file_name
+// TaskID returns the value of the "task_id" field in the mutation.
+func (m *RecvFileMutation) TaskID() (r string, exists bool) {
+	v := m.task_id
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldFileName returns the old "file_name" field's value of the RecvFile entity.
+// OldTaskID returns the old "task_id" field's value of the RecvFile entity.
 // If the RecvFile object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecvFileMutation) OldFileName(ctx context.Context) (v *string, err error) {
+func (m *RecvFileMutation) OldTaskID(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldFileName is only allowed on UpdateOne operations")
+		return v, errors.New("OldTaskID is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldFileName requires an ID field in the mutation")
+		return v, errors.New("OldTaskID requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldFileName: %w", err)
+		return v, fmt.Errorf("querying old value for OldTaskID: %w", err)
 	}
-	return oldValue.FileName, nil
+	return oldValue.TaskID, nil
 }
 
-// ClearFileName clears the value of the "file_name" field.
-func (m *RecvFileMutation) ClearFileName() {
-	m.file_name = nil
-	m.clearedFields[recvfile.FieldFileName] = struct{}{}
+// ResetTaskID resets all changes to the "task_id" field.
+func (m *RecvFileMutation) ResetTaskID() {
+	m.task_id = nil
 }
 
-// FileNameCleared returns if the "file_name" field was cleared in this mutation.
-func (m *RecvFileMutation) FileNameCleared() bool {
-	_, ok := m.clearedFields[recvfile.FieldFileName]
-	return ok
+// SetTaskName sets the "task_name" field.
+func (m *RecvFileMutation) SetTaskName(s string) {
+	m.task_name = &s
 }
 
-// ResetFileName resets all changes to the "file_name" field.
-func (m *RecvFileMutation) ResetFileName() {
-	m.file_name = nil
-	delete(m.clearedFields, recvfile.FieldFileName)
+// TaskName returns the value of the "task_name" field in the mutation.
+func (m *RecvFileMutation) TaskName() (r string, exists bool) {
+	v := m.task_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTaskName returns the old "task_name" field's value of the RecvFile entity.
+// If the RecvFile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecvFileMutation) OldTaskName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTaskName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTaskName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTaskName: %w", err)
+	}
+	return oldValue.TaskName, nil
+}
+
+// ResetTaskName resets all changes to the "task_name" field.
+func (m *RecvFileMutation) ResetTaskName() {
+	m.task_name = nil
 }
 
 // SetFilePathSave sets the "file_path_save" field.
@@ -1078,7 +1102,7 @@ func (m *RecvFileMutation) FilePathSave() (r string, exists bool) {
 // OldFilePathSave returns the old "file_path_save" field's value of the RecvFile entity.
 // If the RecvFile object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecvFileMutation) OldFilePathSave(ctx context.Context) (v *string, err error) {
+func (m *RecvFileMutation) OldFilePathSave(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldFilePathSave is only allowed on UpdateOne operations")
 	}
@@ -1092,22 +1116,9 @@ func (m *RecvFileMutation) OldFilePathSave(ctx context.Context) (v *string, err 
 	return oldValue.FilePathSave, nil
 }
 
-// ClearFilePathSave clears the value of the "file_path_save" field.
-func (m *RecvFileMutation) ClearFilePathSave() {
-	m.file_path_save = nil
-	m.clearedFields[recvfile.FieldFilePathSave] = struct{}{}
-}
-
-// FilePathSaveCleared returns if the "file_path_save" field was cleared in this mutation.
-func (m *RecvFileMutation) FilePathSaveCleared() bool {
-	_, ok := m.clearedFields[recvfile.FieldFilePathSave]
-	return ok
-}
-
 // ResetFilePathSave resets all changes to the "file_path_save" field.
 func (m *RecvFileMutation) ResetFilePathSave() {
 	m.file_path_save = nil
-	delete(m.clearedFields, recvfile.FieldFilePathSave)
 }
 
 // SetFilePathOrigin sets the "file_path_origin" field.
@@ -1127,7 +1138,7 @@ func (m *RecvFileMutation) FilePathOrigin() (r string, exists bool) {
 // OldFilePathOrigin returns the old "file_path_origin" field's value of the RecvFile entity.
 // If the RecvFile object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecvFileMutation) OldFilePathOrigin(ctx context.Context) (v *string, err error) {
+func (m *RecvFileMutation) OldFilePathOrigin(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldFilePathOrigin is only allowed on UpdateOne operations")
 	}
@@ -1141,22 +1152,9 @@ func (m *RecvFileMutation) OldFilePathOrigin(ctx context.Context) (v *string, er
 	return oldValue.FilePathOrigin, nil
 }
 
-// ClearFilePathOrigin clears the value of the "file_path_origin" field.
-func (m *RecvFileMutation) ClearFilePathOrigin() {
-	m.file_path_origin = nil
-	m.clearedFields[recvfile.FieldFilePathOrigin] = struct{}{}
-}
-
-// FilePathOriginCleared returns if the "file_path_origin" field was cleared in this mutation.
-func (m *RecvFileMutation) FilePathOriginCleared() bool {
-	_, ok := m.clearedFields[recvfile.FieldFilePathOrigin]
-	return ok
-}
-
 // ResetFilePathOrigin resets all changes to the "file_path_origin" field.
 func (m *RecvFileMutation) ResetFilePathOrigin() {
 	m.file_path_origin = nil
-	delete(m.clearedFields, recvfile.FieldFilePathOrigin)
 }
 
 // SetFid sets the "fid" field.
@@ -1579,9 +1577,12 @@ func (m *RecvFileMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RecvFileMutation) Fields() []string {
-	fields := make([]string, 0, 10)
-	if m.file_name != nil {
-		fields = append(fields, recvfile.FieldFileName)
+	fields := make([]string, 0, 11)
+	if m.task_id != nil {
+		fields = append(fields, recvfile.FieldTaskID)
+	}
+	if m.task_name != nil {
+		fields = append(fields, recvfile.FieldTaskName)
 	}
 	if m.file_path_save != nil {
 		fields = append(fields, recvfile.FieldFilePathSave)
@@ -1618,8 +1619,10 @@ func (m *RecvFileMutation) Fields() []string {
 // schema.
 func (m *RecvFileMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case recvfile.FieldFileName:
-		return m.FileName()
+	case recvfile.FieldTaskID:
+		return m.TaskID()
+	case recvfile.FieldTaskName:
+		return m.TaskName()
 	case recvfile.FieldFilePathSave:
 		return m.FilePathSave()
 	case recvfile.FieldFilePathOrigin:
@@ -1647,8 +1650,10 @@ func (m *RecvFileMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *RecvFileMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case recvfile.FieldFileName:
-		return m.OldFileName(ctx)
+	case recvfile.FieldTaskID:
+		return m.OldTaskID(ctx)
+	case recvfile.FieldTaskName:
+		return m.OldTaskName(ctx)
 	case recvfile.FieldFilePathSave:
 		return m.OldFilePathSave(ctx)
 	case recvfile.FieldFilePathOrigin:
@@ -1676,12 +1681,19 @@ func (m *RecvFileMutation) OldField(ctx context.Context, name string) (ent.Value
 // type.
 func (m *RecvFileMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case recvfile.FieldFileName:
+	case recvfile.FieldTaskID:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetFileName(v)
+		m.SetTaskID(v)
+		return nil
+	case recvfile.FieldTaskName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTaskName(v)
 		return nil
 	case recvfile.FieldFilePathSave:
 		v, ok := value.(string)
@@ -1826,17 +1838,7 @@ func (m *RecvFileMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *RecvFileMutation) ClearedFields() []string {
-	var fields []string
-	if m.FieldCleared(recvfile.FieldFileName) {
-		fields = append(fields, recvfile.FieldFileName)
-	}
-	if m.FieldCleared(recvfile.FieldFilePathSave) {
-		fields = append(fields, recvfile.FieldFilePathSave)
-	}
-	if m.FieldCleared(recvfile.FieldFilePathOrigin) {
-		fields = append(fields, recvfile.FieldFilePathOrigin)
-	}
-	return fields
+	return nil
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -1849,17 +1851,6 @@ func (m *RecvFileMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *RecvFileMutation) ClearField(name string) error {
-	switch name {
-	case recvfile.FieldFileName:
-		m.ClearFileName()
-		return nil
-	case recvfile.FieldFilePathSave:
-		m.ClearFilePathSave()
-		return nil
-	case recvfile.FieldFilePathOrigin:
-		m.ClearFilePathOrigin()
-		return nil
-	}
 	return fmt.Errorf("unknown RecvFile nullable field %s", name)
 }
 
@@ -1867,8 +1858,11 @@ func (m *RecvFileMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *RecvFileMutation) ResetField(name string) error {
 	switch name {
-	case recvfile.FieldFileName:
-		m.ResetFileName()
+	case recvfile.FieldTaskID:
+		m.ResetTaskID()
+		return nil
+	case recvfile.FieldTaskName:
+		m.ResetTaskName()
 		return nil
 	case recvfile.FieldFilePathSave:
 		m.ResetFilePathSave()
@@ -1995,8 +1989,8 @@ type SendChunkMutation struct {
 	addchunk_index   *int
 	chunk_offset     *int64
 	addchunk_offset  *int64
-	chunk_size       *int64
-	addchunk_size    *int64
+	chunk_size       *int
+	addchunk_size    *int
 	status           *int
 	addstatus        *int
 	updated_at       *time.Time
@@ -2256,13 +2250,13 @@ func (m *SendChunkMutation) ResetChunkOffset() {
 }
 
 // SetChunkSize sets the "chunk_size" field.
-func (m *SendChunkMutation) SetChunkSize(i int64) {
+func (m *SendChunkMutation) SetChunkSize(i int) {
 	m.chunk_size = &i
 	m.addchunk_size = nil
 }
 
 // ChunkSize returns the value of the "chunk_size" field in the mutation.
-func (m *SendChunkMutation) ChunkSize() (r int64, exists bool) {
+func (m *SendChunkMutation) ChunkSize() (r int, exists bool) {
 	v := m.chunk_size
 	if v == nil {
 		return
@@ -2273,7 +2267,7 @@ func (m *SendChunkMutation) ChunkSize() (r int64, exists bool) {
 // OldChunkSize returns the old "chunk_size" field's value of the SendChunk entity.
 // If the SendChunk object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *SendChunkMutation) OldChunkSize(ctx context.Context) (v int64, err error) {
+func (m *SendChunkMutation) OldChunkSize(ctx context.Context) (v int, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldChunkSize is only allowed on UpdateOne operations")
 	}
@@ -2288,7 +2282,7 @@ func (m *SendChunkMutation) OldChunkSize(ctx context.Context) (v int64, err erro
 }
 
 // AddChunkSize adds i to the "chunk_size" field.
-func (m *SendChunkMutation) AddChunkSize(i int64) {
+func (m *SendChunkMutation) AddChunkSize(i int) {
 	if m.addchunk_size != nil {
 		*m.addchunk_size += i
 	} else {
@@ -2297,7 +2291,7 @@ func (m *SendChunkMutation) AddChunkSize(i int64) {
 }
 
 // AddedChunkSize returns the value that was added to the "chunk_size" field in this mutation.
-func (m *SendChunkMutation) AddedChunkSize() (r int64, exists bool) {
+func (m *SendChunkMutation) AddedChunkSize() (r int, exists bool) {
 	v := m.addchunk_size
 	if v == nil {
 		return
@@ -2611,7 +2605,7 @@ func (m *SendChunkMutation) SetField(name string, value ent.Value) error {
 		m.SetChunkOffset(v)
 		return nil
 	case sendchunk.FieldChunkSize:
-		v, ok := value.(int64)
+		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -2698,7 +2692,7 @@ func (m *SendChunkMutation) AddField(name string, value ent.Value) error {
 		m.AddChunkOffset(v)
 		return nil
 	case sendchunk.FieldChunkSize:
-		v, ok := value.(int64)
+		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -2843,8 +2837,9 @@ type SendFileMutation struct {
 	op                  Op
 	typ                 string
 	id                  *int
+	task_id             *string
+	task_name           *string
 	file_path           *string
-	file_name           *string
 	fid                 *string
 	file_size           *int64
 	addfile_size        *int64
@@ -2965,6 +2960,78 @@ func (m *SendFileMutation) IDs(ctx context.Context) ([]int, error) {
 	}
 }
 
+// SetTaskID sets the "task_id" field.
+func (m *SendFileMutation) SetTaskID(s string) {
+	m.task_id = &s
+}
+
+// TaskID returns the value of the "task_id" field in the mutation.
+func (m *SendFileMutation) TaskID() (r string, exists bool) {
+	v := m.task_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTaskID returns the old "task_id" field's value of the SendFile entity.
+// If the SendFile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SendFileMutation) OldTaskID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTaskID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTaskID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTaskID: %w", err)
+	}
+	return oldValue.TaskID, nil
+}
+
+// ResetTaskID resets all changes to the "task_id" field.
+func (m *SendFileMutation) ResetTaskID() {
+	m.task_id = nil
+}
+
+// SetTaskName sets the "task_name" field.
+func (m *SendFileMutation) SetTaskName(s string) {
+	m.task_name = &s
+}
+
+// TaskName returns the value of the "task_name" field in the mutation.
+func (m *SendFileMutation) TaskName() (r string, exists bool) {
+	v := m.task_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTaskName returns the old "task_name" field's value of the SendFile entity.
+// If the SendFile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SendFileMutation) OldTaskName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTaskName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTaskName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTaskName: %w", err)
+	}
+	return oldValue.TaskName, nil
+}
+
+// ResetTaskName resets all changes to the "task_name" field.
+func (m *SendFileMutation) ResetTaskName() {
+	m.task_name = nil
+}
+
 // SetFilePath sets the "file_path" field.
 func (m *SendFileMutation) SetFilePath(s string) {
 	m.file_path = &s
@@ -2982,7 +3049,7 @@ func (m *SendFileMutation) FilePath() (r string, exists bool) {
 // OldFilePath returns the old "file_path" field's value of the SendFile entity.
 // If the SendFile object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *SendFileMutation) OldFilePath(ctx context.Context) (v *string, err error) {
+func (m *SendFileMutation) OldFilePath(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldFilePath is only allowed on UpdateOne operations")
 	}
@@ -2996,71 +3063,9 @@ func (m *SendFileMutation) OldFilePath(ctx context.Context) (v *string, err erro
 	return oldValue.FilePath, nil
 }
 
-// ClearFilePath clears the value of the "file_path" field.
-func (m *SendFileMutation) ClearFilePath() {
-	m.file_path = nil
-	m.clearedFields[sendfile.FieldFilePath] = struct{}{}
-}
-
-// FilePathCleared returns if the "file_path" field was cleared in this mutation.
-func (m *SendFileMutation) FilePathCleared() bool {
-	_, ok := m.clearedFields[sendfile.FieldFilePath]
-	return ok
-}
-
 // ResetFilePath resets all changes to the "file_path" field.
 func (m *SendFileMutation) ResetFilePath() {
 	m.file_path = nil
-	delete(m.clearedFields, sendfile.FieldFilePath)
-}
-
-// SetFileName sets the "file_name" field.
-func (m *SendFileMutation) SetFileName(s string) {
-	m.file_name = &s
-}
-
-// FileName returns the value of the "file_name" field in the mutation.
-func (m *SendFileMutation) FileName() (r string, exists bool) {
-	v := m.file_name
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldFileName returns the old "file_name" field's value of the SendFile entity.
-// If the SendFile object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *SendFileMutation) OldFileName(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldFileName is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldFileName requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldFileName: %w", err)
-	}
-	return oldValue.FileName, nil
-}
-
-// ClearFileName clears the value of the "file_name" field.
-func (m *SendFileMutation) ClearFileName() {
-	m.file_name = nil
-	m.clearedFields[sendfile.FieldFileName] = struct{}{}
-}
-
-// FileNameCleared returns if the "file_name" field was cleared in this mutation.
-func (m *SendFileMutation) FileNameCleared() bool {
-	_, ok := m.clearedFields[sendfile.FieldFileName]
-	return ok
-}
-
-// ResetFileName resets all changes to the "file_name" field.
-func (m *SendFileMutation) ResetFileName() {
-	m.file_name = nil
-	delete(m.clearedFields, sendfile.FieldFileName)
 }
 
 // SetFid sets the "fid" field.
@@ -3555,12 +3560,15 @@ func (m *SendFileMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SendFileMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 12)
+	if m.task_id != nil {
+		fields = append(fields, sendfile.FieldTaskID)
+	}
+	if m.task_name != nil {
+		fields = append(fields, sendfile.FieldTaskName)
+	}
 	if m.file_path != nil {
 		fields = append(fields, sendfile.FieldFilePath)
-	}
-	if m.file_name != nil {
-		fields = append(fields, sendfile.FieldFileName)
 	}
 	if m.fid != nil {
 		fields = append(fields, sendfile.FieldFid)
@@ -3597,10 +3605,12 @@ func (m *SendFileMutation) Fields() []string {
 // schema.
 func (m *SendFileMutation) Field(name string) (ent.Value, bool) {
 	switch name {
+	case sendfile.FieldTaskID:
+		return m.TaskID()
+	case sendfile.FieldTaskName:
+		return m.TaskName()
 	case sendfile.FieldFilePath:
 		return m.FilePath()
-	case sendfile.FieldFileName:
-		return m.FileName()
 	case sendfile.FieldFid:
 		return m.Fid()
 	case sendfile.FieldFileSize:
@@ -3628,10 +3638,12 @@ func (m *SendFileMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *SendFileMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
+	case sendfile.FieldTaskID:
+		return m.OldTaskID(ctx)
+	case sendfile.FieldTaskName:
+		return m.OldTaskName(ctx)
 	case sendfile.FieldFilePath:
 		return m.OldFilePath(ctx)
-	case sendfile.FieldFileName:
-		return m.OldFileName(ctx)
 	case sendfile.FieldFid:
 		return m.OldFid(ctx)
 	case sendfile.FieldFileSize:
@@ -3659,19 +3671,26 @@ func (m *SendFileMutation) OldField(ctx context.Context, name string) (ent.Value
 // type.
 func (m *SendFileMutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case sendfile.FieldTaskID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTaskID(v)
+		return nil
+	case sendfile.FieldTaskName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTaskName(v)
+		return nil
 	case sendfile.FieldFilePath:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetFilePath(v)
-		return nil
-	case sendfile.FieldFileName:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetFileName(v)
 		return nil
 	case sendfile.FieldFid:
 		v, ok := value.(string)
@@ -3816,14 +3835,7 @@ func (m *SendFileMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *SendFileMutation) ClearedFields() []string {
-	var fields []string
-	if m.FieldCleared(sendfile.FieldFilePath) {
-		fields = append(fields, sendfile.FieldFilePath)
-	}
-	if m.FieldCleared(sendfile.FieldFileName) {
-		fields = append(fields, sendfile.FieldFileName)
-	}
-	return fields
+	return nil
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -3836,14 +3848,6 @@ func (m *SendFileMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *SendFileMutation) ClearField(name string) error {
-	switch name {
-	case sendfile.FieldFilePath:
-		m.ClearFilePath()
-		return nil
-	case sendfile.FieldFileName:
-		m.ClearFileName()
-		return nil
-	}
 	return fmt.Errorf("unknown SendFile nullable field %s", name)
 }
 
@@ -3851,11 +3855,14 @@ func (m *SendFileMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *SendFileMutation) ResetField(name string) error {
 	switch name {
+	case sendfile.FieldTaskID:
+		m.ResetTaskID()
+		return nil
+	case sendfile.FieldTaskName:
+		m.ResetTaskName()
+		return nil
 	case sendfile.FieldFilePath:
 		m.ResetFilePath()
-		return nil
-	case sendfile.FieldFileName:
-		m.ResetFileName()
 		return nil
 	case sendfile.FieldFid:
 		m.ResetFid()

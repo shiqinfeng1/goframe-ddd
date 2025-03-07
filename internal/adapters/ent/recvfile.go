@@ -17,12 +17,14 @@ type RecvFile struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
-	// FileName holds the value of the "file_name" field.
-	FileName *string `json:"file_name,omitempty"`
+	// TaskID holds the value of the "task_id" field.
+	TaskID string `json:"task_id,omitempty"`
+	// TaskName holds the value of the "task_name" field.
+	TaskName string `json:"task_name,omitempty"`
 	// FilePathSave holds the value of the "file_path_save" field.
-	FilePathSave *string `json:"file_path_save,omitempty"`
+	FilePathSave string `json:"file_path_save,omitempty"`
 	// FilePathOrigin holds the value of the "file_path_origin" field.
-	FilePathOrigin *string `json:"file_path_origin,omitempty"`
+	FilePathOrigin string `json:"file_path_origin,omitempty"`
 	// Fid holds the value of the "fid" field.
 	Fid string `json:"fid,omitempty"`
 	// FileSize holds the value of the "file_size" field.
@@ -68,7 +70,7 @@ func (*RecvFile) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case recvfile.FieldID, recvfile.FieldFileSize, recvfile.FieldChunkNumTotal, recvfile.FieldChunkNumRecved, recvfile.FieldStatus:
 			values[i] = new(sql.NullInt64)
-		case recvfile.FieldFileName, recvfile.FieldFilePathSave, recvfile.FieldFilePathOrigin, recvfile.FieldFid:
+		case recvfile.FieldTaskID, recvfile.FieldTaskName, recvfile.FieldFilePathSave, recvfile.FieldFilePathOrigin, recvfile.FieldFid:
 			values[i] = new(sql.NullString)
 		case recvfile.FieldUpdatedAt, recvfile.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -93,26 +95,29 @@ func (rf *RecvFile) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			rf.ID = int(value.Int64)
-		case recvfile.FieldFileName:
+		case recvfile.FieldTaskID:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field file_name", values[i])
+				return fmt.Errorf("unexpected type %T for field task_id", values[i])
 			} else if value.Valid {
-				rf.FileName = new(string)
-				*rf.FileName = value.String
+				rf.TaskID = value.String
+			}
+		case recvfile.FieldTaskName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field task_name", values[i])
+			} else if value.Valid {
+				rf.TaskName = value.String
 			}
 		case recvfile.FieldFilePathSave:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field file_path_save", values[i])
 			} else if value.Valid {
-				rf.FilePathSave = new(string)
-				*rf.FilePathSave = value.String
+				rf.FilePathSave = value.String
 			}
 		case recvfile.FieldFilePathOrigin:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field file_path_origin", values[i])
 			} else if value.Valid {
-				rf.FilePathOrigin = new(string)
-				*rf.FilePathOrigin = value.String
+				rf.FilePathOrigin = value.String
 			}
 		case recvfile.FieldFid:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -197,20 +202,17 @@ func (rf *RecvFile) String() string {
 	var builder strings.Builder
 	builder.WriteString("RecvFile(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", rf.ID))
-	if v := rf.FileName; v != nil {
-		builder.WriteString("file_name=")
-		builder.WriteString(*v)
-	}
+	builder.WriteString("task_id=")
+	builder.WriteString(rf.TaskID)
 	builder.WriteString(", ")
-	if v := rf.FilePathSave; v != nil {
-		builder.WriteString("file_path_save=")
-		builder.WriteString(*v)
-	}
+	builder.WriteString("task_name=")
+	builder.WriteString(rf.TaskName)
 	builder.WriteString(", ")
-	if v := rf.FilePathOrigin; v != nil {
-		builder.WriteString("file_path_origin=")
-		builder.WriteString(*v)
-	}
+	builder.WriteString("file_path_save=")
+	builder.WriteString(rf.FilePathSave)
+	builder.WriteString(", ")
+	builder.WriteString("file_path_origin=")
+	builder.WriteString(rf.FilePathOrigin)
 	builder.WriteString(", ")
 	builder.WriteString("fid=")
 	builder.WriteString(rf.Fid)

@@ -15,16 +15,19 @@ type FileTransferMgr struct {
 	mutex    sync.Mutex
 	cond     *sync.Cond
 	stream   StreamIntf
+	repo     Repository
 }
 
 // NewFileSendQueue 创建一个新的文件发送队列
-func NewFileTransferService(maxTasks int, stream StreamIntf) *FileTransferMgr {
+func NewFileTransferService(maxTasks int, stm StreamIntf, repo Repository) *FileTransferMgr {
 	q := &FileTransferMgr{
 		maxTasks: maxTasks,
 		tasks:    *gmap.NewStrAnyMap(true),
 		running:  0,
-		stream:   stream,
+		stream:   stm,
+		repo:     repo,
 	}
+
 	q.cond = sync.NewCond(&q.mutex)
 	q.start()
 	return q
@@ -34,7 +37,7 @@ func NewFileTransferService(maxTasks int, stream StreamIntf) *FileTransferMgr {
 func (q *FileTransferMgr) AddTask(ctx context.Context, id, name, nodeId string, paths []string) {
 	q.mutex.Lock()
 	defer q.mutex.Unlock()
-	task := NewTransferTask(ctx, id, name, nodeId, paths, q.stream)
+	task := NewTransferTask(ctx, id, name, nodeId, paths, q.stream, q.repo)
 	q.tasks.Set(id, task)
 }
 

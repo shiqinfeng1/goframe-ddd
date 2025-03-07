@@ -71,7 +71,7 @@ func ChunkOffset(v int64) predicate.SendChunk {
 }
 
 // ChunkSize applies equality check predicate on the "chunk_size" field. It's identical to ChunkSizeEQ.
-func ChunkSize(v int64) predicate.SendChunk {
+func ChunkSize(v int) predicate.SendChunk {
 	return predicate.SendChunk(sql.FieldEQ(FieldChunkSize, v))
 }
 
@@ -191,42 +191,42 @@ func ChunkOffsetLTE(v int64) predicate.SendChunk {
 }
 
 // ChunkSizeEQ applies the EQ predicate on the "chunk_size" field.
-func ChunkSizeEQ(v int64) predicate.SendChunk {
+func ChunkSizeEQ(v int) predicate.SendChunk {
 	return predicate.SendChunk(sql.FieldEQ(FieldChunkSize, v))
 }
 
 // ChunkSizeNEQ applies the NEQ predicate on the "chunk_size" field.
-func ChunkSizeNEQ(v int64) predicate.SendChunk {
+func ChunkSizeNEQ(v int) predicate.SendChunk {
 	return predicate.SendChunk(sql.FieldNEQ(FieldChunkSize, v))
 }
 
 // ChunkSizeIn applies the In predicate on the "chunk_size" field.
-func ChunkSizeIn(vs ...int64) predicate.SendChunk {
+func ChunkSizeIn(vs ...int) predicate.SendChunk {
 	return predicate.SendChunk(sql.FieldIn(FieldChunkSize, vs...))
 }
 
 // ChunkSizeNotIn applies the NotIn predicate on the "chunk_size" field.
-func ChunkSizeNotIn(vs ...int64) predicate.SendChunk {
+func ChunkSizeNotIn(vs ...int) predicate.SendChunk {
 	return predicate.SendChunk(sql.FieldNotIn(FieldChunkSize, vs...))
 }
 
 // ChunkSizeGT applies the GT predicate on the "chunk_size" field.
-func ChunkSizeGT(v int64) predicate.SendChunk {
+func ChunkSizeGT(v int) predicate.SendChunk {
 	return predicate.SendChunk(sql.FieldGT(FieldChunkSize, v))
 }
 
 // ChunkSizeGTE applies the GTE predicate on the "chunk_size" field.
-func ChunkSizeGTE(v int64) predicate.SendChunk {
+func ChunkSizeGTE(v int) predicate.SendChunk {
 	return predicate.SendChunk(sql.FieldGTE(FieldChunkSize, v))
 }
 
 // ChunkSizeLT applies the LT predicate on the "chunk_size" field.
-func ChunkSizeLT(v int64) predicate.SendChunk {
+func ChunkSizeLT(v int) predicate.SendChunk {
 	return predicate.SendChunk(sql.FieldLT(FieldChunkSize, v))
 }
 
 // ChunkSizeLTE applies the LTE predicate on the "chunk_size" field.
-func ChunkSizeLTE(v int64) predicate.SendChunk {
+func ChunkSizeLTE(v int) predicate.SendChunk {
 	return predicate.SendChunk(sql.FieldLTE(FieldChunkSize, v))
 }
 

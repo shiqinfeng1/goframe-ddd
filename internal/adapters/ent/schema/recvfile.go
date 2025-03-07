@@ -16,10 +16,11 @@ type RecvFile struct {
 // Fields of the RecvFile.
 func (RecvFile) Fields() []ent.Field {
 	return []ent.Field{
-		field.Text("file_name").Optional().Nillable(),
-		field.Text("file_path_save").Optional().Nillable(),
-		field.Text("file_path_origin").Optional().Nillable(),
-		field.String("fid").Unique(),
+		field.Text("task_id").NotEmpty(),
+		field.Text("task_name").NotEmpty(),
+		field.Text("file_path_save").NotEmpty(),
+		field.Text("file_path_origin").NotEmpty(),
+		field.String("fid").Unique(), // 标识文件的唯一id
 		field.Int64("file_size").Default(0),
 		field.Int("chunk_num_total").Default(0),
 		field.Int("chunk_num_recved").Default(0),

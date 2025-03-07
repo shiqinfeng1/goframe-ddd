@@ -55,9 +55,14 @@ func IDLTE(id int) predicate.RecvFile {
 	return predicate.RecvFile(sql.FieldLTE(FieldID, id))
 }
 
-// FileName applies equality check predicate on the "file_name" field. It's identical to FileNameEQ.
-func FileName(v string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldEQ(FieldFileName, v))
+// TaskID applies equality check predicate on the "task_id" field. It's identical to TaskIDEQ.
+func TaskID(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldEQ(FieldTaskID, v))
+}
+
+// TaskName applies equality check predicate on the "task_name" field. It's identical to TaskNameEQ.
+func TaskName(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldEQ(FieldTaskName, v))
 }
 
 // FilePathSave applies equality check predicate on the "file_path_save" field. It's identical to FilePathSaveEQ.
@@ -105,79 +110,134 @@ func CreatedAt(v time.Time) predicate.RecvFile {
 	return predicate.RecvFile(sql.FieldEQ(FieldCreatedAt, v))
 }
 
-// FileNameEQ applies the EQ predicate on the "file_name" field.
-func FileNameEQ(v string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldEQ(FieldFileName, v))
+// TaskIDEQ applies the EQ predicate on the "task_id" field.
+func TaskIDEQ(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldEQ(FieldTaskID, v))
 }
 
-// FileNameNEQ applies the NEQ predicate on the "file_name" field.
-func FileNameNEQ(v string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldNEQ(FieldFileName, v))
+// TaskIDNEQ applies the NEQ predicate on the "task_id" field.
+func TaskIDNEQ(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldNEQ(FieldTaskID, v))
 }
 
-// FileNameIn applies the In predicate on the "file_name" field.
-func FileNameIn(vs ...string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldIn(FieldFileName, vs...))
+// TaskIDIn applies the In predicate on the "task_id" field.
+func TaskIDIn(vs ...string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldIn(FieldTaskID, vs...))
 }
 
-// FileNameNotIn applies the NotIn predicate on the "file_name" field.
-func FileNameNotIn(vs ...string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldNotIn(FieldFileName, vs...))
+// TaskIDNotIn applies the NotIn predicate on the "task_id" field.
+func TaskIDNotIn(vs ...string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldNotIn(FieldTaskID, vs...))
 }
 
-// FileNameGT applies the GT predicate on the "file_name" field.
-func FileNameGT(v string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldGT(FieldFileName, v))
+// TaskIDGT applies the GT predicate on the "task_id" field.
+func TaskIDGT(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldGT(FieldTaskID, v))
 }
 
-// FileNameGTE applies the GTE predicate on the "file_name" field.
-func FileNameGTE(v string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldGTE(FieldFileName, v))
+// TaskIDGTE applies the GTE predicate on the "task_id" field.
+func TaskIDGTE(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldGTE(FieldTaskID, v))
 }
 
-// FileNameLT applies the LT predicate on the "file_name" field.
-func FileNameLT(v string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldLT(FieldFileName, v))
+// TaskIDLT applies the LT predicate on the "task_id" field.
+func TaskIDLT(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldLT(FieldTaskID, v))
 }
 
-// FileNameLTE applies the LTE predicate on the "file_name" field.
-func FileNameLTE(v string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldLTE(FieldFileName, v))
+// TaskIDLTE applies the LTE predicate on the "task_id" field.
+func TaskIDLTE(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldLTE(FieldTaskID, v))
 }
 
-// FileNameContains applies the Contains predicate on the "file_name" field.
-func FileNameContains(v string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldContains(FieldFileName, v))
+// TaskIDContains applies the Contains predicate on the "task_id" field.
+func TaskIDContains(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldContains(FieldTaskID, v))
 }
 
-// FileNameHasPrefix applies the HasPrefix predicate on the "file_name" field.
-func FileNameHasPrefix(v string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldHasPrefix(FieldFileName, v))
+// TaskIDHasPrefix applies the HasPrefix predicate on the "task_id" field.
+func TaskIDHasPrefix(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldHasPrefix(FieldTaskID, v))
 }
 
-// FileNameHasSuffix applies the HasSuffix predicate on the "file_name" field.
-func FileNameHasSuffix(v string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldHasSuffix(FieldFileName, v))
+// TaskIDHasSuffix applies the HasSuffix predicate on the "task_id" field.
+func TaskIDHasSuffix(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldHasSuffix(FieldTaskID, v))
 }
 
-// FileNameIsNil applies the IsNil predicate on the "file_name" field.
-func FileNameIsNil() predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldIsNull(FieldFileName))
+// TaskIDEqualFold applies the EqualFold predicate on the "task_id" field.
+func TaskIDEqualFold(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldEqualFold(FieldTaskID, v))
 }
 
-// FileNameNotNil applies the NotNil predicate on the "file_name" field.
-func FileNameNotNil() predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldNotNull(FieldFileName))
+// TaskIDContainsFold applies the ContainsFold predicate on the "task_id" field.
+func TaskIDContainsFold(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldContainsFold(FieldTaskID, v))
 }
 
-// FileNameEqualFold applies the EqualFold predicate on the "file_name" field.
-func FileNameEqualFold(v string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldEqualFold(FieldFileName, v))
+// TaskNameEQ applies the EQ predicate on the "task_name" field.
+func TaskNameEQ(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldEQ(FieldTaskName, v))
 }
 
-// FileNameContainsFold applies the ContainsFold predicate on the "file_name" field.
-func FileNameContainsFold(v string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldContainsFold(FieldFileName, v))
+// TaskNameNEQ applies the NEQ predicate on the "task_name" field.
+func TaskNameNEQ(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldNEQ(FieldTaskName, v))
+}
+
+// TaskNameIn applies the In predicate on the "task_name" field.
+func TaskNameIn(vs ...string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldIn(FieldTaskName, vs...))
+}
+
+// TaskNameNotIn applies the NotIn predicate on the "task_name" field.
+func TaskNameNotIn(vs ...string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldNotIn(FieldTaskName, vs...))
+}
+
+// TaskNameGT applies the GT predicate on the "task_name" field.
+func TaskNameGT(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldGT(FieldTaskName, v))
+}
+
+// TaskNameGTE applies the GTE predicate on the "task_name" field.
+func TaskNameGTE(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldGTE(FieldTaskName, v))
+}
+
+// TaskNameLT applies the LT predicate on the "task_name" field.
+func TaskNameLT(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldLT(FieldTaskName, v))
+}
+
+// TaskNameLTE applies the LTE predicate on the "task_name" field.
+func TaskNameLTE(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldLTE(FieldTaskName, v))
+}
+
+// TaskNameContains applies the Contains predicate on the "task_name" field.
+func TaskNameContains(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldContains(FieldTaskName, v))
+}
+
+// TaskNameHasPrefix applies the HasPrefix predicate on the "task_name" field.
+func TaskNameHasPrefix(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldHasPrefix(FieldTaskName, v))
+}
+
+// TaskNameHasSuffix applies the HasSuffix predicate on the "task_name" field.
+func TaskNameHasSuffix(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldHasSuffix(FieldTaskName, v))
+}
+
+// TaskNameEqualFold applies the EqualFold predicate on the "task_name" field.
+func TaskNameEqualFold(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldEqualFold(FieldTaskName, v))
+}
+
+// TaskNameContainsFold applies the ContainsFold predicate on the "task_name" field.
+func TaskNameContainsFold(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldContainsFold(FieldTaskName, v))
 }
 
 // FilePathSaveEQ applies the EQ predicate on the "file_path_save" field.
@@ -233,16 +293,6 @@ func FilePathSaveHasPrefix(v string) predicate.RecvFile {
 // FilePathSaveHasSuffix applies the HasSuffix predicate on the "file_path_save" field.
 func FilePathSaveHasSuffix(v string) predicate.RecvFile {
 	return predicate.RecvFile(sql.FieldHasSuffix(FieldFilePathSave, v))
-}
-
-// FilePathSaveIsNil applies the IsNil predicate on the "file_path_save" field.
-func FilePathSaveIsNil() predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldIsNull(FieldFilePathSave))
-}
-
-// FilePathSaveNotNil applies the NotNil predicate on the "file_path_save" field.
-func FilePathSaveNotNil() predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldNotNull(FieldFilePathSave))
 }
 
 // FilePathSaveEqualFold applies the EqualFold predicate on the "file_path_save" field.
@@ -308,16 +358,6 @@ func FilePathOriginHasPrefix(v string) predicate.RecvFile {
 // FilePathOriginHasSuffix applies the HasSuffix predicate on the "file_path_origin" field.
 func FilePathOriginHasSuffix(v string) predicate.RecvFile {
 	return predicate.RecvFile(sql.FieldHasSuffix(FieldFilePathOrigin, v))
-}
-
-// FilePathOriginIsNil applies the IsNil predicate on the "file_path_origin" field.
-func FilePathOriginIsNil() predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldIsNull(FieldFilePathOrigin))
-}
-
-// FilePathOriginNotNil applies the NotNil predicate on the "file_path_origin" field.
-func FilePathOriginNotNil() predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldNotNull(FieldFilePathOrigin))
 }
 
 // FilePathOriginEqualFold applies the EqualFold predicate on the "file_path_origin" field.

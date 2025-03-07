@@ -29,23 +29,31 @@ func (rfu *RecvFileUpdate) Where(ps ...predicate.RecvFile) *RecvFileUpdate {
 	return rfu
 }
 
-// SetFileName sets the "file_name" field.
-func (rfu *RecvFileUpdate) SetFileName(s string) *RecvFileUpdate {
-	rfu.mutation.SetFileName(s)
+// SetTaskID sets the "task_id" field.
+func (rfu *RecvFileUpdate) SetTaskID(s string) *RecvFileUpdate {
+	rfu.mutation.SetTaskID(s)
 	return rfu
 }
 
-// SetNillableFileName sets the "file_name" field if the given value is not nil.
-func (rfu *RecvFileUpdate) SetNillableFileName(s *string) *RecvFileUpdate {
+// SetNillableTaskID sets the "task_id" field if the given value is not nil.
+func (rfu *RecvFileUpdate) SetNillableTaskID(s *string) *RecvFileUpdate {
 	if s != nil {
-		rfu.SetFileName(*s)
+		rfu.SetTaskID(*s)
 	}
 	return rfu
 }
 
-// ClearFileName clears the value of the "file_name" field.
-func (rfu *RecvFileUpdate) ClearFileName() *RecvFileUpdate {
-	rfu.mutation.ClearFileName()
+// SetTaskName sets the "task_name" field.
+func (rfu *RecvFileUpdate) SetTaskName(s string) *RecvFileUpdate {
+	rfu.mutation.SetTaskName(s)
+	return rfu
+}
+
+// SetNillableTaskName sets the "task_name" field if the given value is not nil.
+func (rfu *RecvFileUpdate) SetNillableTaskName(s *string) *RecvFileUpdate {
+	if s != nil {
+		rfu.SetTaskName(*s)
+	}
 	return rfu
 }
 
@@ -63,12 +71,6 @@ func (rfu *RecvFileUpdate) SetNillableFilePathSave(s *string) *RecvFileUpdate {
 	return rfu
 }
 
-// ClearFilePathSave clears the value of the "file_path_save" field.
-func (rfu *RecvFileUpdate) ClearFilePathSave() *RecvFileUpdate {
-	rfu.mutation.ClearFilePathSave()
-	return rfu
-}
-
 // SetFilePathOrigin sets the "file_path_origin" field.
 func (rfu *RecvFileUpdate) SetFilePathOrigin(s string) *RecvFileUpdate {
 	rfu.mutation.SetFilePathOrigin(s)
@@ -80,12 +82,6 @@ func (rfu *RecvFileUpdate) SetNillableFilePathOrigin(s *string) *RecvFileUpdate 
 	if s != nil {
 		rfu.SetFilePathOrigin(*s)
 	}
-	return rfu
-}
-
-// ClearFilePathOrigin clears the value of the "file_path_origin" field.
-func (rfu *RecvFileUpdate) ClearFilePathOrigin() *RecvFileUpdate {
-	rfu.mutation.ClearFilePathOrigin()
 	return rfu
 }
 
@@ -270,7 +266,35 @@ func (rfu *RecvFileUpdate) defaults() {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (rfu *RecvFileUpdate) check() error {
+	if v, ok := rfu.mutation.TaskID(); ok {
+		if err := recvfile.TaskIDValidator(v); err != nil {
+			return &ValidationError{Name: "task_id", err: fmt.Errorf(`ent: validator failed for field "RecvFile.task_id": %w`, err)}
+		}
+	}
+	if v, ok := rfu.mutation.TaskName(); ok {
+		if err := recvfile.TaskNameValidator(v); err != nil {
+			return &ValidationError{Name: "task_name", err: fmt.Errorf(`ent: validator failed for field "RecvFile.task_name": %w`, err)}
+		}
+	}
+	if v, ok := rfu.mutation.FilePathSave(); ok {
+		if err := recvfile.FilePathSaveValidator(v); err != nil {
+			return &ValidationError{Name: "file_path_save", err: fmt.Errorf(`ent: validator failed for field "RecvFile.file_path_save": %w`, err)}
+		}
+	}
+	if v, ok := rfu.mutation.FilePathOrigin(); ok {
+		if err := recvfile.FilePathOriginValidator(v); err != nil {
+			return &ValidationError{Name: "file_path_origin", err: fmt.Errorf(`ent: validator failed for field "RecvFile.file_path_origin": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (rfu *RecvFileUpdate) sqlSave(ctx context.Context) (n int, err error) {
+	if err := rfu.check(); err != nil {
+		return n, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(recvfile.Table, recvfile.Columns, sqlgraph.NewFieldSpec(recvfile.FieldID, field.TypeInt))
 	if ps := rfu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -279,23 +303,17 @@ func (rfu *RecvFileUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := rfu.mutation.FileName(); ok {
-		_spec.SetField(recvfile.FieldFileName, field.TypeString, value)
+	if value, ok := rfu.mutation.TaskID(); ok {
+		_spec.SetField(recvfile.FieldTaskID, field.TypeString, value)
 	}
-	if rfu.mutation.FileNameCleared() {
-		_spec.ClearField(recvfile.FieldFileName, field.TypeString)
+	if value, ok := rfu.mutation.TaskName(); ok {
+		_spec.SetField(recvfile.FieldTaskName, field.TypeString, value)
 	}
 	if value, ok := rfu.mutation.FilePathSave(); ok {
 		_spec.SetField(recvfile.FieldFilePathSave, field.TypeString, value)
 	}
-	if rfu.mutation.FilePathSaveCleared() {
-		_spec.ClearField(recvfile.FieldFilePathSave, field.TypeString)
-	}
 	if value, ok := rfu.mutation.FilePathOrigin(); ok {
 		_spec.SetField(recvfile.FieldFilePathOrigin, field.TypeString, value)
-	}
-	if rfu.mutation.FilePathOriginCleared() {
-		_spec.ClearField(recvfile.FieldFilePathOrigin, field.TypeString)
 	}
 	if value, ok := rfu.mutation.Fid(); ok {
 		_spec.SetField(recvfile.FieldFid, field.TypeString, value)
@@ -392,23 +410,31 @@ type RecvFileUpdateOne struct {
 	mutation *RecvFileMutation
 }
 
-// SetFileName sets the "file_name" field.
-func (rfuo *RecvFileUpdateOne) SetFileName(s string) *RecvFileUpdateOne {
-	rfuo.mutation.SetFileName(s)
+// SetTaskID sets the "task_id" field.
+func (rfuo *RecvFileUpdateOne) SetTaskID(s string) *RecvFileUpdateOne {
+	rfuo.mutation.SetTaskID(s)
 	return rfuo
 }
 
-// SetNillableFileName sets the "file_name" field if the given value is not nil.
-func (rfuo *RecvFileUpdateOne) SetNillableFileName(s *string) *RecvFileUpdateOne {
+// SetNillableTaskID sets the "task_id" field if the given value is not nil.
+func (rfuo *RecvFileUpdateOne) SetNillableTaskID(s *string) *RecvFileUpdateOne {
 	if s != nil {
-		rfuo.SetFileName(*s)
+		rfuo.SetTaskID(*s)
 	}
 	return rfuo
 }
 
-// ClearFileName clears the value of the "file_name" field.
-func (rfuo *RecvFileUpdateOne) ClearFileName() *RecvFileUpdateOne {
-	rfuo.mutation.ClearFileName()
+// SetTaskName sets the "task_name" field.
+func (rfuo *RecvFileUpdateOne) SetTaskName(s string) *RecvFileUpdateOne {
+	rfuo.mutation.SetTaskName(s)
+	return rfuo
+}
+
+// SetNillableTaskName sets the "task_name" field if the given value is not nil.
+func (rfuo *RecvFileUpdateOne) SetNillableTaskName(s *string) *RecvFileUpdateOne {
+	if s != nil {
+		rfuo.SetTaskName(*s)
+	}
 	return rfuo
 }
 
@@ -426,12 +452,6 @@ func (rfuo *RecvFileUpdateOne) SetNillableFilePathSave(s *string) *RecvFileUpdat
 	return rfuo
 }
 
-// ClearFilePathSave clears the value of the "file_path_save" field.
-func (rfuo *RecvFileUpdateOne) ClearFilePathSave() *RecvFileUpdateOne {
-	rfuo.mutation.ClearFilePathSave()
-	return rfuo
-}
-
 // SetFilePathOrigin sets the "file_path_origin" field.
 func (rfuo *RecvFileUpdateOne) SetFilePathOrigin(s string) *RecvFileUpdateOne {
 	rfuo.mutation.SetFilePathOrigin(s)
@@ -443,12 +463,6 @@ func (rfuo *RecvFileUpdateOne) SetNillableFilePathOrigin(s *string) *RecvFileUpd
 	if s != nil {
 		rfuo.SetFilePathOrigin(*s)
 	}
-	return rfuo
-}
-
-// ClearFilePathOrigin clears the value of the "file_path_origin" field.
-func (rfuo *RecvFileUpdateOne) ClearFilePathOrigin() *RecvFileUpdateOne {
-	rfuo.mutation.ClearFilePathOrigin()
 	return rfuo
 }
 
@@ -646,7 +660,35 @@ func (rfuo *RecvFileUpdateOne) defaults() {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (rfuo *RecvFileUpdateOne) check() error {
+	if v, ok := rfuo.mutation.TaskID(); ok {
+		if err := recvfile.TaskIDValidator(v); err != nil {
+			return &ValidationError{Name: "task_id", err: fmt.Errorf(`ent: validator failed for field "RecvFile.task_id": %w`, err)}
+		}
+	}
+	if v, ok := rfuo.mutation.TaskName(); ok {
+		if err := recvfile.TaskNameValidator(v); err != nil {
+			return &ValidationError{Name: "task_name", err: fmt.Errorf(`ent: validator failed for field "RecvFile.task_name": %w`, err)}
+		}
+	}
+	if v, ok := rfuo.mutation.FilePathSave(); ok {
+		if err := recvfile.FilePathSaveValidator(v); err != nil {
+			return &ValidationError{Name: "file_path_save", err: fmt.Errorf(`ent: validator failed for field "RecvFile.file_path_save": %w`, err)}
+		}
+	}
+	if v, ok := rfuo.mutation.FilePathOrigin(); ok {
+		if err := recvfile.FilePathOriginValidator(v); err != nil {
+			return &ValidationError{Name: "file_path_origin", err: fmt.Errorf(`ent: validator failed for field "RecvFile.file_path_origin": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (rfuo *RecvFileUpdateOne) sqlSave(ctx context.Context) (_node *RecvFile, err error) {
+	if err := rfuo.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(recvfile.Table, recvfile.Columns, sqlgraph.NewFieldSpec(recvfile.FieldID, field.TypeInt))
 	id, ok := rfuo.mutation.ID()
 	if !ok {
@@ -672,23 +714,17 @@ func (rfuo *RecvFileUpdateOne) sqlSave(ctx context.Context) (_node *RecvFile, er
 			}
 		}
 	}
-	if value, ok := rfuo.mutation.FileName(); ok {
-		_spec.SetField(recvfile.FieldFileName, field.TypeString, value)
+	if value, ok := rfuo.mutation.TaskID(); ok {
+		_spec.SetField(recvfile.FieldTaskID, field.TypeString, value)
 	}
-	if rfuo.mutation.FileNameCleared() {
-		_spec.ClearField(recvfile.FieldFileName, field.TypeString)
+	if value, ok := rfuo.mutation.TaskName(); ok {
+		_spec.SetField(recvfile.FieldTaskName, field.TypeString, value)
 	}
 	if value, ok := rfuo.mutation.FilePathSave(); ok {
 		_spec.SetField(recvfile.FieldFilePathSave, field.TypeString, value)
 	}
-	if rfuo.mutation.FilePathSaveCleared() {
-		_spec.ClearField(recvfile.FieldFilePathSave, field.TypeString)
-	}
 	if value, ok := rfuo.mutation.FilePathOrigin(); ok {
 		_spec.SetField(recvfile.FieldFilePathOrigin, field.TypeString, value)
-	}
-	if rfuo.mutation.FilePathOriginCleared() {
-		_spec.ClearField(recvfile.FieldFilePathOrigin, field.TypeString)
 	}
 	if value, ok := rfuo.mutation.Fid(); ok {
 		_spec.SetField(recvfile.FieldFid, field.TypeString, value)

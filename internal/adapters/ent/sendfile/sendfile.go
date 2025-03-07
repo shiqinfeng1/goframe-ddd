@@ -14,10 +14,12 @@ const (
 	Label = "send_file"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldTaskID holds the string denoting the task_id field in the database.
+	FieldTaskID = "task_id"
+	// FieldTaskName holds the string denoting the task_name field in the database.
+	FieldTaskName = "task_name"
 	// FieldFilePath holds the string denoting the file_path field in the database.
 	FieldFilePath = "file_path"
-	// FieldFileName holds the string denoting the file_name field in the database.
-	FieldFileName = "file_name"
 	// FieldFid holds the string denoting the fid field in the database.
 	FieldFid = "fid"
 	// FieldFileSize holds the string denoting the file_size field in the database.
@@ -52,8 +54,9 @@ const (
 // Columns holds all SQL columns for sendfile fields.
 var Columns = []string{
 	FieldID,
+	FieldTaskID,
+	FieldTaskName,
 	FieldFilePath,
-	FieldFileName,
 	FieldFid,
 	FieldFileSize,
 	FieldChunkNumTotal,
@@ -76,6 +79,14 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// TaskIDValidator is a validator for the "task_id" field. It is called by the builders before save.
+	TaskIDValidator func(string) error
+	// TaskNameValidator is a validator for the "task_name" field. It is called by the builders before save.
+	TaskNameValidator func(string) error
+	// FilePathValidator is a validator for the "file_path" field. It is called by the builders before save.
+	FilePathValidator func(string) error
+	// FidValidator is a validator for the "fid" field. It is called by the builders before save.
+	FidValidator func(string) error
 	// DefaultFileSize holds the default value on creation for the "file_size" field.
 	DefaultFileSize int64
 	// DefaultChunkNumTotal holds the default value on creation for the "chunk_num_total" field.
@@ -108,14 +119,19 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
+// ByTaskID orders the results by the task_id field.
+func ByTaskID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTaskID, opts...).ToFunc()
+}
+
+// ByTaskName orders the results by the task_name field.
+func ByTaskName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTaskName, opts...).ToFunc()
+}
+
 // ByFilePath orders the results by the file_path field.
 func ByFilePath(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldFilePath, opts...).ToFunc()
-}
-
-// ByFileName orders the results by the file_name field.
-func ByFileName(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldFileName, opts...).ToFunc()
 }
 
 // ByFid orders the results by the fid field.
