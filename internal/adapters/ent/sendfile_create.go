@@ -39,9 +39,9 @@ func (sfc *SendFileCreate) SetFilePath(s string) *SendFileCreate {
 	return sfc
 }
 
-// SetFid sets the "fid" field.
-func (sfc *SendFileCreate) SetFid(s string) *SendFileCreate {
-	sfc.mutation.SetFid(s)
+// SetFileID sets the "file_id" field.
+func (sfc *SendFileCreate) SetFileID(s string) *SendFileCreate {
+	sfc.mutation.SetFileID(s)
 	return sfc
 }
 
@@ -51,25 +51,9 @@ func (sfc *SendFileCreate) SetFileSize(i int64) *SendFileCreate {
 	return sfc
 }
 
-// SetNillableFileSize sets the "file_size" field if the given value is not nil.
-func (sfc *SendFileCreate) SetNillableFileSize(i *int64) *SendFileCreate {
-	if i != nil {
-		sfc.SetFileSize(*i)
-	}
-	return sfc
-}
-
 // SetChunkNumTotal sets the "chunk_num_total" field.
 func (sfc *SendFileCreate) SetChunkNumTotal(i int) *SendFileCreate {
 	sfc.mutation.SetChunkNumTotal(i)
-	return sfc
-}
-
-// SetNillableChunkNumTotal sets the "chunk_num_total" field if the given value is not nil.
-func (sfc *SendFileCreate) SetNillableChunkNumTotal(i *int) *SendFileCreate {
-	if i != nil {
-		sfc.SetChunkNumTotal(*i)
-	}
 	return sfc
 }
 
@@ -207,14 +191,6 @@ func (sfc *SendFileCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (sfc *SendFileCreate) defaults() {
-	if _, ok := sfc.mutation.FileSize(); !ok {
-		v := sendfile.DefaultFileSize
-		sfc.mutation.SetFileSize(v)
-	}
-	if _, ok := sfc.mutation.ChunkNumTotal(); !ok {
-		v := sendfile.DefaultChunkNumTotal
-		sfc.mutation.SetChunkNumTotal(v)
-	}
 	if _, ok := sfc.mutation.ChunkNumSended(); !ok {
 		v := sendfile.DefaultChunkNumSended
 		sfc.mutation.SetChunkNumSended(v)
@@ -267,19 +243,29 @@ func (sfc *SendFileCreate) check() error {
 			return &ValidationError{Name: "file_path", err: fmt.Errorf(`ent: validator failed for field "SendFile.file_path": %w`, err)}
 		}
 	}
-	if _, ok := sfc.mutation.Fid(); !ok {
-		return &ValidationError{Name: "fid", err: errors.New(`ent: missing required field "SendFile.fid"`)}
+	if _, ok := sfc.mutation.FileID(); !ok {
+		return &ValidationError{Name: "file_id", err: errors.New(`ent: missing required field "SendFile.file_id"`)}
 	}
-	if v, ok := sfc.mutation.Fid(); ok {
-		if err := sendfile.FidValidator(v); err != nil {
-			return &ValidationError{Name: "fid", err: fmt.Errorf(`ent: validator failed for field "SendFile.fid": %w`, err)}
+	if v, ok := sfc.mutation.FileID(); ok {
+		if err := sendfile.FileIDValidator(v); err != nil {
+			return &ValidationError{Name: "file_id", err: fmt.Errorf(`ent: validator failed for field "SendFile.file_id": %w`, err)}
 		}
 	}
 	if _, ok := sfc.mutation.FileSize(); !ok {
 		return &ValidationError{Name: "file_size", err: errors.New(`ent: missing required field "SendFile.file_size"`)}
 	}
+	if v, ok := sfc.mutation.FileSize(); ok {
+		if err := sendfile.FileSizeValidator(v); err != nil {
+			return &ValidationError{Name: "file_size", err: fmt.Errorf(`ent: validator failed for field "SendFile.file_size": %w`, err)}
+		}
+	}
 	if _, ok := sfc.mutation.ChunkNumTotal(); !ok {
 		return &ValidationError{Name: "chunk_num_total", err: errors.New(`ent: missing required field "SendFile.chunk_num_total"`)}
+	}
+	if v, ok := sfc.mutation.ChunkNumTotal(); ok {
+		if err := sendfile.ChunkNumTotalValidator(v); err != nil {
+			return &ValidationError{Name: "chunk_num_total", err: fmt.Errorf(`ent: validator failed for field "SendFile.chunk_num_total": %w`, err)}
+		}
 	}
 	if _, ok := sfc.mutation.ChunkNumSended(); !ok {
 		return &ValidationError{Name: "chunk_num_sended", err: errors.New(`ent: missing required field "SendFile.chunk_num_sended"`)}
@@ -347,9 +333,9 @@ func (sfc *SendFileCreate) createSpec() (*SendFile, *sqlgraph.CreateSpec) {
 		_spec.SetField(sendfile.FieldFilePath, field.TypeString, value)
 		_node.FilePath = value
 	}
-	if value, ok := sfc.mutation.Fid(); ok {
-		_spec.SetField(sendfile.FieldFid, field.TypeString, value)
-		_node.Fid = value
+	if value, ok := sfc.mutation.FileID(); ok {
+		_spec.SetField(sendfile.FieldFileID, field.TypeString, value)
+		_node.FileID = value
 	}
 	if value, ok := sfc.mutation.FileSize(); ok {
 		_spec.SetField(sendfile.FieldFileSize, field.TypeInt64, value)

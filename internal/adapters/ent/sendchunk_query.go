@@ -298,12 +298,12 @@ func (scq *SendChunkQuery) WithSendFile(opts ...func(*SendFileQuery)) *SendChunk
 // Example:
 //
 //	var v []struct {
-//		FileID int `json:"file_id,omitempty"`
+//		SendfileID int `json:"sendfile_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.SendChunk.Query().
-//		GroupBy(sendchunk.FieldFileID).
+//		GroupBy(sendchunk.FieldSendfileID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (scq *SendChunkQuery) GroupBy(field string, fields ...string) *SendChunkGroupBy {
@@ -321,11 +321,11 @@ func (scq *SendChunkQuery) GroupBy(field string, fields ...string) *SendChunkGro
 // Example:
 //
 //	var v []struct {
-//		FileID int `json:"file_id,omitempty"`
+//		SendfileID int `json:"sendfile_id,omitempty"`
 //	}
 //
 //	client.SendChunk.Query().
-//		Select(sendchunk.FieldFileID).
+//		Select(sendchunk.FieldSendfileID).
 //		Scan(ctx, &v)
 func (scq *SendChunkQuery) Select(fields ...string) *SendChunkSelect {
 	scq.ctx.Fields = append(scq.ctx.Fields, fields...)
@@ -405,7 +405,7 @@ func (scq *SendChunkQuery) loadSendFile(ctx context.Context, query *SendFileQuer
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*SendChunk)
 	for i := range nodes {
-		fk := nodes[i].FileID
+		fk := nodes[i].SendfileID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -422,7 +422,7 @@ func (scq *SendChunkQuery) loadSendFile(ctx context.Context, query *SendFileQuer
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "file_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "sendfile_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -457,7 +457,7 @@ func (scq *SendChunkQuery) querySpec() *sqlgraph.QuerySpec {
 			}
 		}
 		if scq.withSendFile != nil {
-			_spec.Node.AddColumnOnce(sendchunk.FieldFileID)
+			_spec.Node.AddColumnOnce(sendchunk.FieldSendfileID)
 		}
 	}
 	if ps := scq.predicates; len(ps) > 0 {

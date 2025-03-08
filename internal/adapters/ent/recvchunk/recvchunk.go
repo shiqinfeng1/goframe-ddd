@@ -14,16 +14,14 @@ const (
 	Label = "recv_chunk"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldFileID holds the string denoting the file_id field in the database.
-	FieldFileID = "file_id"
+	// FieldRecvfileID holds the string denoting the recvfile_id field in the database.
+	FieldRecvfileID = "recvfile_id"
 	// FieldChunkIndex holds the string denoting the chunk_index field in the database.
 	FieldChunkIndex = "chunk_index"
 	// FieldChunkOffset holds the string denoting the chunk_offset field in the database.
 	FieldChunkOffset = "chunk_offset"
 	// FieldChunkSize holds the string denoting the chunk_size field in the database.
 	FieldChunkSize = "chunk_size"
-	// FieldStatus holds the string denoting the status field in the database.
-	FieldStatus = "status"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -38,17 +36,16 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "recvfile" package.
 	RecvFileInverseTable = "recv_files"
 	// RecvFileColumn is the table column denoting the recv_file relation/edge.
-	RecvFileColumn = "file_id"
+	RecvFileColumn = "recvfile_id"
 )
 
 // Columns holds all SQL columns for recvchunk fields.
 var Columns = []string{
 	FieldID,
-	FieldFileID,
+	FieldRecvfileID,
 	FieldChunkIndex,
 	FieldChunkOffset,
 	FieldChunkSize,
-	FieldStatus,
 	FieldUpdatedAt,
 	FieldCreatedAt,
 }
@@ -70,8 +67,6 @@ var (
 	DefaultChunkOffset int64
 	// DefaultChunkSize holds the default value on creation for the "chunk_size" field.
 	DefaultChunkSize int
-	// DefaultStatus holds the default value on creation for the "status" field.
-	DefaultStatus int
 	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
@@ -88,9 +83,9 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
-// ByFileID orders the results by the file_id field.
-func ByFileID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldFileID, opts...).ToFunc()
+// ByRecvfileID orders the results by the recvfile_id field.
+func ByRecvfileID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRecvfileID, opts...).ToFunc()
 }
 
 // ByChunkIndex orders the results by the chunk_index field.
@@ -106,11 +101,6 @@ func ByChunkOffset(opts ...sql.OrderTermOption) OrderOption {
 // ByChunkSize orders the results by the chunk_size field.
 func ByChunkSize(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldChunkSize, opts...).ToFunc()
-}
-
-// ByStatus orders the results by the status field.
-func ByStatus(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldStatus, opts...).ToFunc()
 }
 
 // ByUpdatedAt orders the results by the updated_at field.

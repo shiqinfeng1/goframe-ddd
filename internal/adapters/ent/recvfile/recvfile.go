@@ -22,8 +22,8 @@ const (
 	FieldFilePathSave = "file_path_save"
 	// FieldFilePathOrigin holds the string denoting the file_path_origin field in the database.
 	FieldFilePathOrigin = "file_path_origin"
-	// FieldFid holds the string denoting the fid field in the database.
-	FieldFid = "fid"
+	// FieldFileID holds the string denoting the file_id field in the database.
+	FieldFileID = "file_id"
 	// FieldFileSize holds the string denoting the file_size field in the database.
 	FieldFileSize = "file_size"
 	// FieldChunkNumTotal holds the string denoting the chunk_num_total field in the database.
@@ -46,7 +46,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "recvchunk" package.
 	RecvChunksInverseTable = "recv_chunks"
 	// RecvChunksColumn is the table column denoting the recv_chunks relation/edge.
-	RecvChunksColumn = "file_id"
+	RecvChunksColumn = "recvfile_id"
 )
 
 // Columns holds all SQL columns for recvfile fields.
@@ -56,7 +56,7 @@ var Columns = []string{
 	FieldTaskName,
 	FieldFilePathSave,
 	FieldFilePathOrigin,
-	FieldFid,
+	FieldFileID,
 	FieldFileSize,
 	FieldChunkNumTotal,
 	FieldChunkNumRecved,
@@ -84,10 +84,12 @@ var (
 	FilePathSaveValidator func(string) error
 	// FilePathOriginValidator is a validator for the "file_path_origin" field. It is called by the builders before save.
 	FilePathOriginValidator func(string) error
-	// DefaultFileSize holds the default value on creation for the "file_size" field.
-	DefaultFileSize int64
-	// DefaultChunkNumTotal holds the default value on creation for the "chunk_num_total" field.
-	DefaultChunkNumTotal int
+	// FileIDValidator is a validator for the "file_id" field. It is called by the builders before save.
+	FileIDValidator func(string) error
+	// FileSizeValidator is a validator for the "file_size" field. It is called by the builders before save.
+	FileSizeValidator func(int64) error
+	// ChunkNumTotalValidator is a validator for the "chunk_num_total" field. It is called by the builders before save.
+	ChunkNumTotalValidator func(int) error
 	// DefaultChunkNumRecved holds the default value on creation for the "chunk_num_recved" field.
 	DefaultChunkNumRecved int
 	// DefaultStatus holds the default value on creation for the "status" field.
@@ -128,9 +130,9 @@ func ByFilePathOrigin(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldFilePathOrigin, opts...).ToFunc()
 }
 
-// ByFid orders the results by the fid field.
-func ByFid(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldFid, opts...).ToFunc()
+// ByFileID orders the results by the file_id field.
+func ByFileID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFileID, opts...).ToFunc()
 }
 
 // ByFileSize orders the results by the file_size field.

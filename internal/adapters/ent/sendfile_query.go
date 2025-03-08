@@ -414,7 +414,7 @@ func (sfq *SendFileQuery) loadSendChunks(ctx context.Context, query *SendChunkQu
 		}
 	}
 	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(sendchunk.FieldFileID)
+		query.ctx.AppendFieldOnce(sendchunk.FieldSendfileID)
 	}
 	query.Where(predicate.SendChunk(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(sendfile.SendChunksColumn), fks...))
@@ -424,10 +424,10 @@ func (sfq *SendFileQuery) loadSendChunks(ctx context.Context, query *SendChunkQu
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.FileID
+		fk := n.SendfileID
 		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "file_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "sendfile_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gfile"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/cache"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/utils"
 )
 
@@ -16,29 +17,6 @@ var recvedPath = ""
 func init() {
 	home, _ := gfile.Home()
 	recvedPath = filepath.Join(home, "Downloads")
-}
-
-type fileChunk struct {
-	fileId     string
-	offset     uint64
-	data       []byte
-	chunkIndex uint32
-	md5        string
-}
-
-type fileChunkHeaderReq struct {
-	Magic       string // len=4
-	FileId      string // len=20
-	ChunkIdx    uint32 // len=4
-	ChunkOffset uint64 // len=8
-	ChunkSize   uint64 // len=8
-	Md5         string // len=32
-}
-type fileChunkHeaderResp struct {
-	Magic    string // len=4
-	FileId   string // len=20
-	ChunkIdx uint32 // len=4
-	Status   uint32 // len=4
 }
 
 func fileInfoMsgToBytes(_ context.Context, body []byte) []byte {
@@ -99,7 +77,7 @@ func recvSendFile(ctx context.Context, body []byte, repo Repository) []byte {
 		TaskName:       sendFile.TaskName,
 		FilePathSave:   path,
 		FilePathOrigin: oldpath,
-		Fid:            sendFile.Fid,
+		FileId:         sendFile.FileId,
 		FileSize:       sendFile.FileSize,
 		ChunkNumTotal:  sendFile.ChunkNumTotal,
 		ChunkNumRecved: 0,
@@ -114,25 +92,41 @@ func recvSendFile(ctx context.Context, body []byte, repo Repository) []byte {
 }
 
 func recvSendFileChunk(ctx context.Context, body []byte, repo Repository) []byte {
-	var sendChunk SendChunk
-	if err := json.Unmarshal(body, &sendChunk); err != nil {
+	var sc SendChunk
+	if err := json.Unmarshal(body, &sc); err != nil {
 		g.Log().Errorf(ctx, "recv sendChunk fail:%v", err)
 		return fileChunkAckToBytes(ctx, []byte("unmarshal fail"))
 	}
 	// 除去sendchunk结构占用的字节，后面就是文件块数据
-	chunkBytes := body[len(body)-sendChunk.ChunkSize:]
+	chunkBytes := body[len(body)-sc.ChunkSize:]
 
-	err := repo.UpdateRecvChunk(ctx, &RecvChunk{
-		FileID:      0,
-		ChunkIndex:  sendChunk.ChunkIndex,
-		ChunkOffset: sendChunk.ChunkOffset,
-		ChunkSize:   sendChunk.ChunkSize,
-		Status:      0,
-	})
+	// 为每个收到的文件块创建一个fileSaver实例
+	// 从缓存中取出文件块持久化管理服务， 如果是首次存储，将先实例化一个文件接收器：NewFileSave
+	fs, err := NewFileSave(ctx, cache.Memory(), sc.TaskID, sc.FileID, repo)
 	if err != nil {
 		g.Log().Errorf(ctx, "save recvfile fail:%v", err)
 		return fileChunkAckToBytes(ctx, []byte("save error"))
 	}
 
-	return fileChunkAckToBytes(ctx, []byte(path))
+	fs.SaveChunk(&fileChunk{
+		taskId:     sc.TaskID,
+		fileId:     sc.FileID,
+		offset:     sc.ChunkOffset,
+		data:       chunkBytes,
+		chunkIndex: uint32(sc.ChunkIndex),
+		md5:        "",
+	})
+
+	if err := repo.UpdateRecvChunk(ctx, &RecvChunk{
+		TaskID:      sc.TaskID,
+		FileID:      sc.FileID,
+		ChunkIndex:  sc.ChunkIndex,
+		ChunkOffset: sc.ChunkOffset,
+		ChunkSize:   sc.ChunkSize,
+	}); err != nil {
+		g.Log().Errorf(ctx, "save recvfile fail:%v", err)
+		return fileChunkAckToBytes(ctx, []byte("save error"))
+	}
+
+	return fileChunkAckToBytes(ctx, []byte(sc.FileID))
 }

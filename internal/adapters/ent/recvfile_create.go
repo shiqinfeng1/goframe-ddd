@@ -45,9 +45,9 @@ func (rfc *RecvFileCreate) SetFilePathOrigin(s string) *RecvFileCreate {
 	return rfc
 }
 
-// SetFid sets the "fid" field.
-func (rfc *RecvFileCreate) SetFid(s string) *RecvFileCreate {
-	rfc.mutation.SetFid(s)
+// SetFileID sets the "file_id" field.
+func (rfc *RecvFileCreate) SetFileID(s string) *RecvFileCreate {
+	rfc.mutation.SetFileID(s)
 	return rfc
 }
 
@@ -57,25 +57,9 @@ func (rfc *RecvFileCreate) SetFileSize(i int64) *RecvFileCreate {
 	return rfc
 }
 
-// SetNillableFileSize sets the "file_size" field if the given value is not nil.
-func (rfc *RecvFileCreate) SetNillableFileSize(i *int64) *RecvFileCreate {
-	if i != nil {
-		rfc.SetFileSize(*i)
-	}
-	return rfc
-}
-
 // SetChunkNumTotal sets the "chunk_num_total" field.
 func (rfc *RecvFileCreate) SetChunkNumTotal(i int) *RecvFileCreate {
 	rfc.mutation.SetChunkNumTotal(i)
-	return rfc
-}
-
-// SetNillableChunkNumTotal sets the "chunk_num_total" field if the given value is not nil.
-func (rfc *RecvFileCreate) SetNillableChunkNumTotal(i *int) *RecvFileCreate {
-	if i != nil {
-		rfc.SetChunkNumTotal(*i)
-	}
 	return rfc
 }
 
@@ -185,14 +169,6 @@ func (rfc *RecvFileCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (rfc *RecvFileCreate) defaults() {
-	if _, ok := rfc.mutation.FileSize(); !ok {
-		v := recvfile.DefaultFileSize
-		rfc.mutation.SetFileSize(v)
-	}
-	if _, ok := rfc.mutation.ChunkNumTotal(); !ok {
-		v := recvfile.DefaultChunkNumTotal
-		rfc.mutation.SetChunkNumTotal(v)
-	}
 	if _, ok := rfc.mutation.ChunkNumRecved(); !ok {
 		v := recvfile.DefaultChunkNumRecved
 		rfc.mutation.SetChunkNumRecved(v)
@@ -245,14 +221,29 @@ func (rfc *RecvFileCreate) check() error {
 			return &ValidationError{Name: "file_path_origin", err: fmt.Errorf(`ent: validator failed for field "RecvFile.file_path_origin": %w`, err)}
 		}
 	}
-	if _, ok := rfc.mutation.Fid(); !ok {
-		return &ValidationError{Name: "fid", err: errors.New(`ent: missing required field "RecvFile.fid"`)}
+	if _, ok := rfc.mutation.FileID(); !ok {
+		return &ValidationError{Name: "file_id", err: errors.New(`ent: missing required field "RecvFile.file_id"`)}
+	}
+	if v, ok := rfc.mutation.FileID(); ok {
+		if err := recvfile.FileIDValidator(v); err != nil {
+			return &ValidationError{Name: "file_id", err: fmt.Errorf(`ent: validator failed for field "RecvFile.file_id": %w`, err)}
+		}
 	}
 	if _, ok := rfc.mutation.FileSize(); !ok {
 		return &ValidationError{Name: "file_size", err: errors.New(`ent: missing required field "RecvFile.file_size"`)}
 	}
+	if v, ok := rfc.mutation.FileSize(); ok {
+		if err := recvfile.FileSizeValidator(v); err != nil {
+			return &ValidationError{Name: "file_size", err: fmt.Errorf(`ent: validator failed for field "RecvFile.file_size": %w`, err)}
+		}
+	}
 	if _, ok := rfc.mutation.ChunkNumTotal(); !ok {
 		return &ValidationError{Name: "chunk_num_total", err: errors.New(`ent: missing required field "RecvFile.chunk_num_total"`)}
+	}
+	if v, ok := rfc.mutation.ChunkNumTotal(); ok {
+		if err := recvfile.ChunkNumTotalValidator(v); err != nil {
+			return &ValidationError{Name: "chunk_num_total", err: fmt.Errorf(`ent: validator failed for field "RecvFile.chunk_num_total": %w`, err)}
+		}
 	}
 	if _, ok := rfc.mutation.ChunkNumRecved(); !ok {
 		return &ValidationError{Name: "chunk_num_recved", err: errors.New(`ent: missing required field "RecvFile.chunk_num_recved"`)}
@@ -308,9 +299,9 @@ func (rfc *RecvFileCreate) createSpec() (*RecvFile, *sqlgraph.CreateSpec) {
 		_spec.SetField(recvfile.FieldFilePathOrigin, field.TypeString, value)
 		_node.FilePathOrigin = value
 	}
-	if value, ok := rfc.mutation.Fid(); ok {
-		_spec.SetField(recvfile.FieldFid, field.TypeString, value)
-		_node.Fid = value
+	if value, ok := rfc.mutation.FileID(); ok {
+		_spec.SetField(recvfile.FieldFileID, field.TypeString, value)
+		_node.FileID = value
 	}
 	if value, ok := rfc.mutation.FileSize(); ok {
 		_spec.SetField(recvfile.FieldFileSize, field.TypeInt64, value)

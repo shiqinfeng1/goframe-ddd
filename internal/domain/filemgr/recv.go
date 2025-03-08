@@ -29,7 +29,7 @@ func recvHeader(_ context.Context, stream io.Reader) (*header, error) {
 	return h, nil
 }
 
-func recvBody(ctx context.Context, stream io.Reader, bodyLen uint32) ([]byte, error) {
+func recvBody(_ context.Context, stream io.Reader, bodyLen uint32) ([]byte, error) {
 	bodyBytes := make([]byte, bodyLen)
 	var m int = 0
 	for {

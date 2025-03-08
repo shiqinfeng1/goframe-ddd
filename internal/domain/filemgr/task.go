@@ -11,6 +11,7 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/util/gconv"
+	"github.com/rs/xid"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/utils"
 	"github.com/xtaci/smux"
 	"golang.org/x/net/context"
@@ -135,7 +136,7 @@ func (t *TransferTask) getFileAndChunks(ctx context.Context, filePath string, st
 			TaskID:         t.taskId,
 			TaskName:       t.taskName,
 			FilePath:       filePath,
-			Fid:            "undefined",
+			FileId:         xid.New().String(),
 			FileSize:       info.Size(),
 			ChunkNumTotal:  len(t.chunkOffsets),
 			ChunkNumSended: 0,
@@ -198,11 +199,11 @@ func (t *TransferTask) sendChunk(ctx context.Context, sendFile *SendFile, file *
 			return true, nil
 		}
 		body, _ := json.Marshal(&SendChunk{
-			FileID:      0, // 对应sendfile表的id
+			TaskID:      sendFile.TaskID,
+			FileID:      sendFile.FileId,
 			ChunkIndex:  sendFile.ChunkNumSended,
 			ChunkOffset: t.chunkOffsets[i],
 			ChunkSize:   chunkSize,
-			Status:      0,
 		})
 		fcBytes := fileChunkMsgToBytes(ctx, body)
 		// 分块获取文件数据,串行发送
@@ -235,17 +236,18 @@ func (t *TransferTask) sendChunk(ctx context.Context, sendFile *SendFile, file *
 		g.Log().Debugf(ctx, "client read ack %v bytes. elapsed:%v roundtrip-speed:%v MB/s",
 			len(respBody), end2, float64(written)/1024/1024/end2.Seconds())
 
-		filePath := gconv.String(respBody)
-		if sendFile.FilePath != filePath {
-			return false, gerror.Newf("send filechunk fail. not match filepath: exp:%v fact:%v", sendFile.FilePath, filePath)
+		fileId := gconv.String(respBody)
+		if sendFile.FileId != fileId {
+			return false, gerror.Newf("send filechunk fail. not match fileId: exp:%v fact:%v", sendFile.FilePath, fileId)
 		}
 		// 收到确认后， 更新本地数据库
 		if err := t.repo.UpdateSendChunk(ctx, &SendChunk{
-			FileID:      sendFile.ID, // 关联sendfile的i主键d
+			TaskID:      sendFile.TaskID,
+			FileID:      sendFile.FileId,
+			SendFileID:  sendFile.ID, // 关联sendfile的i主键d
 			ChunkIndex:  i,
 			ChunkOffset: t.chunkOffsets[i],
 			ChunkSize:   chunkSize,
-			Status:      1, // todo 定义status
 		}); err != nil {
 			return false, gerror.Wrap(err, "filechunk save fail")
 		}

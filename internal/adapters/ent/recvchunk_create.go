@@ -21,9 +21,9 @@ type RecvChunkCreate struct {
 	hooks    []Hook
 }
 
-// SetFileID sets the "file_id" field.
-func (rcc *RecvChunkCreate) SetFileID(i int) *RecvChunkCreate {
-	rcc.mutation.SetFileID(i)
+// SetRecvfileID sets the "recvfile_id" field.
+func (rcc *RecvChunkCreate) SetRecvfileID(i int) *RecvChunkCreate {
+	rcc.mutation.SetRecvfileID(i)
 	return rcc
 }
 
@@ -65,20 +65,6 @@ func (rcc *RecvChunkCreate) SetChunkSize(i int) *RecvChunkCreate {
 func (rcc *RecvChunkCreate) SetNillableChunkSize(i *int) *RecvChunkCreate {
 	if i != nil {
 		rcc.SetChunkSize(*i)
-	}
-	return rcc
-}
-
-// SetStatus sets the "status" field.
-func (rcc *RecvChunkCreate) SetStatus(i int) *RecvChunkCreate {
-	rcc.mutation.SetStatus(i)
-	return rcc
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (rcc *RecvChunkCreate) SetNillableStatus(i *int) *RecvChunkCreate {
-	if i != nil {
-		rcc.SetStatus(*i)
 	}
 	return rcc
 }
@@ -169,10 +155,6 @@ func (rcc *RecvChunkCreate) defaults() {
 		v := recvchunk.DefaultChunkSize
 		rcc.mutation.SetChunkSize(v)
 	}
-	if _, ok := rcc.mutation.Status(); !ok {
-		v := recvchunk.DefaultStatus
-		rcc.mutation.SetStatus(v)
-	}
 	if _, ok := rcc.mutation.UpdatedAt(); !ok {
 		v := recvchunk.DefaultUpdatedAt()
 		rcc.mutation.SetUpdatedAt(v)
@@ -185,8 +167,8 @@ func (rcc *RecvChunkCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (rcc *RecvChunkCreate) check() error {
-	if _, ok := rcc.mutation.FileID(); !ok {
-		return &ValidationError{Name: "file_id", err: errors.New(`ent: missing required field "RecvChunk.file_id"`)}
+	if _, ok := rcc.mutation.RecvfileID(); !ok {
+		return &ValidationError{Name: "recvfile_id", err: errors.New(`ent: missing required field "RecvChunk.recvfile_id"`)}
 	}
 	if _, ok := rcc.mutation.ChunkIndex(); !ok {
 		return &ValidationError{Name: "chunk_index", err: errors.New(`ent: missing required field "RecvChunk.chunk_index"`)}
@@ -196,9 +178,6 @@ func (rcc *RecvChunkCreate) check() error {
 	}
 	if _, ok := rcc.mutation.ChunkSize(); !ok {
 		return &ValidationError{Name: "chunk_size", err: errors.New(`ent: missing required field "RecvChunk.chunk_size"`)}
-	}
-	if _, ok := rcc.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "RecvChunk.status"`)}
 	}
 	if _, ok := rcc.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "RecvChunk.updated_at"`)}
@@ -247,10 +226,6 @@ func (rcc *RecvChunkCreate) createSpec() (*RecvChunk, *sqlgraph.CreateSpec) {
 		_spec.SetField(recvchunk.FieldChunkSize, field.TypeInt, value)
 		_node.ChunkSize = value
 	}
-	if value, ok := rcc.mutation.Status(); ok {
-		_spec.SetField(recvchunk.FieldStatus, field.TypeInt, value)
-		_node.Status = value
-	}
 	if value, ok := rcc.mutation.UpdatedAt(); ok {
 		_spec.SetField(recvchunk.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
@@ -273,7 +248,7 @@ func (rcc *RecvChunkCreate) createSpec() (*RecvChunk, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.FileID = nodes[0]
+		_node.RecvfileID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

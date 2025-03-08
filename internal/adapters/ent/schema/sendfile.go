@@ -16,12 +16,12 @@ type SendFile struct {
 // Fields of the SendFile.
 func (SendFile) Fields() []ent.Field {
 	return []ent.Field{
-		field.Text("task_id").NotEmpty(),
+		field.String("task_id").NotEmpty().MaxLen(20),
 		field.Text("task_name").NotEmpty(),
 		field.Text("file_path").NotEmpty(),
-		field.String("fid").Unique().NotEmpty(), // 标识文件的唯一id
-		field.Int64("file_size").Default(0),
-		field.Int("chunk_num_total").Default(0),
+		field.String("file_id").Unique().NotEmpty().MaxLen(20), // 标识文件的唯一id
+		field.Int64("file_size").Positive(),
+		field.Int("chunk_num_total").Positive(),
 		field.Int("chunk_num_sended").Default(0),
 		field.Int("status").Default(0),
 		field.String("elapsed").Default("").MaxLen(16),

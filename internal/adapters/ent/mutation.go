@@ -45,8 +45,6 @@ type RecvChunkMutation struct {
 	addchunk_offset  *int64
 	chunk_size       *int
 	addchunk_size    *int
-	status           *int
-	addstatus        *int
 	updated_at       *time.Time
 	created_at       *time.Time
 	clearedFields    map[string]struct{}
@@ -155,13 +153,13 @@ func (m *RecvChunkMutation) IDs(ctx context.Context) ([]int, error) {
 	}
 }
 
-// SetFileID sets the "file_id" field.
-func (m *RecvChunkMutation) SetFileID(i int) {
+// SetRecvfileID sets the "recvfile_id" field.
+func (m *RecvChunkMutation) SetRecvfileID(i int) {
 	m.recv_file = &i
 }
 
-// FileID returns the value of the "file_id" field in the mutation.
-func (m *RecvChunkMutation) FileID() (r int, exists bool) {
+// RecvfileID returns the value of the "recvfile_id" field in the mutation.
+func (m *RecvChunkMutation) RecvfileID() (r int, exists bool) {
 	v := m.recv_file
 	if v == nil {
 		return
@@ -169,25 +167,25 @@ func (m *RecvChunkMutation) FileID() (r int, exists bool) {
 	return *v, true
 }
 
-// OldFileID returns the old "file_id" field's value of the RecvChunk entity.
+// OldRecvfileID returns the old "recvfile_id" field's value of the RecvChunk entity.
 // If the RecvChunk object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecvChunkMutation) OldFileID(ctx context.Context) (v int, err error) {
+func (m *RecvChunkMutation) OldRecvfileID(ctx context.Context) (v int, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldFileID is only allowed on UpdateOne operations")
+		return v, errors.New("OldRecvfileID is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldFileID requires an ID field in the mutation")
+		return v, errors.New("OldRecvfileID requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldFileID: %w", err)
+		return v, fmt.Errorf("querying old value for OldRecvfileID: %w", err)
 	}
-	return oldValue.FileID, nil
+	return oldValue.RecvfileID, nil
 }
 
-// ResetFileID resets all changes to the "file_id" field.
-func (m *RecvChunkMutation) ResetFileID() {
+// ResetRecvfileID resets all changes to the "recvfile_id" field.
+func (m *RecvChunkMutation) ResetRecvfileID() {
 	m.recv_file = nil
 }
 
@@ -359,62 +357,6 @@ func (m *RecvChunkMutation) ResetChunkSize() {
 	m.addchunk_size = nil
 }
 
-// SetStatus sets the "status" field.
-func (m *RecvChunkMutation) SetStatus(i int) {
-	m.status = &i
-	m.addstatus = nil
-}
-
-// Status returns the value of the "status" field in the mutation.
-func (m *RecvChunkMutation) Status() (r int, exists bool) {
-	v := m.status
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldStatus returns the old "status" field's value of the RecvChunk entity.
-// If the RecvChunk object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecvChunkMutation) OldStatus(ctx context.Context) (v int, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatus requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
-	}
-	return oldValue.Status, nil
-}
-
-// AddStatus adds i to the "status" field.
-func (m *RecvChunkMutation) AddStatus(i int) {
-	if m.addstatus != nil {
-		*m.addstatus += i
-	} else {
-		m.addstatus = &i
-	}
-}
-
-// AddedStatus returns the value that was added to the "status" field in this mutation.
-func (m *RecvChunkMutation) AddedStatus() (r int, exists bool) {
-	v := m.addstatus
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ResetStatus resets all changes to the "status" field.
-func (m *RecvChunkMutation) ResetStatus() {
-	m.status = nil
-	m.addstatus = nil
-}
-
 // SetUpdatedAt sets the "updated_at" field.
 func (m *RecvChunkMutation) SetUpdatedAt(t time.Time) {
 	m.updated_at = &t
@@ -495,7 +437,7 @@ func (m *RecvChunkMutation) SetRecvFileID(id int) {
 // ClearRecvFile clears the "recv_file" edge to the RecvFile entity.
 func (m *RecvChunkMutation) ClearRecvFile() {
 	m.clearedrecv_file = true
-	m.clearedFields[recvchunk.FieldFileID] = struct{}{}
+	m.clearedFields[recvchunk.FieldRecvfileID] = struct{}{}
 }
 
 // RecvFileCleared reports if the "recv_file" edge to the RecvFile entity was cleared.
@@ -561,9 +503,9 @@ func (m *RecvChunkMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RecvChunkMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 6)
 	if m.recv_file != nil {
-		fields = append(fields, recvchunk.FieldFileID)
+		fields = append(fields, recvchunk.FieldRecvfileID)
 	}
 	if m.chunk_index != nil {
 		fields = append(fields, recvchunk.FieldChunkIndex)
@@ -573,9 +515,6 @@ func (m *RecvChunkMutation) Fields() []string {
 	}
 	if m.chunk_size != nil {
 		fields = append(fields, recvchunk.FieldChunkSize)
-	}
-	if m.status != nil {
-		fields = append(fields, recvchunk.FieldStatus)
 	}
 	if m.updated_at != nil {
 		fields = append(fields, recvchunk.FieldUpdatedAt)
@@ -591,16 +530,14 @@ func (m *RecvChunkMutation) Fields() []string {
 // schema.
 func (m *RecvChunkMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case recvchunk.FieldFileID:
-		return m.FileID()
+	case recvchunk.FieldRecvfileID:
+		return m.RecvfileID()
 	case recvchunk.FieldChunkIndex:
 		return m.ChunkIndex()
 	case recvchunk.FieldChunkOffset:
 		return m.ChunkOffset()
 	case recvchunk.FieldChunkSize:
 		return m.ChunkSize()
-	case recvchunk.FieldStatus:
-		return m.Status()
 	case recvchunk.FieldUpdatedAt:
 		return m.UpdatedAt()
 	case recvchunk.FieldCreatedAt:
@@ -614,16 +551,14 @@ func (m *RecvChunkMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *RecvChunkMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case recvchunk.FieldFileID:
-		return m.OldFileID(ctx)
+	case recvchunk.FieldRecvfileID:
+		return m.OldRecvfileID(ctx)
 	case recvchunk.FieldChunkIndex:
 		return m.OldChunkIndex(ctx)
 	case recvchunk.FieldChunkOffset:
 		return m.OldChunkOffset(ctx)
 	case recvchunk.FieldChunkSize:
 		return m.OldChunkSize(ctx)
-	case recvchunk.FieldStatus:
-		return m.OldStatus(ctx)
 	case recvchunk.FieldUpdatedAt:
 		return m.OldUpdatedAt(ctx)
 	case recvchunk.FieldCreatedAt:
@@ -637,12 +572,12 @@ func (m *RecvChunkMutation) OldField(ctx context.Context, name string) (ent.Valu
 // type.
 func (m *RecvChunkMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case recvchunk.FieldFileID:
+	case recvchunk.FieldRecvfileID:
 		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetFileID(v)
+		m.SetRecvfileID(v)
 		return nil
 	case recvchunk.FieldChunkIndex:
 		v, ok := value.(int)
@@ -664,13 +599,6 @@ func (m *RecvChunkMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetChunkSize(v)
-		return nil
-	case recvchunk.FieldStatus:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetStatus(v)
 		return nil
 	case recvchunk.FieldUpdatedAt:
 		v, ok := value.(time.Time)
@@ -703,9 +631,6 @@ func (m *RecvChunkMutation) AddedFields() []string {
 	if m.addchunk_size != nil {
 		fields = append(fields, recvchunk.FieldChunkSize)
 	}
-	if m.addstatus != nil {
-		fields = append(fields, recvchunk.FieldStatus)
-	}
 	return fields
 }
 
@@ -720,8 +645,6 @@ func (m *RecvChunkMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedChunkOffset()
 	case recvchunk.FieldChunkSize:
 		return m.AddedChunkSize()
-	case recvchunk.FieldStatus:
-		return m.AddedStatus()
 	}
 	return nil, false
 }
@@ -752,13 +675,6 @@ func (m *RecvChunkMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddChunkSize(v)
 		return nil
-	case recvchunk.FieldStatus:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.AddStatus(v)
-		return nil
 	}
 	return fmt.Errorf("unknown RecvChunk numeric field %s", name)
 }
@@ -786,8 +702,8 @@ func (m *RecvChunkMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *RecvChunkMutation) ResetField(name string) error {
 	switch name {
-	case recvchunk.FieldFileID:
-		m.ResetFileID()
+	case recvchunk.FieldRecvfileID:
+		m.ResetRecvfileID()
 		return nil
 	case recvchunk.FieldChunkIndex:
 		m.ResetChunkIndex()
@@ -797,9 +713,6 @@ func (m *RecvChunkMutation) ResetField(name string) error {
 		return nil
 	case recvchunk.FieldChunkSize:
 		m.ResetChunkSize()
-		return nil
-	case recvchunk.FieldStatus:
-		m.ResetStatus()
 		return nil
 	case recvchunk.FieldUpdatedAt:
 		m.ResetUpdatedAt()
@@ -895,7 +808,7 @@ type RecvFileMutation struct {
 	task_name           *string
 	file_path_save      *string
 	file_path_origin    *string
-	fid                 *string
+	file_id             *string
 	file_size           *int64
 	addfile_size        *int64
 	chunk_num_total     *int
@@ -1157,40 +1070,40 @@ func (m *RecvFileMutation) ResetFilePathOrigin() {
 	m.file_path_origin = nil
 }
 
-// SetFid sets the "fid" field.
-func (m *RecvFileMutation) SetFid(s string) {
-	m.fid = &s
+// SetFileID sets the "file_id" field.
+func (m *RecvFileMutation) SetFileID(s string) {
+	m.file_id = &s
 }
 
-// Fid returns the value of the "fid" field in the mutation.
-func (m *RecvFileMutation) Fid() (r string, exists bool) {
-	v := m.fid
+// FileID returns the value of the "file_id" field in the mutation.
+func (m *RecvFileMutation) FileID() (r string, exists bool) {
+	v := m.file_id
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldFid returns the old "fid" field's value of the RecvFile entity.
+// OldFileID returns the old "file_id" field's value of the RecvFile entity.
 // If the RecvFile object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecvFileMutation) OldFid(ctx context.Context) (v string, err error) {
+func (m *RecvFileMutation) OldFileID(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldFid is only allowed on UpdateOne operations")
+		return v, errors.New("OldFileID is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldFid requires an ID field in the mutation")
+		return v, errors.New("OldFileID requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldFid: %w", err)
+		return v, fmt.Errorf("querying old value for OldFileID: %w", err)
 	}
-	return oldValue.Fid, nil
+	return oldValue.FileID, nil
 }
 
-// ResetFid resets all changes to the "fid" field.
-func (m *RecvFileMutation) ResetFid() {
-	m.fid = nil
+// ResetFileID resets all changes to the "file_id" field.
+func (m *RecvFileMutation) ResetFileID() {
+	m.file_id = nil
 }
 
 // SetFileSize sets the "file_size" field.
@@ -1590,8 +1503,8 @@ func (m *RecvFileMutation) Fields() []string {
 	if m.file_path_origin != nil {
 		fields = append(fields, recvfile.FieldFilePathOrigin)
 	}
-	if m.fid != nil {
-		fields = append(fields, recvfile.FieldFid)
+	if m.file_id != nil {
+		fields = append(fields, recvfile.FieldFileID)
 	}
 	if m.file_size != nil {
 		fields = append(fields, recvfile.FieldFileSize)
@@ -1627,8 +1540,8 @@ func (m *RecvFileMutation) Field(name string) (ent.Value, bool) {
 		return m.FilePathSave()
 	case recvfile.FieldFilePathOrigin:
 		return m.FilePathOrigin()
-	case recvfile.FieldFid:
-		return m.Fid()
+	case recvfile.FieldFileID:
+		return m.FileID()
 	case recvfile.FieldFileSize:
 		return m.FileSize()
 	case recvfile.FieldChunkNumTotal:
@@ -1658,8 +1571,8 @@ func (m *RecvFileMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldFilePathSave(ctx)
 	case recvfile.FieldFilePathOrigin:
 		return m.OldFilePathOrigin(ctx)
-	case recvfile.FieldFid:
-		return m.OldFid(ctx)
+	case recvfile.FieldFileID:
+		return m.OldFileID(ctx)
 	case recvfile.FieldFileSize:
 		return m.OldFileSize(ctx)
 	case recvfile.FieldChunkNumTotal:
@@ -1709,12 +1622,12 @@ func (m *RecvFileMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetFilePathOrigin(v)
 		return nil
-	case recvfile.FieldFid:
+	case recvfile.FieldFileID:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetFid(v)
+		m.SetFileID(v)
 		return nil
 	case recvfile.FieldFileSize:
 		v, ok := value.(int64)
@@ -1870,8 +1783,8 @@ func (m *RecvFileMutation) ResetField(name string) error {
 	case recvfile.FieldFilePathOrigin:
 		m.ResetFilePathOrigin()
 		return nil
-	case recvfile.FieldFid:
-		m.ResetFid()
+	case recvfile.FieldFileID:
+		m.ResetFileID()
 		return nil
 	case recvfile.FieldFileSize:
 		m.ResetFileSize()
@@ -1991,8 +1904,6 @@ type SendChunkMutation struct {
 	addchunk_offset  *int64
 	chunk_size       *int
 	addchunk_size    *int
-	status           *int
-	addstatus        *int
 	updated_at       *time.Time
 	created_at       *time.Time
 	clearedFields    map[string]struct{}
@@ -2101,13 +2012,13 @@ func (m *SendChunkMutation) IDs(ctx context.Context) ([]int, error) {
 	}
 }
 
-// SetFileID sets the "file_id" field.
-func (m *SendChunkMutation) SetFileID(i int) {
+// SetSendfileID sets the "sendfile_id" field.
+func (m *SendChunkMutation) SetSendfileID(i int) {
 	m.send_file = &i
 }
 
-// FileID returns the value of the "file_id" field in the mutation.
-func (m *SendChunkMutation) FileID() (r int, exists bool) {
+// SendfileID returns the value of the "sendfile_id" field in the mutation.
+func (m *SendChunkMutation) SendfileID() (r int, exists bool) {
 	v := m.send_file
 	if v == nil {
 		return
@@ -2115,25 +2026,25 @@ func (m *SendChunkMutation) FileID() (r int, exists bool) {
 	return *v, true
 }
 
-// OldFileID returns the old "file_id" field's value of the SendChunk entity.
+// OldSendfileID returns the old "sendfile_id" field's value of the SendChunk entity.
 // If the SendChunk object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *SendChunkMutation) OldFileID(ctx context.Context) (v int, err error) {
+func (m *SendChunkMutation) OldSendfileID(ctx context.Context) (v int, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldFileID is only allowed on UpdateOne operations")
+		return v, errors.New("OldSendfileID is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldFileID requires an ID field in the mutation")
+		return v, errors.New("OldSendfileID requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldFileID: %w", err)
+		return v, fmt.Errorf("querying old value for OldSendfileID: %w", err)
 	}
-	return oldValue.FileID, nil
+	return oldValue.SendfileID, nil
 }
 
-// ResetFileID resets all changes to the "file_id" field.
-func (m *SendChunkMutation) ResetFileID() {
+// ResetSendfileID resets all changes to the "sendfile_id" field.
+func (m *SendChunkMutation) ResetSendfileID() {
 	m.send_file = nil
 }
 
@@ -2305,62 +2216,6 @@ func (m *SendChunkMutation) ResetChunkSize() {
 	m.addchunk_size = nil
 }
 
-// SetStatus sets the "status" field.
-func (m *SendChunkMutation) SetStatus(i int) {
-	m.status = &i
-	m.addstatus = nil
-}
-
-// Status returns the value of the "status" field in the mutation.
-func (m *SendChunkMutation) Status() (r int, exists bool) {
-	v := m.status
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldStatus returns the old "status" field's value of the SendChunk entity.
-// If the SendChunk object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *SendChunkMutation) OldStatus(ctx context.Context) (v int, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatus requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
-	}
-	return oldValue.Status, nil
-}
-
-// AddStatus adds i to the "status" field.
-func (m *SendChunkMutation) AddStatus(i int) {
-	if m.addstatus != nil {
-		*m.addstatus += i
-	} else {
-		m.addstatus = &i
-	}
-}
-
-// AddedStatus returns the value that was added to the "status" field in this mutation.
-func (m *SendChunkMutation) AddedStatus() (r int, exists bool) {
-	v := m.addstatus
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ResetStatus resets all changes to the "status" field.
-func (m *SendChunkMutation) ResetStatus() {
-	m.status = nil
-	m.addstatus = nil
-}
-
 // SetUpdatedAt sets the "updated_at" field.
 func (m *SendChunkMutation) SetUpdatedAt(t time.Time) {
 	m.updated_at = &t
@@ -2441,7 +2296,7 @@ func (m *SendChunkMutation) SetSendFileID(id int) {
 // ClearSendFile clears the "send_file" edge to the SendFile entity.
 func (m *SendChunkMutation) ClearSendFile() {
 	m.clearedsend_file = true
-	m.clearedFields[sendchunk.FieldFileID] = struct{}{}
+	m.clearedFields[sendchunk.FieldSendfileID] = struct{}{}
 }
 
 // SendFileCleared reports if the "send_file" edge to the SendFile entity was cleared.
@@ -2507,9 +2362,9 @@ func (m *SendChunkMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SendChunkMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 6)
 	if m.send_file != nil {
-		fields = append(fields, sendchunk.FieldFileID)
+		fields = append(fields, sendchunk.FieldSendfileID)
 	}
 	if m.chunk_index != nil {
 		fields = append(fields, sendchunk.FieldChunkIndex)
@@ -2519,9 +2374,6 @@ func (m *SendChunkMutation) Fields() []string {
 	}
 	if m.chunk_size != nil {
 		fields = append(fields, sendchunk.FieldChunkSize)
-	}
-	if m.status != nil {
-		fields = append(fields, sendchunk.FieldStatus)
 	}
 	if m.updated_at != nil {
 		fields = append(fields, sendchunk.FieldUpdatedAt)
@@ -2537,16 +2389,14 @@ func (m *SendChunkMutation) Fields() []string {
 // schema.
 func (m *SendChunkMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case sendchunk.FieldFileID:
-		return m.FileID()
+	case sendchunk.FieldSendfileID:
+		return m.SendfileID()
 	case sendchunk.FieldChunkIndex:
 		return m.ChunkIndex()
 	case sendchunk.FieldChunkOffset:
 		return m.ChunkOffset()
 	case sendchunk.FieldChunkSize:
 		return m.ChunkSize()
-	case sendchunk.FieldStatus:
-		return m.Status()
 	case sendchunk.FieldUpdatedAt:
 		return m.UpdatedAt()
 	case sendchunk.FieldCreatedAt:
@@ -2560,16 +2410,14 @@ func (m *SendChunkMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *SendChunkMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case sendchunk.FieldFileID:
-		return m.OldFileID(ctx)
+	case sendchunk.FieldSendfileID:
+		return m.OldSendfileID(ctx)
 	case sendchunk.FieldChunkIndex:
 		return m.OldChunkIndex(ctx)
 	case sendchunk.FieldChunkOffset:
 		return m.OldChunkOffset(ctx)
 	case sendchunk.FieldChunkSize:
 		return m.OldChunkSize(ctx)
-	case sendchunk.FieldStatus:
-		return m.OldStatus(ctx)
 	case sendchunk.FieldUpdatedAt:
 		return m.OldUpdatedAt(ctx)
 	case sendchunk.FieldCreatedAt:
@@ -2583,12 +2431,12 @@ func (m *SendChunkMutation) OldField(ctx context.Context, name string) (ent.Valu
 // type.
 func (m *SendChunkMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case sendchunk.FieldFileID:
+	case sendchunk.FieldSendfileID:
 		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetFileID(v)
+		m.SetSendfileID(v)
 		return nil
 	case sendchunk.FieldChunkIndex:
 		v, ok := value.(int)
@@ -2610,13 +2458,6 @@ func (m *SendChunkMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetChunkSize(v)
-		return nil
-	case sendchunk.FieldStatus:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetStatus(v)
 		return nil
 	case sendchunk.FieldUpdatedAt:
 		v, ok := value.(time.Time)
@@ -2649,9 +2490,6 @@ func (m *SendChunkMutation) AddedFields() []string {
 	if m.addchunk_size != nil {
 		fields = append(fields, sendchunk.FieldChunkSize)
 	}
-	if m.addstatus != nil {
-		fields = append(fields, sendchunk.FieldStatus)
-	}
 	return fields
 }
 
@@ -2666,8 +2504,6 @@ func (m *SendChunkMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedChunkOffset()
 	case sendchunk.FieldChunkSize:
 		return m.AddedChunkSize()
-	case sendchunk.FieldStatus:
-		return m.AddedStatus()
 	}
 	return nil, false
 }
@@ -2698,13 +2534,6 @@ func (m *SendChunkMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddChunkSize(v)
 		return nil
-	case sendchunk.FieldStatus:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.AddStatus(v)
-		return nil
 	}
 	return fmt.Errorf("unknown SendChunk numeric field %s", name)
 }
@@ -2732,8 +2561,8 @@ func (m *SendChunkMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *SendChunkMutation) ResetField(name string) error {
 	switch name {
-	case sendchunk.FieldFileID:
-		m.ResetFileID()
+	case sendchunk.FieldSendfileID:
+		m.ResetSendfileID()
 		return nil
 	case sendchunk.FieldChunkIndex:
 		m.ResetChunkIndex()
@@ -2743,9 +2572,6 @@ func (m *SendChunkMutation) ResetField(name string) error {
 		return nil
 	case sendchunk.FieldChunkSize:
 		m.ResetChunkSize()
-		return nil
-	case sendchunk.FieldStatus:
-		m.ResetStatus()
 		return nil
 	case sendchunk.FieldUpdatedAt:
 		m.ResetUpdatedAt()
@@ -2840,7 +2666,7 @@ type SendFileMutation struct {
 	task_id             *string
 	task_name           *string
 	file_path           *string
-	fid                 *string
+	file_id             *string
 	file_size           *int64
 	addfile_size        *int64
 	chunk_num_total     *int
@@ -3068,40 +2894,40 @@ func (m *SendFileMutation) ResetFilePath() {
 	m.file_path = nil
 }
 
-// SetFid sets the "fid" field.
-func (m *SendFileMutation) SetFid(s string) {
-	m.fid = &s
+// SetFileID sets the "file_id" field.
+func (m *SendFileMutation) SetFileID(s string) {
+	m.file_id = &s
 }
 
-// Fid returns the value of the "fid" field in the mutation.
-func (m *SendFileMutation) Fid() (r string, exists bool) {
-	v := m.fid
+// FileID returns the value of the "file_id" field in the mutation.
+func (m *SendFileMutation) FileID() (r string, exists bool) {
+	v := m.file_id
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldFid returns the old "fid" field's value of the SendFile entity.
+// OldFileID returns the old "file_id" field's value of the SendFile entity.
 // If the SendFile object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *SendFileMutation) OldFid(ctx context.Context) (v string, err error) {
+func (m *SendFileMutation) OldFileID(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldFid is only allowed on UpdateOne operations")
+		return v, errors.New("OldFileID is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldFid requires an ID field in the mutation")
+		return v, errors.New("OldFileID requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldFid: %w", err)
+		return v, fmt.Errorf("querying old value for OldFileID: %w", err)
 	}
-	return oldValue.Fid, nil
+	return oldValue.FileID, nil
 }
 
-// ResetFid resets all changes to the "fid" field.
-func (m *SendFileMutation) ResetFid() {
-	m.fid = nil
+// ResetFileID resets all changes to the "file_id" field.
+func (m *SendFileMutation) ResetFileID() {
+	m.file_id = nil
 }
 
 // SetFileSize sets the "file_size" field.
@@ -3570,8 +3396,8 @@ func (m *SendFileMutation) Fields() []string {
 	if m.file_path != nil {
 		fields = append(fields, sendfile.FieldFilePath)
 	}
-	if m.fid != nil {
-		fields = append(fields, sendfile.FieldFid)
+	if m.file_id != nil {
+		fields = append(fields, sendfile.FieldFileID)
 	}
 	if m.file_size != nil {
 		fields = append(fields, sendfile.FieldFileSize)
@@ -3611,8 +3437,8 @@ func (m *SendFileMutation) Field(name string) (ent.Value, bool) {
 		return m.TaskName()
 	case sendfile.FieldFilePath:
 		return m.FilePath()
-	case sendfile.FieldFid:
-		return m.Fid()
+	case sendfile.FieldFileID:
+		return m.FileID()
 	case sendfile.FieldFileSize:
 		return m.FileSize()
 	case sendfile.FieldChunkNumTotal:
@@ -3644,8 +3470,8 @@ func (m *SendFileMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldTaskName(ctx)
 	case sendfile.FieldFilePath:
 		return m.OldFilePath(ctx)
-	case sendfile.FieldFid:
-		return m.OldFid(ctx)
+	case sendfile.FieldFileID:
+		return m.OldFileID(ctx)
 	case sendfile.FieldFileSize:
 		return m.OldFileSize(ctx)
 	case sendfile.FieldChunkNumTotal:
@@ -3692,12 +3518,12 @@ func (m *SendFileMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetFilePath(v)
 		return nil
-	case sendfile.FieldFid:
+	case sendfile.FieldFileID:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetFid(v)
+		m.SetFileID(v)
 		return nil
 	case sendfile.FieldFileSize:
 		v, ok := value.(int64)
@@ -3864,8 +3690,8 @@ func (m *SendFileMutation) ResetField(name string) error {
 	case sendfile.FieldFilePath:
 		m.ResetFilePath()
 		return nil
-	case sendfile.FieldFid:
-		m.ResetFid()
+	case sendfile.FieldFileID:
+		m.ResetFileID()
 		return nil
 	case sendfile.FieldFileSize:
 		m.ResetFileSize()

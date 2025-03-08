@@ -4,11 +4,12 @@ import "context"
 
 // SendChunk is the model entity for the SendChunk schema.
 type SendChunk struct {
-	FileID      int   `json:"file_id,omitempty"` // 对应sendfile表的id
-	ChunkIndex  int   `json:"chunk_index,omitempty"`
-	ChunkOffset int64 `json:"chunk_offset,omitempty"`
-	ChunkSize   int   `json:"chunk_size,omitempty"`
-	Status      int   `json:"status,omitempty"`
+	TaskID      string `json:"task_id,omitempty"`
+	FileID      string `json:"file_id,omitempty"`
+	SendFileID  int    `json:"sendfile_id,omitempty"` // 对应sendfile表的id
+	ChunkIndex  int    `json:"chunk_index,omitempty"`
+	ChunkOffset int64  `json:"chunk_offset,omitempty"`
+	ChunkSize   int    `json:"chunk_size,omitempty"`
 }
 
 // SendFile is the model entity for the SendFile schema.
@@ -17,7 +18,7 @@ type SendFile struct {
 	TaskID         string `json:"task_id,omitempty"`
 	TaskName       string `json:"task_name,omitempty"`
 	FilePath       string `json:"file_path,omitempty"`
-	Fid            string `json:"fid,omitempty"`
+	FileId         string `json:"file_id,omitempty"`
 	FileSize       int64  `json:"file_size,omitempty"`
 	ChunkNumTotal  int    `json:"chunk_num_total,omitempty"`
 	ChunkNumSended int    `json:"chunk_num_sended,omitempty"`
@@ -27,11 +28,11 @@ type SendFile struct {
 }
 
 type RecvChunk struct {
-	FileID      int   `json:"file_id,omitempty"`
-	ChunkIndex  int   `json:"chunk_index,omitempty"`
-	ChunkOffset int64 `json:"chunk_offset,omitempty"`
-	ChunkSize   int   `json:"chunk_size,omitempty"`
-	Status      int   `json:"status,omitempty"`
+	TaskID      string `json:"task_id,omitempty"`
+	FileID      string `json:"file_id,omitempty"`
+	ChunkIndex  int    `json:"chunk_index,omitempty"`
+	ChunkOffset int64  `json:"chunk_offset,omitempty"`
+	ChunkSize   int    `json:"chunk_size,omitempty"`
 }
 
 // RecvFile is the model entity for the RecvFile schema.
@@ -40,7 +41,7 @@ type RecvFile struct {
 	TaskName       string `json:"task_name,omitempty"`
 	FilePathSave   string `json:"file_path_save,omitempty"`
 	FilePathOrigin string `json:"file_path_origin,omitempty"`
-	Fid            string `json:"fid,omitempty"`
+	FileId         string `json:"file_id,omitempty"`
 	FileSize       int64  `json:"file_size,omitempty"`
 	ChunkNumTotal  int    `json:"chunk_num_total,omitempty"`
 	ChunkNumRecved int    `json:"chunk_num_recved,omitempty"`
@@ -53,6 +54,8 @@ type Repository interface {
 	SaveSendFile(ctx context.Context, sendFile *SendFile) (int, error)
 	UpdateSendChunk(ctx context.Context, sendChunk *SendChunk) error
 	GetRecvTask(ctx context.Context, taskId string) ([]*RecvFile, error)
+	GetRecvTaskFile(ctx context.Context, taskId, fileId string) (*RecvFile, error)
 	SaveRecvFile(ctx context.Context, recvile *RecvFile) error
 	UpdateRecvChunk(ctx context.Context, recvChunk *RecvChunk) error
+	CountOfRecvedChunks(ctx context.Context, taskId, fileId string) (int, error)
 }

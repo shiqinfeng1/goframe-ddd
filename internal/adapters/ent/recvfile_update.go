@@ -85,16 +85,16 @@ func (rfu *RecvFileUpdate) SetNillableFilePathOrigin(s *string) *RecvFileUpdate 
 	return rfu
 }
 
-// SetFid sets the "fid" field.
-func (rfu *RecvFileUpdate) SetFid(s string) *RecvFileUpdate {
-	rfu.mutation.SetFid(s)
+// SetFileID sets the "file_id" field.
+func (rfu *RecvFileUpdate) SetFileID(s string) *RecvFileUpdate {
+	rfu.mutation.SetFileID(s)
 	return rfu
 }
 
-// SetNillableFid sets the "fid" field if the given value is not nil.
-func (rfu *RecvFileUpdate) SetNillableFid(s *string) *RecvFileUpdate {
+// SetNillableFileID sets the "file_id" field if the given value is not nil.
+func (rfu *RecvFileUpdate) SetNillableFileID(s *string) *RecvFileUpdate {
 	if s != nil {
-		rfu.SetFid(*s)
+		rfu.SetFileID(*s)
 	}
 	return rfu
 }
@@ -288,6 +288,21 @@ func (rfu *RecvFileUpdate) check() error {
 			return &ValidationError{Name: "file_path_origin", err: fmt.Errorf(`ent: validator failed for field "RecvFile.file_path_origin": %w`, err)}
 		}
 	}
+	if v, ok := rfu.mutation.FileID(); ok {
+		if err := recvfile.FileIDValidator(v); err != nil {
+			return &ValidationError{Name: "file_id", err: fmt.Errorf(`ent: validator failed for field "RecvFile.file_id": %w`, err)}
+		}
+	}
+	if v, ok := rfu.mutation.FileSize(); ok {
+		if err := recvfile.FileSizeValidator(v); err != nil {
+			return &ValidationError{Name: "file_size", err: fmt.Errorf(`ent: validator failed for field "RecvFile.file_size": %w`, err)}
+		}
+	}
+	if v, ok := rfu.mutation.ChunkNumTotal(); ok {
+		if err := recvfile.ChunkNumTotalValidator(v); err != nil {
+			return &ValidationError{Name: "chunk_num_total", err: fmt.Errorf(`ent: validator failed for field "RecvFile.chunk_num_total": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -315,8 +330,8 @@ func (rfu *RecvFileUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := rfu.mutation.FilePathOrigin(); ok {
 		_spec.SetField(recvfile.FieldFilePathOrigin, field.TypeString, value)
 	}
-	if value, ok := rfu.mutation.Fid(); ok {
-		_spec.SetField(recvfile.FieldFid, field.TypeString, value)
+	if value, ok := rfu.mutation.FileID(); ok {
+		_spec.SetField(recvfile.FieldFileID, field.TypeString, value)
 	}
 	if value, ok := rfu.mutation.FileSize(); ok {
 		_spec.SetField(recvfile.FieldFileSize, field.TypeInt64, value)
@@ -466,16 +481,16 @@ func (rfuo *RecvFileUpdateOne) SetNillableFilePathOrigin(s *string) *RecvFileUpd
 	return rfuo
 }
 
-// SetFid sets the "fid" field.
-func (rfuo *RecvFileUpdateOne) SetFid(s string) *RecvFileUpdateOne {
-	rfuo.mutation.SetFid(s)
+// SetFileID sets the "file_id" field.
+func (rfuo *RecvFileUpdateOne) SetFileID(s string) *RecvFileUpdateOne {
+	rfuo.mutation.SetFileID(s)
 	return rfuo
 }
 
-// SetNillableFid sets the "fid" field if the given value is not nil.
-func (rfuo *RecvFileUpdateOne) SetNillableFid(s *string) *RecvFileUpdateOne {
+// SetNillableFileID sets the "file_id" field if the given value is not nil.
+func (rfuo *RecvFileUpdateOne) SetNillableFileID(s *string) *RecvFileUpdateOne {
 	if s != nil {
-		rfuo.SetFid(*s)
+		rfuo.SetFileID(*s)
 	}
 	return rfuo
 }
@@ -682,6 +697,21 @@ func (rfuo *RecvFileUpdateOne) check() error {
 			return &ValidationError{Name: "file_path_origin", err: fmt.Errorf(`ent: validator failed for field "RecvFile.file_path_origin": %w`, err)}
 		}
 	}
+	if v, ok := rfuo.mutation.FileID(); ok {
+		if err := recvfile.FileIDValidator(v); err != nil {
+			return &ValidationError{Name: "file_id", err: fmt.Errorf(`ent: validator failed for field "RecvFile.file_id": %w`, err)}
+		}
+	}
+	if v, ok := rfuo.mutation.FileSize(); ok {
+		if err := recvfile.FileSizeValidator(v); err != nil {
+			return &ValidationError{Name: "file_size", err: fmt.Errorf(`ent: validator failed for field "RecvFile.file_size": %w`, err)}
+		}
+	}
+	if v, ok := rfuo.mutation.ChunkNumTotal(); ok {
+		if err := recvfile.ChunkNumTotalValidator(v); err != nil {
+			return &ValidationError{Name: "chunk_num_total", err: fmt.Errorf(`ent: validator failed for field "RecvFile.chunk_num_total": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -726,8 +756,8 @@ func (rfuo *RecvFileUpdateOne) sqlSave(ctx context.Context) (_node *RecvFile, er
 	if value, ok := rfuo.mutation.FilePathOrigin(); ok {
 		_spec.SetField(recvfile.FieldFilePathOrigin, field.TypeString, value)
 	}
-	if value, ok := rfuo.mutation.Fid(); ok {
-		_spec.SetField(recvfile.FieldFid, field.TypeString, value)
+	if value, ok := rfuo.mutation.FileID(); ok {
+		_spec.SetField(recvfile.FieldFileID, field.TypeString, value)
 	}
 	if value, ok := rfuo.mutation.FileSize(); ok {
 		_spec.SetField(recvfile.FieldFileSize, field.TypeInt64, value)

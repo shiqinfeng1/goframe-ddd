@@ -23,8 +23,8 @@ type SendFile struct {
 	TaskName string `json:"task_name,omitempty"`
 	// FilePath holds the value of the "file_path" field.
 	FilePath string `json:"file_path,omitempty"`
-	// Fid holds the value of the "fid" field.
-	Fid string `json:"fid,omitempty"`
+	// FileID holds the value of the "file_id" field.
+	FileID string `json:"file_id,omitempty"`
 	// FileSize holds the value of the "file_size" field.
 	FileSize int64 `json:"file_size,omitempty"`
 	// ChunkNumTotal holds the value of the "chunk_num_total" field.
@@ -72,7 +72,7 @@ func (*SendFile) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case sendfile.FieldID, sendfile.FieldFileSize, sendfile.FieldChunkNumTotal, sendfile.FieldChunkNumSended, sendfile.FieldStatus:
 			values[i] = new(sql.NullInt64)
-		case sendfile.FieldTaskID, sendfile.FieldTaskName, sendfile.FieldFilePath, sendfile.FieldFid, sendfile.FieldElapsed, sendfile.FieldSpeed:
+		case sendfile.FieldTaskID, sendfile.FieldTaskName, sendfile.FieldFilePath, sendfile.FieldFileID, sendfile.FieldElapsed, sendfile.FieldSpeed:
 			values[i] = new(sql.NullString)
 		case sendfile.FieldUpdatedAt, sendfile.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -115,11 +115,11 @@ func (sf *SendFile) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				sf.FilePath = value.String
 			}
-		case sendfile.FieldFid:
+		case sendfile.FieldFileID:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field fid", values[i])
+				return fmt.Errorf("unexpected type %T for field file_id", values[i])
 			} else if value.Valid {
-				sf.Fid = value.String
+				sf.FileID = value.String
 			}
 		case sendfile.FieldFileSize:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -219,8 +219,8 @@ func (sf *SendFile) String() string {
 	builder.WriteString("file_path=")
 	builder.WriteString(sf.FilePath)
 	builder.WriteString(", ")
-	builder.WriteString("fid=")
-	builder.WriteString(sf.Fid)
+	builder.WriteString("file_id=")
+	builder.WriteString(sf.FileID)
 	builder.WriteString(", ")
 	builder.WriteString("file_size=")
 	builder.WriteString(fmt.Sprintf("%v", sf.FileSize))

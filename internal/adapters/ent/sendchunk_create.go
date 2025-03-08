@@ -21,9 +21,9 @@ type SendChunkCreate struct {
 	hooks    []Hook
 }
 
-// SetFileID sets the "file_id" field.
-func (scc *SendChunkCreate) SetFileID(i int) *SendChunkCreate {
-	scc.mutation.SetFileID(i)
+// SetSendfileID sets the "sendfile_id" field.
+func (scc *SendChunkCreate) SetSendfileID(i int) *SendChunkCreate {
+	scc.mutation.SetSendfileID(i)
 	return scc
 }
 
@@ -65,20 +65,6 @@ func (scc *SendChunkCreate) SetChunkSize(i int) *SendChunkCreate {
 func (scc *SendChunkCreate) SetNillableChunkSize(i *int) *SendChunkCreate {
 	if i != nil {
 		scc.SetChunkSize(*i)
-	}
-	return scc
-}
-
-// SetStatus sets the "status" field.
-func (scc *SendChunkCreate) SetStatus(i int) *SendChunkCreate {
-	scc.mutation.SetStatus(i)
-	return scc
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (scc *SendChunkCreate) SetNillableStatus(i *int) *SendChunkCreate {
-	if i != nil {
-		scc.SetStatus(*i)
 	}
 	return scc
 }
@@ -169,10 +155,6 @@ func (scc *SendChunkCreate) defaults() {
 		v := sendchunk.DefaultChunkSize
 		scc.mutation.SetChunkSize(v)
 	}
-	if _, ok := scc.mutation.Status(); !ok {
-		v := sendchunk.DefaultStatus
-		scc.mutation.SetStatus(v)
-	}
 	if _, ok := scc.mutation.UpdatedAt(); !ok {
 		v := sendchunk.DefaultUpdatedAt()
 		scc.mutation.SetUpdatedAt(v)
@@ -185,8 +167,8 @@ func (scc *SendChunkCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (scc *SendChunkCreate) check() error {
-	if _, ok := scc.mutation.FileID(); !ok {
-		return &ValidationError{Name: "file_id", err: errors.New(`ent: missing required field "SendChunk.file_id"`)}
+	if _, ok := scc.mutation.SendfileID(); !ok {
+		return &ValidationError{Name: "sendfile_id", err: errors.New(`ent: missing required field "SendChunk.sendfile_id"`)}
 	}
 	if _, ok := scc.mutation.ChunkIndex(); !ok {
 		return &ValidationError{Name: "chunk_index", err: errors.New(`ent: missing required field "SendChunk.chunk_index"`)}
@@ -196,9 +178,6 @@ func (scc *SendChunkCreate) check() error {
 	}
 	if _, ok := scc.mutation.ChunkSize(); !ok {
 		return &ValidationError{Name: "chunk_size", err: errors.New(`ent: missing required field "SendChunk.chunk_size"`)}
-	}
-	if _, ok := scc.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "SendChunk.status"`)}
 	}
 	if _, ok := scc.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "SendChunk.updated_at"`)}
@@ -247,10 +226,6 @@ func (scc *SendChunkCreate) createSpec() (*SendChunk, *sqlgraph.CreateSpec) {
 		_spec.SetField(sendchunk.FieldChunkSize, field.TypeInt, value)
 		_node.ChunkSize = value
 	}
-	if value, ok := scc.mutation.Status(); ok {
-		_spec.SetField(sendchunk.FieldStatus, field.TypeInt, value)
-		_node.Status = value
-	}
 	if value, ok := scc.mutation.UpdatedAt(); ok {
 		_spec.SetField(sendchunk.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
@@ -273,7 +248,7 @@ func (scc *SendChunkCreate) createSpec() (*SendChunk, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.FileID = nodes[0]
+		_node.SendfileID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

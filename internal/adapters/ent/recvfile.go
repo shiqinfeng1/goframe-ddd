@@ -25,8 +25,8 @@ type RecvFile struct {
 	FilePathSave string `json:"file_path_save,omitempty"`
 	// FilePathOrigin holds the value of the "file_path_origin" field.
 	FilePathOrigin string `json:"file_path_origin,omitempty"`
-	// Fid holds the value of the "fid" field.
-	Fid string `json:"fid,omitempty"`
+	// FileID holds the value of the "file_id" field.
+	FileID string `json:"file_id,omitempty"`
 	// FileSize holds the value of the "file_size" field.
 	FileSize int64 `json:"file_size,omitempty"`
 	// ChunkNumTotal holds the value of the "chunk_num_total" field.
@@ -70,7 +70,7 @@ func (*RecvFile) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case recvfile.FieldID, recvfile.FieldFileSize, recvfile.FieldChunkNumTotal, recvfile.FieldChunkNumRecved, recvfile.FieldStatus:
 			values[i] = new(sql.NullInt64)
-		case recvfile.FieldTaskID, recvfile.FieldTaskName, recvfile.FieldFilePathSave, recvfile.FieldFilePathOrigin, recvfile.FieldFid:
+		case recvfile.FieldTaskID, recvfile.FieldTaskName, recvfile.FieldFilePathSave, recvfile.FieldFilePathOrigin, recvfile.FieldFileID:
 			values[i] = new(sql.NullString)
 		case recvfile.FieldUpdatedAt, recvfile.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -119,11 +119,11 @@ func (rf *RecvFile) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				rf.FilePathOrigin = value.String
 			}
-		case recvfile.FieldFid:
+		case recvfile.FieldFileID:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field fid", values[i])
+				return fmt.Errorf("unexpected type %T for field file_id", values[i])
 			} else if value.Valid {
-				rf.Fid = value.String
+				rf.FileID = value.String
 			}
 		case recvfile.FieldFileSize:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -214,8 +214,8 @@ func (rf *RecvFile) String() string {
 	builder.WriteString("file_path_origin=")
 	builder.WriteString(rf.FilePathOrigin)
 	builder.WriteString(", ")
-	builder.WriteString("fid=")
-	builder.WriteString(rf.Fid)
+	builder.WriteString("file_id=")
+	builder.WriteString(rf.FileID)
 	builder.WriteString(", ")
 	builder.WriteString("file_size=")
 	builder.WriteString(fmt.Sprintf("%v", rf.FileSize))

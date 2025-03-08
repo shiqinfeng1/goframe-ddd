@@ -20,8 +20,8 @@ const (
 	FieldTaskName = "task_name"
 	// FieldFilePath holds the string denoting the file_path field in the database.
 	FieldFilePath = "file_path"
-	// FieldFid holds the string denoting the fid field in the database.
-	FieldFid = "fid"
+	// FieldFileID holds the string denoting the file_id field in the database.
+	FieldFileID = "file_id"
 	// FieldFileSize holds the string denoting the file_size field in the database.
 	FieldFileSize = "file_size"
 	// FieldChunkNumTotal holds the string denoting the chunk_num_total field in the database.
@@ -48,7 +48,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "sendchunk" package.
 	SendChunksInverseTable = "send_chunks"
 	// SendChunksColumn is the table column denoting the send_chunks relation/edge.
-	SendChunksColumn = "file_id"
+	SendChunksColumn = "sendfile_id"
 )
 
 // Columns holds all SQL columns for sendfile fields.
@@ -57,7 +57,7 @@ var Columns = []string{
 	FieldTaskID,
 	FieldTaskName,
 	FieldFilePath,
-	FieldFid,
+	FieldFileID,
 	FieldFileSize,
 	FieldChunkNumTotal,
 	FieldChunkNumSended,
@@ -85,12 +85,12 @@ var (
 	TaskNameValidator func(string) error
 	// FilePathValidator is a validator for the "file_path" field. It is called by the builders before save.
 	FilePathValidator func(string) error
-	// FidValidator is a validator for the "fid" field. It is called by the builders before save.
-	FidValidator func(string) error
-	// DefaultFileSize holds the default value on creation for the "file_size" field.
-	DefaultFileSize int64
-	// DefaultChunkNumTotal holds the default value on creation for the "chunk_num_total" field.
-	DefaultChunkNumTotal int
+	// FileIDValidator is a validator for the "file_id" field. It is called by the builders before save.
+	FileIDValidator func(string) error
+	// FileSizeValidator is a validator for the "file_size" field. It is called by the builders before save.
+	FileSizeValidator func(int64) error
+	// ChunkNumTotalValidator is a validator for the "chunk_num_total" field. It is called by the builders before save.
+	ChunkNumTotalValidator func(int) error
 	// DefaultChunkNumSended holds the default value on creation for the "chunk_num_sended" field.
 	DefaultChunkNumSended int
 	// DefaultStatus holds the default value on creation for the "status" field.
@@ -134,9 +134,9 @@ func ByFilePath(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldFilePath, opts...).ToFunc()
 }
 
-// ByFid orders the results by the fid field.
-func ByFid(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldFid, opts...).ToFunc()
+// ByFileID orders the results by the file_id field.
+func ByFileID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFileID, opts...).ToFunc()
 }
 
 // ByFileSize orders the results by the file_size field.

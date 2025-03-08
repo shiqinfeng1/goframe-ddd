@@ -55,9 +55,9 @@ func IDLTE(id int) predicate.RecvChunk {
 	return predicate.RecvChunk(sql.FieldLTE(FieldID, id))
 }
 
-// FileID applies equality check predicate on the "file_id" field. It's identical to FileIDEQ.
-func FileID(v int) predicate.RecvChunk {
-	return predicate.RecvChunk(sql.FieldEQ(FieldFileID, v))
+// RecvfileID applies equality check predicate on the "recvfile_id" field. It's identical to RecvfileIDEQ.
+func RecvfileID(v int) predicate.RecvChunk {
+	return predicate.RecvChunk(sql.FieldEQ(FieldRecvfileID, v))
 }
 
 // ChunkIndex applies equality check predicate on the "chunk_index" field. It's identical to ChunkIndexEQ.
@@ -75,11 +75,6 @@ func ChunkSize(v int) predicate.RecvChunk {
 	return predicate.RecvChunk(sql.FieldEQ(FieldChunkSize, v))
 }
 
-// Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
-func Status(v int) predicate.RecvChunk {
-	return predicate.RecvChunk(sql.FieldEQ(FieldStatus, v))
-}
-
 // UpdatedAt applies equality check predicate on the "updated_at" field. It's identical to UpdatedAtEQ.
 func UpdatedAt(v time.Time) predicate.RecvChunk {
 	return predicate.RecvChunk(sql.FieldEQ(FieldUpdatedAt, v))
@@ -90,24 +85,24 @@ func CreatedAt(v time.Time) predicate.RecvChunk {
 	return predicate.RecvChunk(sql.FieldEQ(FieldCreatedAt, v))
 }
 
-// FileIDEQ applies the EQ predicate on the "file_id" field.
-func FileIDEQ(v int) predicate.RecvChunk {
-	return predicate.RecvChunk(sql.FieldEQ(FieldFileID, v))
+// RecvfileIDEQ applies the EQ predicate on the "recvfile_id" field.
+func RecvfileIDEQ(v int) predicate.RecvChunk {
+	return predicate.RecvChunk(sql.FieldEQ(FieldRecvfileID, v))
 }
 
-// FileIDNEQ applies the NEQ predicate on the "file_id" field.
-func FileIDNEQ(v int) predicate.RecvChunk {
-	return predicate.RecvChunk(sql.FieldNEQ(FieldFileID, v))
+// RecvfileIDNEQ applies the NEQ predicate on the "recvfile_id" field.
+func RecvfileIDNEQ(v int) predicate.RecvChunk {
+	return predicate.RecvChunk(sql.FieldNEQ(FieldRecvfileID, v))
 }
 
-// FileIDIn applies the In predicate on the "file_id" field.
-func FileIDIn(vs ...int) predicate.RecvChunk {
-	return predicate.RecvChunk(sql.FieldIn(FieldFileID, vs...))
+// RecvfileIDIn applies the In predicate on the "recvfile_id" field.
+func RecvfileIDIn(vs ...int) predicate.RecvChunk {
+	return predicate.RecvChunk(sql.FieldIn(FieldRecvfileID, vs...))
 }
 
-// FileIDNotIn applies the NotIn predicate on the "file_id" field.
-func FileIDNotIn(vs ...int) predicate.RecvChunk {
-	return predicate.RecvChunk(sql.FieldNotIn(FieldFileID, vs...))
+// RecvfileIDNotIn applies the NotIn predicate on the "recvfile_id" field.
+func RecvfileIDNotIn(vs ...int) predicate.RecvChunk {
+	return predicate.RecvChunk(sql.FieldNotIn(FieldRecvfileID, vs...))
 }
 
 // ChunkIndexEQ applies the EQ predicate on the "chunk_index" field.
@@ -228,46 +223,6 @@ func ChunkSizeLT(v int) predicate.RecvChunk {
 // ChunkSizeLTE applies the LTE predicate on the "chunk_size" field.
 func ChunkSizeLTE(v int) predicate.RecvChunk {
 	return predicate.RecvChunk(sql.FieldLTE(FieldChunkSize, v))
-}
-
-// StatusEQ applies the EQ predicate on the "status" field.
-func StatusEQ(v int) predicate.RecvChunk {
-	return predicate.RecvChunk(sql.FieldEQ(FieldStatus, v))
-}
-
-// StatusNEQ applies the NEQ predicate on the "status" field.
-func StatusNEQ(v int) predicate.RecvChunk {
-	return predicate.RecvChunk(sql.FieldNEQ(FieldStatus, v))
-}
-
-// StatusIn applies the In predicate on the "status" field.
-func StatusIn(vs ...int) predicate.RecvChunk {
-	return predicate.RecvChunk(sql.FieldIn(FieldStatus, vs...))
-}
-
-// StatusNotIn applies the NotIn predicate on the "status" field.
-func StatusNotIn(vs ...int) predicate.RecvChunk {
-	return predicate.RecvChunk(sql.FieldNotIn(FieldStatus, vs...))
-}
-
-// StatusGT applies the GT predicate on the "status" field.
-func StatusGT(v int) predicate.RecvChunk {
-	return predicate.RecvChunk(sql.FieldGT(FieldStatus, v))
-}
-
-// StatusGTE applies the GTE predicate on the "status" field.
-func StatusGTE(v int) predicate.RecvChunk {
-	return predicate.RecvChunk(sql.FieldGTE(FieldStatus, v))
-}
-
-// StatusLT applies the LT predicate on the "status" field.
-func StatusLT(v int) predicate.RecvChunk {
-	return predicate.RecvChunk(sql.FieldLT(FieldStatus, v))
-}
-
-// StatusLTE applies the LTE predicate on the "status" field.
-func StatusLTE(v int) predicate.RecvChunk {
-	return predicate.RecvChunk(sql.FieldLTE(FieldStatus, v))
 }
 
 // UpdatedAtEQ applies the EQ predicate on the "updated_at" field.

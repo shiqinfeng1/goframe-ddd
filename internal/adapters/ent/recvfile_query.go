@@ -414,7 +414,7 @@ func (rfq *RecvFileQuery) loadRecvChunks(ctx context.Context, query *RecvChunkQu
 		}
 	}
 	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(recvchunk.FieldFileID)
+		query.ctx.AppendFieldOnce(recvchunk.FieldRecvfileID)
 	}
 	query.Where(predicate.RecvChunk(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(recvfile.RecvChunksColumn), fks...))
@@ -424,10 +424,10 @@ func (rfq *RecvFileQuery) loadRecvChunks(ctx context.Context, query *RecvChunkQu
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.FileID
+		fk := n.RecvfileID
 		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "file_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "recvfile_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

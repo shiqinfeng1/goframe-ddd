@@ -29,16 +29,16 @@ func (rcu *RecvChunkUpdate) Where(ps ...predicate.RecvChunk) *RecvChunkUpdate {
 	return rcu
 }
 
-// SetFileID sets the "file_id" field.
-func (rcu *RecvChunkUpdate) SetFileID(i int) *RecvChunkUpdate {
-	rcu.mutation.SetFileID(i)
+// SetRecvfileID sets the "recvfile_id" field.
+func (rcu *RecvChunkUpdate) SetRecvfileID(i int) *RecvChunkUpdate {
+	rcu.mutation.SetRecvfileID(i)
 	return rcu
 }
 
-// SetNillableFileID sets the "file_id" field if the given value is not nil.
-func (rcu *RecvChunkUpdate) SetNillableFileID(i *int) *RecvChunkUpdate {
+// SetNillableRecvfileID sets the "recvfile_id" field if the given value is not nil.
+func (rcu *RecvChunkUpdate) SetNillableRecvfileID(i *int) *RecvChunkUpdate {
 	if i != nil {
-		rcu.SetFileID(*i)
+		rcu.SetRecvfileID(*i)
 	}
 	return rcu
 }
@@ -103,27 +103,6 @@ func (rcu *RecvChunkUpdate) SetNillableChunkSize(i *int) *RecvChunkUpdate {
 // AddChunkSize adds i to the "chunk_size" field.
 func (rcu *RecvChunkUpdate) AddChunkSize(i int) *RecvChunkUpdate {
 	rcu.mutation.AddChunkSize(i)
-	return rcu
-}
-
-// SetStatus sets the "status" field.
-func (rcu *RecvChunkUpdate) SetStatus(i int) *RecvChunkUpdate {
-	rcu.mutation.ResetStatus()
-	rcu.mutation.SetStatus(i)
-	return rcu
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (rcu *RecvChunkUpdate) SetNillableStatus(i *int) *RecvChunkUpdate {
-	if i != nil {
-		rcu.SetStatus(*i)
-	}
-	return rcu
-}
-
-// AddStatus adds i to the "status" field.
-func (rcu *RecvChunkUpdate) AddStatus(i int) *RecvChunkUpdate {
-	rcu.mutation.AddStatus(i)
 	return rcu
 }
 
@@ -229,12 +208,6 @@ func (rcu *RecvChunkUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := rcu.mutation.AddedChunkSize(); ok {
 		_spec.AddField(recvchunk.FieldChunkSize, field.TypeInt, value)
 	}
-	if value, ok := rcu.mutation.Status(); ok {
-		_spec.SetField(recvchunk.FieldStatus, field.TypeInt, value)
-	}
-	if value, ok := rcu.mutation.AddedStatus(); ok {
-		_spec.AddField(recvchunk.FieldStatus, field.TypeInt, value)
-	}
 	if value, ok := rcu.mutation.UpdatedAt(); ok {
 		_spec.SetField(recvchunk.FieldUpdatedAt, field.TypeTime, value)
 	}
@@ -287,16 +260,16 @@ type RecvChunkUpdateOne struct {
 	mutation *RecvChunkMutation
 }
 
-// SetFileID sets the "file_id" field.
-func (rcuo *RecvChunkUpdateOne) SetFileID(i int) *RecvChunkUpdateOne {
-	rcuo.mutation.SetFileID(i)
+// SetRecvfileID sets the "recvfile_id" field.
+func (rcuo *RecvChunkUpdateOne) SetRecvfileID(i int) *RecvChunkUpdateOne {
+	rcuo.mutation.SetRecvfileID(i)
 	return rcuo
 }
 
-// SetNillableFileID sets the "file_id" field if the given value is not nil.
-func (rcuo *RecvChunkUpdateOne) SetNillableFileID(i *int) *RecvChunkUpdateOne {
+// SetNillableRecvfileID sets the "recvfile_id" field if the given value is not nil.
+func (rcuo *RecvChunkUpdateOne) SetNillableRecvfileID(i *int) *RecvChunkUpdateOne {
 	if i != nil {
-		rcuo.SetFileID(*i)
+		rcuo.SetRecvfileID(*i)
 	}
 	return rcuo
 }
@@ -361,27 +334,6 @@ func (rcuo *RecvChunkUpdateOne) SetNillableChunkSize(i *int) *RecvChunkUpdateOne
 // AddChunkSize adds i to the "chunk_size" field.
 func (rcuo *RecvChunkUpdateOne) AddChunkSize(i int) *RecvChunkUpdateOne {
 	rcuo.mutation.AddChunkSize(i)
-	return rcuo
-}
-
-// SetStatus sets the "status" field.
-func (rcuo *RecvChunkUpdateOne) SetStatus(i int) *RecvChunkUpdateOne {
-	rcuo.mutation.ResetStatus()
-	rcuo.mutation.SetStatus(i)
-	return rcuo
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (rcuo *RecvChunkUpdateOne) SetNillableStatus(i *int) *RecvChunkUpdateOne {
-	if i != nil {
-		rcuo.SetStatus(*i)
-	}
-	return rcuo
-}
-
-// AddStatus adds i to the "status" field.
-func (rcuo *RecvChunkUpdateOne) AddStatus(i int) *RecvChunkUpdateOne {
-	rcuo.mutation.AddStatus(i)
 	return rcuo
 }
 
@@ -516,12 +468,6 @@ func (rcuo *RecvChunkUpdateOne) sqlSave(ctx context.Context) (_node *RecvChunk, 
 	}
 	if value, ok := rcuo.mutation.AddedChunkSize(); ok {
 		_spec.AddField(recvchunk.FieldChunkSize, field.TypeInt, value)
-	}
-	if value, ok := rcuo.mutation.Status(); ok {
-		_spec.SetField(recvchunk.FieldStatus, field.TypeInt, value)
-	}
-	if value, ok := rcuo.mutation.AddedStatus(); ok {
-		_spec.AddField(recvchunk.FieldStatus, field.TypeInt, value)
 	}
 	if value, ok := rcuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(recvchunk.FieldUpdatedAt, field.TypeTime, value)

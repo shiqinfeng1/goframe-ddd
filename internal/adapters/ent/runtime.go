@@ -30,18 +30,14 @@ func init() {
 	recvchunkDescChunkSize := recvchunkFields[3].Descriptor()
 	// recvchunk.DefaultChunkSize holds the default value on creation for the chunk_size field.
 	recvchunk.DefaultChunkSize = recvchunkDescChunkSize.Default.(int)
-	// recvchunkDescStatus is the schema descriptor for status field.
-	recvchunkDescStatus := recvchunkFields[4].Descriptor()
-	// recvchunk.DefaultStatus holds the default value on creation for the status field.
-	recvchunk.DefaultStatus = recvchunkDescStatus.Default.(int)
 	// recvchunkDescUpdatedAt is the schema descriptor for updated_at field.
-	recvchunkDescUpdatedAt := recvchunkFields[5].Descriptor()
+	recvchunkDescUpdatedAt := recvchunkFields[4].Descriptor()
 	// recvchunk.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	recvchunk.DefaultUpdatedAt = recvchunkDescUpdatedAt.Default.(func() time.Time)
 	// recvchunk.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	recvchunk.UpdateDefaultUpdatedAt = recvchunkDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// recvchunkDescCreatedAt is the schema descriptor for created_at field.
-	recvchunkDescCreatedAt := recvchunkFields[6].Descriptor()
+	recvchunkDescCreatedAt := recvchunkFields[5].Descriptor()
 	// recvchunk.DefaultCreatedAt holds the default value on creation for the created_at field.
 	recvchunk.DefaultCreatedAt = recvchunkDescCreatedAt.Default.(func() time.Time)
 	recvfileFields := schema.RecvFile{}.Fields()
@@ -49,7 +45,21 @@ func init() {
 	// recvfileDescTaskID is the schema descriptor for task_id field.
 	recvfileDescTaskID := recvfileFields[0].Descriptor()
 	// recvfile.TaskIDValidator is a validator for the "task_id" field. It is called by the builders before save.
-	recvfile.TaskIDValidator = recvfileDescTaskID.Validators[0].(func(string) error)
+	recvfile.TaskIDValidator = func() func(string) error {
+		validators := recvfileDescTaskID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(task_id string) error {
+			for _, fn := range fns {
+				if err := fn(task_id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
 	// recvfileDescTaskName is the schema descriptor for task_name field.
 	recvfileDescTaskName := recvfileFields[1].Descriptor()
 	// recvfile.TaskNameValidator is a validator for the "task_name" field. It is called by the builders before save.
@@ -62,14 +72,32 @@ func init() {
 	recvfileDescFilePathOrigin := recvfileFields[3].Descriptor()
 	// recvfile.FilePathOriginValidator is a validator for the "file_path_origin" field. It is called by the builders before save.
 	recvfile.FilePathOriginValidator = recvfileDescFilePathOrigin.Validators[0].(func(string) error)
+	// recvfileDescFileID is the schema descriptor for file_id field.
+	recvfileDescFileID := recvfileFields[4].Descriptor()
+	// recvfile.FileIDValidator is a validator for the "file_id" field. It is called by the builders before save.
+	recvfile.FileIDValidator = func() func(string) error {
+		validators := recvfileDescFileID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(file_id string) error {
+			for _, fn := range fns {
+				if err := fn(file_id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
 	// recvfileDescFileSize is the schema descriptor for file_size field.
 	recvfileDescFileSize := recvfileFields[5].Descriptor()
-	// recvfile.DefaultFileSize holds the default value on creation for the file_size field.
-	recvfile.DefaultFileSize = recvfileDescFileSize.Default.(int64)
+	// recvfile.FileSizeValidator is a validator for the "file_size" field. It is called by the builders before save.
+	recvfile.FileSizeValidator = recvfileDescFileSize.Validators[0].(func(int64) error)
 	// recvfileDescChunkNumTotal is the schema descriptor for chunk_num_total field.
 	recvfileDescChunkNumTotal := recvfileFields[6].Descriptor()
-	// recvfile.DefaultChunkNumTotal holds the default value on creation for the chunk_num_total field.
-	recvfile.DefaultChunkNumTotal = recvfileDescChunkNumTotal.Default.(int)
+	// recvfile.ChunkNumTotalValidator is a validator for the "chunk_num_total" field. It is called by the builders before save.
+	recvfile.ChunkNumTotalValidator = recvfileDescChunkNumTotal.Validators[0].(func(int) error)
 	// recvfileDescChunkNumRecved is the schema descriptor for chunk_num_recved field.
 	recvfileDescChunkNumRecved := recvfileFields[7].Descriptor()
 	// recvfile.DefaultChunkNumRecved holds the default value on creation for the chunk_num_recved field.
@@ -102,18 +130,14 @@ func init() {
 	sendchunkDescChunkSize := sendchunkFields[3].Descriptor()
 	// sendchunk.DefaultChunkSize holds the default value on creation for the chunk_size field.
 	sendchunk.DefaultChunkSize = sendchunkDescChunkSize.Default.(int)
-	// sendchunkDescStatus is the schema descriptor for status field.
-	sendchunkDescStatus := sendchunkFields[4].Descriptor()
-	// sendchunk.DefaultStatus holds the default value on creation for the status field.
-	sendchunk.DefaultStatus = sendchunkDescStatus.Default.(int)
 	// sendchunkDescUpdatedAt is the schema descriptor for updated_at field.
-	sendchunkDescUpdatedAt := sendchunkFields[5].Descriptor()
+	sendchunkDescUpdatedAt := sendchunkFields[4].Descriptor()
 	// sendchunk.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	sendchunk.DefaultUpdatedAt = sendchunkDescUpdatedAt.Default.(func() time.Time)
 	// sendchunk.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	sendchunk.UpdateDefaultUpdatedAt = sendchunkDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// sendchunkDescCreatedAt is the schema descriptor for created_at field.
-	sendchunkDescCreatedAt := sendchunkFields[6].Descriptor()
+	sendchunkDescCreatedAt := sendchunkFields[5].Descriptor()
 	// sendchunk.DefaultCreatedAt holds the default value on creation for the created_at field.
 	sendchunk.DefaultCreatedAt = sendchunkDescCreatedAt.Default.(func() time.Time)
 	sendfileFields := schema.SendFile{}.Fields()
@@ -121,7 +145,21 @@ func init() {
 	// sendfileDescTaskID is the schema descriptor for task_id field.
 	sendfileDescTaskID := sendfileFields[0].Descriptor()
 	// sendfile.TaskIDValidator is a validator for the "task_id" field. It is called by the builders before save.
-	sendfile.TaskIDValidator = sendfileDescTaskID.Validators[0].(func(string) error)
+	sendfile.TaskIDValidator = func() func(string) error {
+		validators := sendfileDescTaskID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(task_id string) error {
+			for _, fn := range fns {
+				if err := fn(task_id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
 	// sendfileDescTaskName is the schema descriptor for task_name field.
 	sendfileDescTaskName := sendfileFields[1].Descriptor()
 	// sendfile.TaskNameValidator is a validator for the "task_name" field. It is called by the builders before save.
@@ -130,18 +168,32 @@ func init() {
 	sendfileDescFilePath := sendfileFields[2].Descriptor()
 	// sendfile.FilePathValidator is a validator for the "file_path" field. It is called by the builders before save.
 	sendfile.FilePathValidator = sendfileDescFilePath.Validators[0].(func(string) error)
-	// sendfileDescFid is the schema descriptor for fid field.
-	sendfileDescFid := sendfileFields[3].Descriptor()
-	// sendfile.FidValidator is a validator for the "fid" field. It is called by the builders before save.
-	sendfile.FidValidator = sendfileDescFid.Validators[0].(func(string) error)
+	// sendfileDescFileID is the schema descriptor for file_id field.
+	sendfileDescFileID := sendfileFields[3].Descriptor()
+	// sendfile.FileIDValidator is a validator for the "file_id" field. It is called by the builders before save.
+	sendfile.FileIDValidator = func() func(string) error {
+		validators := sendfileDescFileID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(file_id string) error {
+			for _, fn := range fns {
+				if err := fn(file_id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
 	// sendfileDescFileSize is the schema descriptor for file_size field.
 	sendfileDescFileSize := sendfileFields[4].Descriptor()
-	// sendfile.DefaultFileSize holds the default value on creation for the file_size field.
-	sendfile.DefaultFileSize = sendfileDescFileSize.Default.(int64)
+	// sendfile.FileSizeValidator is a validator for the "file_size" field. It is called by the builders before save.
+	sendfile.FileSizeValidator = sendfileDescFileSize.Validators[0].(func(int64) error)
 	// sendfileDescChunkNumTotal is the schema descriptor for chunk_num_total field.
 	sendfileDescChunkNumTotal := sendfileFields[5].Descriptor()
-	// sendfile.DefaultChunkNumTotal holds the default value on creation for the chunk_num_total field.
-	sendfile.DefaultChunkNumTotal = sendfileDescChunkNumTotal.Default.(int)
+	// sendfile.ChunkNumTotalValidator is a validator for the "chunk_num_total" field. It is called by the builders before save.
+	sendfile.ChunkNumTotalValidator = sendfileDescChunkNumTotal.Validators[0].(func(int) error)
 	// sendfileDescChunkNumSended is the schema descriptor for chunk_num_sended field.
 	sendfileDescChunkNumSended := sendfileFields[6].Descriptor()
 	// sendfile.DefaultChunkNumSended holds the default value on creation for the chunk_num_sended field.

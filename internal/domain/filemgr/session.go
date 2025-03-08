@@ -12,6 +12,7 @@ import (
 	"github.com/gogf/gf/v2/os/gcache"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/util/gconv"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/cache"
 	"github.com/xtaci/smux"
 )
 
@@ -28,7 +29,7 @@ var (
 func Session() *SessionMgr {
 	once.Do(func() {
 		sessionMgr = &SessionMgr{
-			serverSess: gcache.NewWithAdapter(gcache.NewAdapterMemory()),
+			serverSess: cache.Memory(),
 		}
 		go sessionMgr.checkLiveness()
 	})

@@ -298,12 +298,12 @@ func (rcq *RecvChunkQuery) WithRecvFile(opts ...func(*RecvFileQuery)) *RecvChunk
 // Example:
 //
 //	var v []struct {
-//		FileID int `json:"file_id,omitempty"`
+//		RecvfileID int `json:"recvfile_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.RecvChunk.Query().
-//		GroupBy(recvchunk.FieldFileID).
+//		GroupBy(recvchunk.FieldRecvfileID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (rcq *RecvChunkQuery) GroupBy(field string, fields ...string) *RecvChunkGroupBy {
@@ -321,11 +321,11 @@ func (rcq *RecvChunkQuery) GroupBy(field string, fields ...string) *RecvChunkGro
 // Example:
 //
 //	var v []struct {
-//		FileID int `json:"file_id,omitempty"`
+//		RecvfileID int `json:"recvfile_id,omitempty"`
 //	}
 //
 //	client.RecvChunk.Query().
-//		Select(recvchunk.FieldFileID).
+//		Select(recvchunk.FieldRecvfileID).
 //		Scan(ctx, &v)
 func (rcq *RecvChunkQuery) Select(fields ...string) *RecvChunkSelect {
 	rcq.ctx.Fields = append(rcq.ctx.Fields, fields...)
@@ -405,7 +405,7 @@ func (rcq *RecvChunkQuery) loadRecvFile(ctx context.Context, query *RecvFileQuer
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*RecvChunk)
 	for i := range nodes {
-		fk := nodes[i].FileID
+		fk := nodes[i].RecvfileID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -422,7 +422,7 @@ func (rcq *RecvChunkQuery) loadRecvFile(ctx context.Context, query *RecvFileQuer
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "file_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "recvfile_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -457,7 +457,7 @@ func (rcq *RecvChunkQuery) querySpec() *sqlgraph.QuerySpec {
 			}
 		}
 		if rcq.withRecvFile != nil {
-			_spec.Node.AddColumnOnce(recvchunk.FieldFileID)
+			_spec.Node.AddColumnOnce(recvchunk.FieldRecvfileID)
 		}
 	}
 	if ps := rcq.predicates; len(ps) > 0 {

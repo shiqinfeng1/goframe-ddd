@@ -75,9 +75,9 @@ func FilePathOrigin(v string) predicate.RecvFile {
 	return predicate.RecvFile(sql.FieldEQ(FieldFilePathOrigin, v))
 }
 
-// Fid applies equality check predicate on the "fid" field. It's identical to FidEQ.
-func Fid(v string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldEQ(FieldFid, v))
+// FileID applies equality check predicate on the "file_id" field. It's identical to FileIDEQ.
+func FileID(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldEQ(FieldFileID, v))
 }
 
 // FileSize applies equality check predicate on the "file_size" field. It's identical to FileSizeEQ.
@@ -370,69 +370,69 @@ func FilePathOriginContainsFold(v string) predicate.RecvFile {
 	return predicate.RecvFile(sql.FieldContainsFold(FieldFilePathOrigin, v))
 }
 
-// FidEQ applies the EQ predicate on the "fid" field.
-func FidEQ(v string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldEQ(FieldFid, v))
+// FileIDEQ applies the EQ predicate on the "file_id" field.
+func FileIDEQ(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldEQ(FieldFileID, v))
 }
 
-// FidNEQ applies the NEQ predicate on the "fid" field.
-func FidNEQ(v string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldNEQ(FieldFid, v))
+// FileIDNEQ applies the NEQ predicate on the "file_id" field.
+func FileIDNEQ(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldNEQ(FieldFileID, v))
 }
 
-// FidIn applies the In predicate on the "fid" field.
-func FidIn(vs ...string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldIn(FieldFid, vs...))
+// FileIDIn applies the In predicate on the "file_id" field.
+func FileIDIn(vs ...string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldIn(FieldFileID, vs...))
 }
 
-// FidNotIn applies the NotIn predicate on the "fid" field.
-func FidNotIn(vs ...string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldNotIn(FieldFid, vs...))
+// FileIDNotIn applies the NotIn predicate on the "file_id" field.
+func FileIDNotIn(vs ...string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldNotIn(FieldFileID, vs...))
 }
 
-// FidGT applies the GT predicate on the "fid" field.
-func FidGT(v string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldGT(FieldFid, v))
+// FileIDGT applies the GT predicate on the "file_id" field.
+func FileIDGT(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldGT(FieldFileID, v))
 }
 
-// FidGTE applies the GTE predicate on the "fid" field.
-func FidGTE(v string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldGTE(FieldFid, v))
+// FileIDGTE applies the GTE predicate on the "file_id" field.
+func FileIDGTE(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldGTE(FieldFileID, v))
 }
 
-// FidLT applies the LT predicate on the "fid" field.
-func FidLT(v string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldLT(FieldFid, v))
+// FileIDLT applies the LT predicate on the "file_id" field.
+func FileIDLT(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldLT(FieldFileID, v))
 }
 
-// FidLTE applies the LTE predicate on the "fid" field.
-func FidLTE(v string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldLTE(FieldFid, v))
+// FileIDLTE applies the LTE predicate on the "file_id" field.
+func FileIDLTE(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldLTE(FieldFileID, v))
 }
 
-// FidContains applies the Contains predicate on the "fid" field.
-func FidContains(v string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldContains(FieldFid, v))
+// FileIDContains applies the Contains predicate on the "file_id" field.
+func FileIDContains(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldContains(FieldFileID, v))
 }
 
-// FidHasPrefix applies the HasPrefix predicate on the "fid" field.
-func FidHasPrefix(v string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldHasPrefix(FieldFid, v))
+// FileIDHasPrefix applies the HasPrefix predicate on the "file_id" field.
+func FileIDHasPrefix(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldHasPrefix(FieldFileID, v))
 }
 
-// FidHasSuffix applies the HasSuffix predicate on the "fid" field.
-func FidHasSuffix(v string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldHasSuffix(FieldFid, v))
+// FileIDHasSuffix applies the HasSuffix predicate on the "file_id" field.
+func FileIDHasSuffix(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldHasSuffix(FieldFileID, v))
 }
 
-// FidEqualFold applies the EqualFold predicate on the "fid" field.
-func FidEqualFold(v string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldEqualFold(FieldFid, v))
+// FileIDEqualFold applies the EqualFold predicate on the "file_id" field.
+func FileIDEqualFold(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldEqualFold(FieldFileID, v))
 }
 
-// FidContainsFold applies the ContainsFold predicate on the "fid" field.
-func FidContainsFold(v string) predicate.RecvFile {
-	return predicate.RecvFile(sql.FieldContainsFold(FieldFid, v))
+// FileIDContainsFold applies the ContainsFold predicate on the "file_id" field.
+func FileIDContainsFold(v string) predicate.RecvFile {
+	return predicate.RecvFile(sql.FieldContainsFold(FieldFileID, v))
 }
 
 // FileSizeEQ applies the EQ predicate on the "file_size" field.

@@ -18,16 +18,14 @@ type RecvChunk struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
-	// FileID holds the value of the "file_id" field.
-	FileID int `json:"file_id,omitempty"`
+	// RecvfileID holds the value of the "recvfile_id" field.
+	RecvfileID int `json:"recvfile_id,omitempty"`
 	// ChunkIndex holds the value of the "chunk_index" field.
 	ChunkIndex int `json:"chunk_index,omitempty"`
 	// ChunkOffset holds the value of the "chunk_offset" field.
 	ChunkOffset int64 `json:"chunk_offset,omitempty"`
 	// ChunkSize holds the value of the "chunk_size" field.
 	ChunkSize int `json:"chunk_size,omitempty"`
-	// Status holds the value of the "status" field.
-	Status int `json:"status,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -63,7 +61,7 @@ func (*RecvChunk) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case recvchunk.FieldID, recvchunk.FieldFileID, recvchunk.FieldChunkIndex, recvchunk.FieldChunkOffset, recvchunk.FieldChunkSize, recvchunk.FieldStatus:
+		case recvchunk.FieldID, recvchunk.FieldRecvfileID, recvchunk.FieldChunkIndex, recvchunk.FieldChunkOffset, recvchunk.FieldChunkSize:
 			values[i] = new(sql.NullInt64)
 		case recvchunk.FieldUpdatedAt, recvchunk.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -88,11 +86,11 @@ func (rc *RecvChunk) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			rc.ID = int(value.Int64)
-		case recvchunk.FieldFileID:
+		case recvchunk.FieldRecvfileID:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field file_id", values[i])
+				return fmt.Errorf("unexpected type %T for field recvfile_id", values[i])
 			} else if value.Valid {
-				rc.FileID = int(value.Int64)
+				rc.RecvfileID = int(value.Int64)
 			}
 		case recvchunk.FieldChunkIndex:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -111,12 +109,6 @@ func (rc *RecvChunk) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field chunk_size", values[i])
 			} else if value.Valid {
 				rc.ChunkSize = int(value.Int64)
-			}
-		case recvchunk.FieldStatus:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field status", values[i])
-			} else if value.Valid {
-				rc.Status = int(value.Int64)
 			}
 		case recvchunk.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -171,8 +163,8 @@ func (rc *RecvChunk) String() string {
 	var builder strings.Builder
 	builder.WriteString("RecvChunk(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", rc.ID))
-	builder.WriteString("file_id=")
-	builder.WriteString(fmt.Sprintf("%v", rc.FileID))
+	builder.WriteString("recvfile_id=")
+	builder.WriteString(fmt.Sprintf("%v", rc.RecvfileID))
 	builder.WriteString(", ")
 	builder.WriteString("chunk_index=")
 	builder.WriteString(fmt.Sprintf("%v", rc.ChunkIndex))
@@ -182,9 +174,6 @@ func (rc *RecvChunk) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("chunk_size=")
 	builder.WriteString(fmt.Sprintf("%v", rc.ChunkSize))
-	builder.WriteString(", ")
-	builder.WriteString("status=")
-	builder.WriteString(fmt.Sprintf("%v", rc.Status))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
 	builder.WriteString(rc.UpdatedAt.Format(time.ANSIC))

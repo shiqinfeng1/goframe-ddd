@@ -47,3 +47,11 @@ func (*filemgrRepo) SaveRecvFile(ctx context.Context, recvile *filemgr.RecvFile)
 func (*filemgrRepo) UpdateRecvChunk(ctx context.Context, recvChunk *filemgr.RecvChunk) error {
 	return nil
 }
+
+func (*filemgrRepo) GetRecvTaskFile(ctx context.Context, taskId, fileId string) (*filemgr.RecvFile, error) {
+	return nil, nil
+}
+
+func (*filemgrRepo) CountOfRecvedChunks(ctx context.Context, taskId, fileId string) (int, error) {
+	return 0, nil
+}

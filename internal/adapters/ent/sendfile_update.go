@@ -71,16 +71,16 @@ func (sfu *SendFileUpdate) SetNillableFilePath(s *string) *SendFileUpdate {
 	return sfu
 }
 
-// SetFid sets the "fid" field.
-func (sfu *SendFileUpdate) SetFid(s string) *SendFileUpdate {
-	sfu.mutation.SetFid(s)
+// SetFileID sets the "file_id" field.
+func (sfu *SendFileUpdate) SetFileID(s string) *SendFileUpdate {
+	sfu.mutation.SetFileID(s)
 	return sfu
 }
 
-// SetNillableFid sets the "fid" field if the given value is not nil.
-func (sfu *SendFileUpdate) SetNillableFid(s *string) *SendFileUpdate {
+// SetNillableFileID sets the "file_id" field if the given value is not nil.
+func (sfu *SendFileUpdate) SetNillableFileID(s *string) *SendFileUpdate {
 	if s != nil {
-		sfu.SetFid(*s)
+		sfu.SetFileID(*s)
 	}
 	return sfu
 }
@@ -297,9 +297,19 @@ func (sfu *SendFileUpdate) check() error {
 			return &ValidationError{Name: "file_path", err: fmt.Errorf(`ent: validator failed for field "SendFile.file_path": %w`, err)}
 		}
 	}
-	if v, ok := sfu.mutation.Fid(); ok {
-		if err := sendfile.FidValidator(v); err != nil {
-			return &ValidationError{Name: "fid", err: fmt.Errorf(`ent: validator failed for field "SendFile.fid": %w`, err)}
+	if v, ok := sfu.mutation.FileID(); ok {
+		if err := sendfile.FileIDValidator(v); err != nil {
+			return &ValidationError{Name: "file_id", err: fmt.Errorf(`ent: validator failed for field "SendFile.file_id": %w`, err)}
+		}
+	}
+	if v, ok := sfu.mutation.FileSize(); ok {
+		if err := sendfile.FileSizeValidator(v); err != nil {
+			return &ValidationError{Name: "file_size", err: fmt.Errorf(`ent: validator failed for field "SendFile.file_size": %w`, err)}
+		}
+	}
+	if v, ok := sfu.mutation.ChunkNumTotal(); ok {
+		if err := sendfile.ChunkNumTotalValidator(v); err != nil {
+			return &ValidationError{Name: "chunk_num_total", err: fmt.Errorf(`ent: validator failed for field "SendFile.chunk_num_total": %w`, err)}
 		}
 	}
 	if v, ok := sfu.mutation.Elapsed(); ok {
@@ -336,8 +346,8 @@ func (sfu *SendFileUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := sfu.mutation.FilePath(); ok {
 		_spec.SetField(sendfile.FieldFilePath, field.TypeString, value)
 	}
-	if value, ok := sfu.mutation.Fid(); ok {
-		_spec.SetField(sendfile.FieldFid, field.TypeString, value)
+	if value, ok := sfu.mutation.FileID(); ok {
+		_spec.SetField(sendfile.FieldFileID, field.TypeString, value)
 	}
 	if value, ok := sfu.mutation.FileSize(); ok {
 		_spec.SetField(sendfile.FieldFileSize, field.TypeInt64, value)
@@ -479,16 +489,16 @@ func (sfuo *SendFileUpdateOne) SetNillableFilePath(s *string) *SendFileUpdateOne
 	return sfuo
 }
 
-// SetFid sets the "fid" field.
-func (sfuo *SendFileUpdateOne) SetFid(s string) *SendFileUpdateOne {
-	sfuo.mutation.SetFid(s)
+// SetFileID sets the "file_id" field.
+func (sfuo *SendFileUpdateOne) SetFileID(s string) *SendFileUpdateOne {
+	sfuo.mutation.SetFileID(s)
 	return sfuo
 }
 
-// SetNillableFid sets the "fid" field if the given value is not nil.
-func (sfuo *SendFileUpdateOne) SetNillableFid(s *string) *SendFileUpdateOne {
+// SetNillableFileID sets the "file_id" field if the given value is not nil.
+func (sfuo *SendFileUpdateOne) SetNillableFileID(s *string) *SendFileUpdateOne {
 	if s != nil {
-		sfuo.SetFid(*s)
+		sfuo.SetFileID(*s)
 	}
 	return sfuo
 }
@@ -718,9 +728,19 @@ func (sfuo *SendFileUpdateOne) check() error {
 			return &ValidationError{Name: "file_path", err: fmt.Errorf(`ent: validator failed for field "SendFile.file_path": %w`, err)}
 		}
 	}
-	if v, ok := sfuo.mutation.Fid(); ok {
-		if err := sendfile.FidValidator(v); err != nil {
-			return &ValidationError{Name: "fid", err: fmt.Errorf(`ent: validator failed for field "SendFile.fid": %w`, err)}
+	if v, ok := sfuo.mutation.FileID(); ok {
+		if err := sendfile.FileIDValidator(v); err != nil {
+			return &ValidationError{Name: "file_id", err: fmt.Errorf(`ent: validator failed for field "SendFile.file_id": %w`, err)}
+		}
+	}
+	if v, ok := sfuo.mutation.FileSize(); ok {
+		if err := sendfile.FileSizeValidator(v); err != nil {
+			return &ValidationError{Name: "file_size", err: fmt.Errorf(`ent: validator failed for field "SendFile.file_size": %w`, err)}
+		}
+	}
+	if v, ok := sfuo.mutation.ChunkNumTotal(); ok {
+		if err := sendfile.ChunkNumTotalValidator(v); err != nil {
+			return &ValidationError{Name: "chunk_num_total", err: fmt.Errorf(`ent: validator failed for field "SendFile.chunk_num_total": %w`, err)}
 		}
 	}
 	if v, ok := sfuo.mutation.Elapsed(); ok {
@@ -774,8 +794,8 @@ func (sfuo *SendFileUpdateOne) sqlSave(ctx context.Context) (_node *SendFile, er
 	if value, ok := sfuo.mutation.FilePath(); ok {
 		_spec.SetField(sendfile.FieldFilePath, field.TypeString, value)
 	}
-	if value, ok := sfuo.mutation.Fid(); ok {
-		_spec.SetField(sendfile.FieldFid, field.TypeString, value)
+	if value, ok := sfuo.mutation.FileID(); ok {
+		_spec.SetField(sendfile.FieldFileID, field.TypeString, value)
 	}
 	if value, ok := sfuo.mutation.FileSize(); ok {
 		_spec.SetField(sendfile.FieldFileSize, field.TypeInt64, value)

@@ -18,16 +18,14 @@ type SendChunk struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
-	// FileID holds the value of the "file_id" field.
-	FileID int `json:"file_id,omitempty"`
+	// SendfileID holds the value of the "sendfile_id" field.
+	SendfileID int `json:"sendfile_id,omitempty"`
 	// ChunkIndex holds the value of the "chunk_index" field.
 	ChunkIndex int `json:"chunk_index,omitempty"`
 	// ChunkOffset holds the value of the "chunk_offset" field.
 	ChunkOffset int64 `json:"chunk_offset,omitempty"`
 	// ChunkSize holds the value of the "chunk_size" field.
 	ChunkSize int `json:"chunk_size,omitempty"`
-	// Status holds the value of the "status" field.
-	Status int `json:"status,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -63,7 +61,7 @@ func (*SendChunk) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case sendchunk.FieldID, sendchunk.FieldFileID, sendchunk.FieldChunkIndex, sendchunk.FieldChunkOffset, sendchunk.FieldChunkSize, sendchunk.FieldStatus:
+		case sendchunk.FieldID, sendchunk.FieldSendfileID, sendchunk.FieldChunkIndex, sendchunk.FieldChunkOffset, sendchunk.FieldChunkSize:
 			values[i] = new(sql.NullInt64)
 		case sendchunk.FieldUpdatedAt, sendchunk.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -88,11 +86,11 @@ func (sc *SendChunk) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			sc.ID = int(value.Int64)
-		case sendchunk.FieldFileID:
+		case sendchunk.FieldSendfileID:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field file_id", values[i])
+				return fmt.Errorf("unexpected type %T for field sendfile_id", values[i])
 			} else if value.Valid {
-				sc.FileID = int(value.Int64)
+				sc.SendfileID = int(value.Int64)
 			}
 		case sendchunk.FieldChunkIndex:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -111,12 +109,6 @@ func (sc *SendChunk) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field chunk_size", values[i])
 			} else if value.Valid {
 				sc.ChunkSize = int(value.Int64)
-			}
-		case sendchunk.FieldStatus:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field status", values[i])
-			} else if value.Valid {
-				sc.Status = int(value.Int64)
 			}
 		case sendchunk.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -171,8 +163,8 @@ func (sc *SendChunk) String() string {
 	var builder strings.Builder
 	builder.WriteString("SendChunk(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", sc.ID))
-	builder.WriteString("file_id=")
-	builder.WriteString(fmt.Sprintf("%v", sc.FileID))
+	builder.WriteString("sendfile_id=")
+	builder.WriteString(fmt.Sprintf("%v", sc.SendfileID))
 	builder.WriteString(", ")
 	builder.WriteString("chunk_index=")
 	builder.WriteString(fmt.Sprintf("%v", sc.ChunkIndex))
@@ -182,9 +174,6 @@ func (sc *SendChunk) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("chunk_size=")
 	builder.WriteString(fmt.Sprintf("%v", sc.ChunkSize))
-	builder.WriteString(", ")
-	builder.WriteString("status=")
-	builder.WriteString(fmt.Sprintf("%v", sc.Status))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
 	builder.WriteString(sc.UpdatedAt.Format(time.ANSIC))

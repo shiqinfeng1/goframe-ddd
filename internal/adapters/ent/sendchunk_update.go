@@ -29,16 +29,16 @@ func (scu *SendChunkUpdate) Where(ps ...predicate.SendChunk) *SendChunkUpdate {
 	return scu
 }
 
-// SetFileID sets the "file_id" field.
-func (scu *SendChunkUpdate) SetFileID(i int) *SendChunkUpdate {
-	scu.mutation.SetFileID(i)
+// SetSendfileID sets the "sendfile_id" field.
+func (scu *SendChunkUpdate) SetSendfileID(i int) *SendChunkUpdate {
+	scu.mutation.SetSendfileID(i)
 	return scu
 }
 
-// SetNillableFileID sets the "file_id" field if the given value is not nil.
-func (scu *SendChunkUpdate) SetNillableFileID(i *int) *SendChunkUpdate {
+// SetNillableSendfileID sets the "sendfile_id" field if the given value is not nil.
+func (scu *SendChunkUpdate) SetNillableSendfileID(i *int) *SendChunkUpdate {
 	if i != nil {
-		scu.SetFileID(*i)
+		scu.SetSendfileID(*i)
 	}
 	return scu
 }
@@ -103,27 +103,6 @@ func (scu *SendChunkUpdate) SetNillableChunkSize(i *int) *SendChunkUpdate {
 // AddChunkSize adds i to the "chunk_size" field.
 func (scu *SendChunkUpdate) AddChunkSize(i int) *SendChunkUpdate {
 	scu.mutation.AddChunkSize(i)
-	return scu
-}
-
-// SetStatus sets the "status" field.
-func (scu *SendChunkUpdate) SetStatus(i int) *SendChunkUpdate {
-	scu.mutation.ResetStatus()
-	scu.mutation.SetStatus(i)
-	return scu
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (scu *SendChunkUpdate) SetNillableStatus(i *int) *SendChunkUpdate {
-	if i != nil {
-		scu.SetStatus(*i)
-	}
-	return scu
-}
-
-// AddStatus adds i to the "status" field.
-func (scu *SendChunkUpdate) AddStatus(i int) *SendChunkUpdate {
-	scu.mutation.AddStatus(i)
 	return scu
 }
 
@@ -229,12 +208,6 @@ func (scu *SendChunkUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := scu.mutation.AddedChunkSize(); ok {
 		_spec.AddField(sendchunk.FieldChunkSize, field.TypeInt, value)
 	}
-	if value, ok := scu.mutation.Status(); ok {
-		_spec.SetField(sendchunk.FieldStatus, field.TypeInt, value)
-	}
-	if value, ok := scu.mutation.AddedStatus(); ok {
-		_spec.AddField(sendchunk.FieldStatus, field.TypeInt, value)
-	}
 	if value, ok := scu.mutation.UpdatedAt(); ok {
 		_spec.SetField(sendchunk.FieldUpdatedAt, field.TypeTime, value)
 	}
@@ -287,16 +260,16 @@ type SendChunkUpdateOne struct {
 	mutation *SendChunkMutation
 }
 
-// SetFileID sets the "file_id" field.
-func (scuo *SendChunkUpdateOne) SetFileID(i int) *SendChunkUpdateOne {
-	scuo.mutation.SetFileID(i)
+// SetSendfileID sets the "sendfile_id" field.
+func (scuo *SendChunkUpdateOne) SetSendfileID(i int) *SendChunkUpdateOne {
+	scuo.mutation.SetSendfileID(i)
 	return scuo
 }
 
-// SetNillableFileID sets the "file_id" field if the given value is not nil.
-func (scuo *SendChunkUpdateOne) SetNillableFileID(i *int) *SendChunkUpdateOne {
+// SetNillableSendfileID sets the "sendfile_id" field if the given value is not nil.
+func (scuo *SendChunkUpdateOne) SetNillableSendfileID(i *int) *SendChunkUpdateOne {
 	if i != nil {
-		scuo.SetFileID(*i)
+		scuo.SetSendfileID(*i)
 	}
 	return scuo
 }
@@ -361,27 +334,6 @@ func (scuo *SendChunkUpdateOne) SetNillableChunkSize(i *int) *SendChunkUpdateOne
 // AddChunkSize adds i to the "chunk_size" field.
 func (scuo *SendChunkUpdateOne) AddChunkSize(i int) *SendChunkUpdateOne {
 	scuo.mutation.AddChunkSize(i)
-	return scuo
-}
-
-// SetStatus sets the "status" field.
-func (scuo *SendChunkUpdateOne) SetStatus(i int) *SendChunkUpdateOne {
-	scuo.mutation.ResetStatus()
-	scuo.mutation.SetStatus(i)
-	return scuo
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (scuo *SendChunkUpdateOne) SetNillableStatus(i *int) *SendChunkUpdateOne {
-	if i != nil {
-		scuo.SetStatus(*i)
-	}
-	return scuo
-}
-
-// AddStatus adds i to the "status" field.
-func (scuo *SendChunkUpdateOne) AddStatus(i int) *SendChunkUpdateOne {
-	scuo.mutation.AddStatus(i)
 	return scuo
 }
 
@@ -516,12 +468,6 @@ func (scuo *SendChunkUpdateOne) sqlSave(ctx context.Context) (_node *SendChunk, 
 	}
 	if value, ok := scuo.mutation.AddedChunkSize(); ok {
 		_spec.AddField(sendchunk.FieldChunkSize, field.TypeInt, value)
-	}
-	if value, ok := scuo.mutation.Status(); ok {
-		_spec.SetField(sendchunk.FieldStatus, field.TypeInt, value)
-	}
-	if value, ok := scuo.mutation.AddedStatus(); ok {
-		_spec.AddField(sendchunk.FieldStatus, field.TypeInt, value)
 	}
 	if value, ok := scuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(sendchunk.FieldUpdatedAt, field.TypeTime, value)
