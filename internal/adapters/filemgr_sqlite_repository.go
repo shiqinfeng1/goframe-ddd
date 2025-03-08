@@ -44,8 +44,8 @@ func (*filemgrRepo) SaveRecvFile(ctx context.Context, recvile *filemgr.RecvFile)
 }
 
 // 插入sendchunk和更新sendfile的chunk统计
-func (*filemgrRepo) UpdateRecvChunk(ctx context.Context, recvChunk *filemgr.RecvChunk) error {
-	return nil
+func (*filemgrRepo) UpdateRecvChunk(ctx context.Context, recvChunk *filemgr.RecvChunk) (bool, error) {
+	return false, nil
 }
 
 func (*filemgrRepo) GetRecvTaskFile(ctx context.Context, taskId, fileId string) (*filemgr.RecvFile, error) {
@@ -54,4 +54,8 @@ func (*filemgrRepo) GetRecvTaskFile(ctx context.Context, taskId, fileId string) 
 
 func (*filemgrRepo) CountOfRecvedChunks(ctx context.Context, taskId, fileId string) (int, error) {
 	return 0, nil
+}
+
+func (*filemgrRepo) UpdateSendStatus(ctx context.Context, taskId string, status filemgr.Status) error {
+	return nil
 }

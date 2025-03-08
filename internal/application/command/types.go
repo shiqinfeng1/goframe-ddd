@@ -14,3 +14,21 @@ type StartSendFileOutput struct{}
 type ClientIdsOutput struct {
 	Ids []string
 }
+
+type PauseSendFileInput struct {
+	TaskId string
+}
+
+type PauseSendFileOutput struct{}
+
+type CancelSendFileInput struct {
+	TaskId string
+}
+
+type CancelSendFileOutput struct{}
+
+type ResumeSendFileInput struct {
+	TaskId string
+}
+
+type ResumeSendFileOutput struct{}

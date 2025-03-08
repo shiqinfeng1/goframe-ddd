@@ -105,6 +105,16 @@ func (t *TransferTask) String() string {
 	return fmt.Sprintf("taskId:%v taskName:%v nodeId:%v paths:%+v", t.taskId, t.taskName, t.nodeId, t.paths)
 }
 
+func (t *TransferTask) updateStatusAndNotifyPeer(ctx context.Context, status Status, stm io.ReadWriter) error {
+	if err := t.repo.UpdateSendStatus(ctx, t.taskId, status); err != nil {
+		return gerror.Wrapf(err, "update send status fail")
+	}
+	if err := t.syncEventToPeer(ctx, status, stm); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (t *TransferTask) getFileAndChunks(ctx context.Context, filePath string, stream io.ReadWriter) (*SendFile, *os.File, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -173,12 +183,9 @@ func (t *TransferTask) syncFileInfoToPeer(ctx context.Context, sendFile *SendFil
 	body, _ := json.Marshal(sendFile)
 	fiBytes := fileInfoMsgToBytes(ctx, body)
 	// 分块获取文件数据,串行发送
-	n, err := stm.Write(fiBytes)
+	_, err := stm.Write(fiBytes)
 	if err != nil {
 		return gerror.Wrap(err, "fileinfo write stream fail")
-	}
-	if n != len(fiBytes) {
-		return gerror.Newf("fileinfo write stream fail:n(%v) != len(header)(%v)", n, len(fiBytes))
 	}
 	// 接收响应数据
 	respBody, err := recvAck(ctx, stm, msgFileInfo)
@@ -192,10 +199,36 @@ func (t *TransferTask) syncFileInfoToPeer(ctx context.Context, sendFile *SendFil
 	return nil
 }
 
+func (t *TransferTask) syncEventToPeer(ctx context.Context, status Status, stm io.ReadWriter) error {
+	body, _ := json.Marshal(&EventMsg{
+		TaskId: t.taskId,
+		Status: int(status.val),
+	})
+	fiBytes := fileEventMsgToBytes(ctx, body)
+	// 分块获取文件数据,串行发送
+	_, err := stm.Write(fiBytes)
+	if err != nil {
+		return gerror.Wrap(err, "fileinfo write stream fail")
+	}
+	// 接收响应数据
+	respBody, err := recvAck(ctx, stm, msgFileEvent)
+	if err != nil {
+		return err
+	}
+	taskId := gconv.String(respBody)
+	if t.taskId != taskId {
+		return gerror.Newf("sync fileinfo fail. not match taskid: exp:%v fact:%v", t.taskId, taskId)
+	}
+	return nil
+}
+
 func (t *TransferTask) sendChunk(ctx context.Context, sendFile *SendFile, file *os.File, stm io.ReadWriter) (bool, error) {
 	for i, chunkSize := range t.chunkSizes {
 		status := NewStatus(t.notifyStatus.Load())
 		if status == StatusCancel || status == StatusPaused {
+			if err := t.updateStatusAndNotifyPeer(ctx, status, stm); err != nil {
+				return true, err
+			}
 			return true, nil
 		}
 		body, _ := json.Marshal(&SendChunk{
@@ -279,6 +312,9 @@ func (t *TransferTask) worker(ctx context.Context) {
 				for _, filePath := range t.paths {
 					status := NewStatus(t.notifyStatus.Load())
 					if status == StatusCancel || status == StatusPaused {
+						if err := t.updateStatusAndNotifyPeer(ctx, status, stm); err != nil {
+							return err
+						}
 						return nil // 直接返回，不需要执行postHandle，因为cancel和pause已执行各自的postHandle
 					}
 					// 打开要发送的文件，如果失败，记录到本地，但不同步到对端

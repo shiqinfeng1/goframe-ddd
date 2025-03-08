@@ -4,8 +4,6 @@ import (
 	"context"
 	"path/filepath"
 
-	"github.com/gogf/gf/v2/errors/gcode"
-	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/gogf/gf/v2/util/gconv"
@@ -64,13 +62,22 @@ func (c *ControllerV1) StartSendFile(ctx context.Context, req *v1.StartSendFileR
 }
 
 func (c *ControllerV1) PauseSendFile(ctx context.Context, req *v1.PauseSendFileReq) (res *v1.PauseSendFileRes, err error) {
-	return nil, gerror.NewCode(gcode.CodeNotImplemented)
+	_, err = c.app.Commands.PauseSendFile(ctx, &command.PauseSendFileInput{
+		TaskId: req.TaskId,
+	})
+	return
 }
 
 func (c *ControllerV1) CancelSendFile(ctx context.Context, req *v1.CancelSendFileReq) (res *v1.CancelSendFileRes, err error) {
-	return nil, gerror.NewCode(gcode.CodeNotImplemented)
+	_, err = c.app.Commands.CancelSendFile(ctx, &command.CancelSendFileInput{
+		TaskId: req.TaskId,
+	})
+	return
 }
 
 func (c *ControllerV1) ResumeSendFile(ctx context.Context, req *v1.ResumeSendFileReq) (res *v1.ResumeSendFileRes, err error) {
-	return nil, gerror.NewCode(gcode.CodeNotImplemented)
+	_, err = c.app.Commands.ResumeSendFile(ctx, &command.ResumeSendFileInput{
+		TaskId: req.TaskId,
+	})
+	return
 }

@@ -8,7 +8,6 @@ import (
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gfile"
-	"github.com/shiqinfeng1/goframe-ddd/pkg/cache"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/utils"
 )
 
@@ -19,44 +18,38 @@ func init() {
 	recvedPath = filepath.Join(home, "Downloads")
 }
 
-func fileInfoMsgToBytes(_ context.Context, body []byte) []byte {
+func msgToBytes(_ context.Context, magic string, msg msgType, body []byte) []byte {
 	data := make([]byte, headerLen+len(body))
-	copy(data[0:3], []byte(reqMagic))
-	data[3] = msgFileInfo.Byte()
+	copy(data[0:3], []byte(magic))
+	data[3] = msg.Byte()
 	binary.LittleEndian.PutUint32(data[4:8], uint32(len(body)))
 
 	copy(data[8:], body)
 	return data
 }
 
-func fileChunkMsgToBytes(_ context.Context, body []byte) []byte {
-	data := make([]byte, headerLen+len(body))
-	copy(data[0:3], []byte(reqMagic))
-	data[3] = msgFileChunk.Byte()
-	binary.LittleEndian.PutUint32(data[4:8], uint32(len(body)))
-
-	copy(data[8:], body)
-	return data
+func fileEventMsgToBytes(ctx context.Context, body []byte) []byte {
+	return msgToBytes(ctx, reqMagic, msgFileEvent, body)
 }
 
-func fileInfoAckToBytes(_ context.Context, body []byte) []byte {
-	data := make([]byte, headerLen+len(body))
-	copy(data[0:3], []byte(ackMagic))
-	data[3] = msgFileInfo.Byte()
-	binary.LittleEndian.PutUint32(data[4:8], uint32(len(body)))
-
-	copy(data[8:], body)
-	return data
+func fileEventAckToBytes(ctx context.Context, body []byte) []byte {
+	return msgToBytes(ctx, ackMagic, msgFileEvent, body)
 }
 
-func fileChunkAckToBytes(_ context.Context, body []byte) []byte {
-	data := make([]byte, headerLen+len(body))
-	copy(data[0:3], []byte(ackMagic))
-	data[3] = msgFileChunk.Byte()
-	binary.LittleEndian.PutUint32(data[4:8], uint32(len(body)))
+func fileInfoMsgToBytes(ctx context.Context, body []byte) []byte {
+	return msgToBytes(ctx, reqMagic, msgFileInfo, body)
+}
 
-	copy(data[8:], body)
-	return data
+func fileInfoAckToBytes(ctx context.Context, body []byte) []byte {
+	return msgToBytes(ctx, ackMagic, msgFileInfo, body)
+}
+
+func fileChunkMsgToBytes(ctx context.Context, body []byte) []byte {
+	return msgToBytes(ctx, reqMagic, msgFileChunk, body)
+}
+
+func fileChunkAckToBytes(ctx context.Context, body []byte) []byte {
+	return msgToBytes(ctx, ackMagic, msgFileChunk, body)
 }
 
 // recvSendFile 处理收到的文件信息，不管是否处理成功，都需要回复给发送方
@@ -102,31 +95,46 @@ func recvSendFileChunk(ctx context.Context, body []byte, repo Repository) []byte
 
 	// 为每个收到的文件块创建一个fileSaver实例
 	// 从缓存中取出文件块持久化管理服务， 如果是首次存储，将先实例化一个文件接收器：NewFileSave
-	fs, err := NewFileSave(ctx, cache.Memory(), sc.TaskID, sc.FileID, repo)
+	fsaver, err := getFileSaver(ctx, sc.TaskID, sc.FileID, repo)
 	if err != nil {
-		g.Log().Errorf(ctx, "save recvfile fail:%v", err)
+		g.Log().Errorf(ctx, "get filesaver fail:%v", err)
 		return fileChunkAckToBytes(ctx, []byte("save error"))
 	}
 
-	fs.SaveChunk(&fileChunk{
+	if err := fsaver.SaveChunk(ctx, &fileChunk{
 		taskId:     sc.TaskID,
 		fileId:     sc.FileID,
 		offset:     sc.ChunkOffset,
 		data:       chunkBytes,
 		chunkIndex: uint32(sc.ChunkIndex),
 		md5:        "",
-	})
-
-	if err := repo.UpdateRecvChunk(ctx, &RecvChunk{
-		TaskID:      sc.TaskID,
-		FileID:      sc.FileID,
-		ChunkIndex:  sc.ChunkIndex,
-		ChunkOffset: sc.ChunkOffset,
-		ChunkSize:   sc.ChunkSize,
 	}); err != nil {
 		g.Log().Errorf(ctx, "save recvfile fail:%v", err)
-		return fileChunkAckToBytes(ctx, []byte("save error"))
+		return fileChunkAckToBytes(ctx, []byte("save data error"))
 	}
-
 	return fileChunkAckToBytes(ctx, []byte(sc.FileID))
+}
+
+func recvEvent(ctx context.Context, body []byte, repo Repository) []byte {
+	var sc EventMsg
+	if err := json.Unmarshal(body, &sc); err != nil {
+		g.Log().Errorf(ctx, "recv event fail:%v", err)
+		return fileEventAckToBytes(ctx, []byte("unmarshal fail"))
+	}
+	files, err := repo.GetRecvTask(ctx, sc.TaskId)
+	if err != nil {
+		g.Log().Errorf(ctx, "recv event fail:%v", err)
+		return fileEventAckToBytes(ctx, []byte("recv task fail"))
+	}
+	for _, file := range files {
+		fsaver, err := mustGetFileSaver(ctx, file.FileId)
+		if err != nil {
+			g.Log().Errorf(ctx, "save recvfile fail:%v", err)
+			return fileEventAckToBytes(ctx, []byte("get saver error"))
+		}
+		if fsaver != nil {
+			fsaver.EventNotify(sc.Status)
+		}
+	}
+	return fileEventAckToBytes(ctx, []byte(sc.TaskId))
 }

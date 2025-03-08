@@ -49,12 +49,14 @@ var (
 	msgHeartbeat         = newMsgType(2, "文件收发-心跳消息")
 	msgFileInfo          = newMsgType(3, "文件收发-文件信息")
 	msgFileChunk         = newMsgType(4, "文件收发-文件块数据")
+	msgFileEvent         = newMsgType(5, "文件收发-事件通知")
 )
 
 func init() {
 	msgHandlerMap[msgHeartbeat] = MsgHandleFunc(heartbeat)
 	msgHandlerMap[msgFileInfo] = MsgHandleFunc(recvSendFile)
 	msgHandlerMap[msgFileChunk] = MsgHandleFunc(recvSendFileChunk)
+	msgHandlerMap[msgFileEvent] = MsgHandleFunc(recvEvent)
 }
 
 func newMsgType(val int, desc string) msgType {

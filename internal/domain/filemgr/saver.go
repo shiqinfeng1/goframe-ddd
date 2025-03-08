@@ -9,6 +9,7 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gcache"
 	"github.com/gogf/gf/v2/os/gfile"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/cache"
 )
 
 type fileChunk struct {
@@ -24,22 +25,25 @@ type fileSaver struct {
 	inst          *os.File
 	path          string
 	timeoutTicker *time.Ticker
+	eventNotify   chan Status
 	repo          Repository
 }
 
-func (fs *fileSaver) Close() error {
+func (fs *fileSaver) Close() {
 	if fs == nil {
-		return nil
+		return
 	}
 	if fs.inst != nil {
 		fs.inst.Close()
 		fs.inst = nil
 	}
-
-	return nil
+	if fs.timeoutTicker != nil {
+		fs.timeoutTicker.Stop()
+		fs.timeoutTicker = nil
+	}
 }
 
-func (fs *fileSaver) saveChunk(fc *fileChunk) error {
+func (fs *fileSaver) saveChunkData(fc *fileChunk) error {
 	n, err := fs.inst.WriteAt(fc.data, fc.offset)
 	if err != nil {
 		return gerror.Wrapf(err, "Error writing to file")
@@ -51,40 +55,67 @@ func (fs *fileSaver) saveChunk(fc *fileChunk) error {
 }
 
 // 监听对端取消发送的事件：发送方取消之后，需要通知接收方释放资源
-func (fs *fileSaver) monitorCancel(ctx context.Context, fileId string) {
-	tickerSubCancelNotify := time.NewTicker(10 * time.Second)
+func (fs *fileSaver) monitorEvent(ctx context.Context, fileId string) {
 	for {
 		select {
-		case <-tickerSubCancelNotify.C: // 监控是否有取消发送的通知
+		case status := <-fs.eventNotify: // 监控是否有取消发送的通知
+			// 1. 关闭 filesaver 实例
 			fs.Close() // 发送方取消发送，退出和关闭filersaver
-			g.Log().Infof(ctx, "cancel recv file sucess. fileId:%v", fileId)
-			tickerSubCancelNotify.Stop()
+			// 2. 删除文件
+			if status == StatusCancel {
+				// todo 删除文件
+			}
+			if status == StatusPaused {
+				g.Log().Infof(ctx, "pause recv file success. fileId:%v", fileId)
+			}
+			// todo 更新recvfile状态 为取消或暂停
+			// 删除实例
+			removeFileSaver(ctx, fileId)
+			g.Log().Infof(ctx, "cancel recv file success. fileId:%v", fileId)
 			return
 		case <-fs.timeoutTicker.C: // 强制超时时间5分钟关闭fileSaver，防止对端异常退出，filesaver资源无法正常释放，设置一个超时时间
 			fs.Close()
-			g.Log().Infof(ctx, "force stop recv file sucess")
-			fs.timeoutTicker.Stop()
-			return
-		case <-ctx.Done():
-			g.Log().Infof(ctx, "exit ferry monitor cancel ok")
+			// todo 更新recvfile状态 为 中断
+			removeFileSaver(ctx, fileId)
+			g.Log().Infof(ctx, "force stop recv file success")
 			return
 		}
 	}
 }
 
-func (fs *fileSaver) SaveChunk(fc *fileChunk) {
-	if err := fs.saveChunk(fc); err != nil {
-		return
-	}
+func (fs *fileSaver) SaveChunk(ctx context.Context, fc *fileChunk) error {
 	if fs.timeoutTicker != nil {
 		fs.timeoutTicker.Reset(5 * time.Minute)
 	}
+	if err := fs.saveChunkData(fc); err != nil {
+		return err
+	}
+	finished, err := fs.repo.UpdateRecvChunk(ctx, &RecvChunk{
+		TaskID:      fc.taskId,
+		FileID:      fc.fileId,
+		ChunkIndex:  int(fc.chunkIndex),
+		ChunkOffset: fc.offset,
+		ChunkSize:   len(fc.data),
+	})
+	if err != nil {
+		return gerror.Wrapf(err, "save recvfile fail")
+	}
+
+	if finished {
+		fs.Close()
+		removeFileSaver(ctx, fc.fileId)
+	}
+	return nil
+}
+
+func (fs *fileSaver) EventNotify(status int) {
+	fs.eventNotify <- NewStatus(uint32(status))
 }
 
 // 一个文件对应一个fileSaver,
-func NewFileSave(ctx context.Context, cache *gcache.Cache, taskId, fileId string, repo Repository) (*fileSaver, error) {
+func getFileSaver(ctx context.Context, taskId, fileId string, repo Repository) (*fileSaver, error) {
 	// 检查缓存，如果存在，直接返回，如果不存在，新建
-	val, err := cache.GetOrSetFuncLock(ctx, fileId, gcache.Func(func(ctx context.Context) (value interface{}, err error) {
+	val, err := cache.Memory().GetOrSetFuncLock(ctx, fileId, gcache.Func(func(ctx context.Context) (value interface{}, err error) {
 		// 查询文件接收记录
 		recvFile, err := repo.GetRecvTaskFile(ctx, taskId, fileId)
 		if err != nil {
@@ -115,9 +146,10 @@ func NewFileSave(ctx context.Context, cache *gcache.Cache, taskId, fileId string
 			timeoutTicker: time.NewTicker(5 * time.Minute),
 			inst:          file,
 			repo:          repo,
+			eventNotify:   make(chan Status),
 		}
 
-		go fs.monitorCancel(ctx, fileId)
+		go fs.monitorEvent(ctx, fileId)
 		return fs, nil
 	}), 0)
 	if err != nil {
@@ -129,4 +161,34 @@ func NewFileSave(ctx context.Context, cache *gcache.Cache, taskId, fileId string
 		return nil, gerror.Newf("get file saver fail:%v", err)
 	}
 	return fs, nil
+}
+
+func mustGetFileSaver(ctx context.Context, fileId string) (*fileSaver, error) {
+	if exist, _ := cache.Memory().Contains(ctx, fileId); !exist {
+		return nil, nil
+	}
+	val, err := cache.Memory().Get(ctx, fileId)
+	if err != nil {
+		return nil, gerror.Wrapf(err, "get fileSaver from cache fail: fileId=%v", fileId)
+	}
+	var fs *fileSaver
+	err = val.Scan(&fs)
+	if err != nil || fs == nil {
+		return nil, gerror.Newf("must get file saver fail:%v", err)
+	}
+	return fs, nil
+}
+
+func removeFileSaver(ctx context.Context, fileId string) error {
+	val, err := cache.Memory().Remove(ctx, fileId)
+	if err != nil {
+		return gerror.Wrapf(err, "get fileSaver from cache fail: fileId=%v", fileId)
+	}
+	var fs *fileSaver
+	err = val.Scan(&fs)
+	if err != nil || fs == nil {
+		return gerror.Newf("must get file saver fail:%v", err)
+	}
+	fs.Close()
+	return nil
 }

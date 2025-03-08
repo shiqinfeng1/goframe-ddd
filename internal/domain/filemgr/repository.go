@@ -11,6 +11,10 @@ type SendChunk struct {
 	ChunkOffset int64  `json:"chunk_offset,omitempty"`
 	ChunkSize   int    `json:"chunk_size,omitempty"`
 }
+type EventMsg struct {
+	TaskId string `json:"task_id,omitempty"`
+	Status int    `json:"status,omitempty"`
+}
 
 // SendFile is the model entity for the SendFile schema.
 type SendFile struct {
@@ -53,9 +57,10 @@ type Repository interface {
 	GetSendTask(ctx context.Context, taskId string) ([]*SendFile, error)
 	SaveSendFile(ctx context.Context, sendFile *SendFile) (int, error)
 	UpdateSendChunk(ctx context.Context, sendChunk *SendChunk) error
+	UpdateSendStatus(ctx context.Context, taskId string, status Status) error
 	GetRecvTask(ctx context.Context, taskId string) ([]*RecvFile, error)
 	GetRecvTaskFile(ctx context.Context, taskId, fileId string) (*RecvFile, error)
 	SaveRecvFile(ctx context.Context, recvile *RecvFile) error
-	UpdateRecvChunk(ctx context.Context, recvChunk *RecvChunk) error
+	UpdateRecvChunk(ctx context.Context, recvChunk *RecvChunk) (bool, error)
 	CountOfRecvedChunks(ctx context.Context, taskId, fileId string) (int, error)
 }

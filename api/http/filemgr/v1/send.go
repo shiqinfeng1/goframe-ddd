@@ -12,23 +12,23 @@ type StartSendFileRes struct {
 }
 
 type PauseSendFileReq struct {
-	g.Meta   `path:"/file/pauseSend" tags:"文件收发" method:"post" summary:"暂停发送文件"`
-	FilePath []string `p:"file_path" v:"required" dc:"文件绝对路径"`
+	g.Meta `path:"/file/pauseSend" tags:"文件收发" method:"post" summary:"暂停发送文件"`
+	TaskId string `p:"task_id" v:"required" dc:"任务id"`
 }
 type PauseSendFileRes struct {
 	g.Meta `status:"200"`
 }
 
 type CancelSendFileReq struct {
-	g.Meta   `path:"/file/cancelSend" tags:"文件收发" method:"post" summary:"取消发送文件"`
-	FilePath []string `p:"file_path" v:"required" dc:"文件绝对路径"`
+	g.Meta `path:"/file/cancelSend" tags:"文件收发" method:"post" summary:"取消发送文件"`
+	TaskId string `p:"task_id" v:"required" dc:"任务id"`
 }
 type CancelSendFileRes struct {
 	g.Meta `status:"200"`
 }
 type ResumeSendFileReq struct {
-	g.Meta   `path:"/file/resume" tags:"文件收发" method:"post" summary:"继续发送文件"`
-	FilePath []string `p:"file_path" v:"required" dc:"文件绝对路径"`
+	g.Meta `path:"/file/resumeSend" tags:"文件收发" method:"post" summary:"继续发送文件"`
+	TaskId string `p:"task_id" v:"required" dc:"任务id"`
 }
 type ResumeSendFileRes struct {
 	g.Meta `status:"200"`
