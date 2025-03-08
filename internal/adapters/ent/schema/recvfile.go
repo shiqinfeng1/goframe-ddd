@@ -16,7 +16,7 @@ type RecvFile struct {
 // Fields of the RecvFile.
 func (RecvFile) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("task_id").NotEmpty().MaxLen(20),
+		field.String("task_id").Unique().NotEmpty().MaxLen(20),
 		field.Text("task_name").NotEmpty(),
 		field.Text("file_path_save").NotEmpty(),
 		field.Text("file_path_origin").NotEmpty(),

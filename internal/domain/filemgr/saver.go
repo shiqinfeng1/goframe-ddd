@@ -91,7 +91,6 @@ func (fs *fileSaver) SaveChunk(ctx context.Context, fc *fileChunk) error {
 		return err
 	}
 	finished, err := fs.repo.UpdateRecvChunk(ctx, &RecvChunk{
-		TaskID:      fc.taskId,
 		FileID:      fc.fileId,
 		ChunkIndex:  int(fc.chunkIndex),
 		ChunkOffset: fc.offset,
@@ -113,11 +112,11 @@ func (fs *fileSaver) EventNotify(status int) {
 }
 
 // 一个文件对应一个fileSaver,
-func getFileSaver(ctx context.Context, taskId, fileId string, repo Repository) (*fileSaver, error) {
+func getFileSaver(ctx context.Context, fileId string, repo Repository) (*fileSaver, error) {
 	// 检查缓存，如果存在，直接返回，如果不存在，新建
 	val, err := cache.Memory().GetOrSetFuncLock(ctx, fileId, gcache.Func(func(ctx context.Context) (value interface{}, err error) {
 		// 查询文件接收记录
-		recvFile, err := repo.GetRecvTaskFile(ctx, taskId, fileId)
+		recvFile, err := repo.GetRecvFile(ctx, fileId)
 		if err != nil {
 			return nil, err
 		}
@@ -153,7 +152,7 @@ func getFileSaver(ctx context.Context, taskId, fileId string, repo Repository) (
 		return fs, nil
 	}), 0)
 	if err != nil {
-		return nil, gerror.Wrapf(err, "get fileSaver from cache fail: taskId=%v fileId=%v", taskId, fileId)
+		return nil, gerror.Wrapf(err, "get fileSaver from cache fail: fileId=%v", fileId)
 	}
 	var fs *fileSaver
 	err = val.Scan(&fs)

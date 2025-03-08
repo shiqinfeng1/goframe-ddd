@@ -34,6 +34,14 @@ type Status struct {
 	desc string
 }
 
+func (s Status) Int() int {
+	return int(s.val)
+}
+
+func (s Status) String() string {
+	return s.desc
+}
+
 var (
 	StatusUndefined  = Status{val: 0, desc: "未定义"}
 	StatusWaiting    = Status{val: 1, desc: "等待发送"}
@@ -105,8 +113,8 @@ func (t *TransferTask) String() string {
 	return fmt.Sprintf("taskId:%v taskName:%v nodeId:%v paths:%+v", t.taskId, t.taskName, t.nodeId, t.paths)
 }
 
-func (t *TransferTask) updateStatusAndNotifyPeer(ctx context.Context, status Status, stm io.ReadWriter) error {
-	if err := t.repo.UpdateSendStatus(ctx, t.taskId, status); err != nil {
+func (t *TransferTask) updateStatusAndNotifyPeer(ctx context.Context, fileId string, status Status, stm io.ReadWriter) error {
+	if err := t.repo.UpdateSendStatus(ctx, fileId, status); err != nil {
 		return gerror.Wrapf(err, "update send status fail")
 	}
 	if err := t.syncEventToPeer(ctx, status, stm); err != nil {
@@ -226,13 +234,12 @@ func (t *TransferTask) sendChunk(ctx context.Context, sendFile *SendFile, file *
 	for i, chunkSize := range t.chunkSizes {
 		status := NewStatus(t.notifyStatus.Load())
 		if status == StatusCancel || status == StatusPaused {
-			if err := t.updateStatusAndNotifyPeer(ctx, status, stm); err != nil {
+			if err := t.updateStatusAndNotifyPeer(ctx, sendFile.FileId, status, stm); err != nil {
 				return true, err
 			}
 			return true, nil
 		}
 		body, _ := json.Marshal(&SendChunk{
-			TaskID:      sendFile.TaskID,
 			FileID:      sendFile.FileId,
 			ChunkIndex:  sendFile.ChunkNumSended,
 			ChunkOffset: t.chunkOffsets[i],
@@ -275,7 +282,6 @@ func (t *TransferTask) sendChunk(ctx context.Context, sendFile *SendFile, file *
 		}
 		// 收到确认后， 更新本地数据库
 		if err := t.repo.UpdateSendChunk(ctx, &SendChunk{
-			TaskID:      sendFile.TaskID,
 			FileID:      sendFile.FileId,
 			SendFileID:  sendFile.ID, // 关联sendfile的i主键d
 			ChunkIndex:  i,
@@ -294,6 +300,7 @@ func (t *TransferTask) worker(ctx context.Context) {
 		select {
 		case <-finishChan:
 			g.Log().Infof(ctx, "exit file-tranfer task by finish:%v", t)
+			return
 		case postHandle := <-t.cancelChan:
 			t.notifyStatus.Store(StatusCancel.val)
 			postHandle()
@@ -310,13 +317,7 @@ func (t *TransferTask) worker(ctx context.Context) {
 				defer close(finishChan)
 				// 遍历所有待发送的文件
 				for _, filePath := range t.paths {
-					status := NewStatus(t.notifyStatus.Load())
-					if status == StatusCancel || status == StatusPaused {
-						if err := t.updateStatusAndNotifyPeer(ctx, status, stm); err != nil {
-							return err
-						}
-						return nil // 直接返回，不需要执行postHandle，因为cancel和pause已执行各自的postHandle
-					}
+
 					// 打开要发送的文件，如果失败，记录到本地，但不同步到对端
 					sendFile, file, err := t.getFileAndChunks(ctx, filePath, stm)
 					if err != nil {
@@ -326,6 +327,18 @@ func (t *TransferTask) worker(ctx context.Context) {
 					if file == nil {
 						g.Log().Infof(ctx, "file is already sended:%v skip it!", filePath)
 						continue
+					}
+
+					status := NewStatus(t.notifyStatus.Load())
+					if status == StatusCancel || status == StatusPaused {
+						if err := t.updateStatusAndNotifyPeer(ctx, sendFile.FileId, status, stm); err != nil {
+							return err
+						}
+						return nil // 直接返回，不需要执行postHandle，因为cancel和pause已执行各自的postHandle
+					}
+
+					if err := t.updateStatusAndNotifyPeer(ctx, sendFile.FileId, StatusSending, stm); err != nil {
+						return err
 					}
 					// 发送文件块
 					interrupt, err := t.sendChunk(ctx, sendFile, file, stm)

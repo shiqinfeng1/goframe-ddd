@@ -35,7 +35,7 @@ var (
 	// RecvFilesColumns holds the columns for the "recv_files" table.
 	RecvFilesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "task_id", Type: field.TypeString, Size: 20},
+		{Name: "task_id", Type: field.TypeString, Unique: true, Size: 20},
 		{Name: "task_name", Type: field.TypeString, Size: 2147483647},
 		{Name: "file_path_save", Type: field.TypeString, Size: 2147483647},
 		{Name: "file_path_origin", Type: field.TypeString, Size: 2147483647},
@@ -80,7 +80,7 @@ var (
 	// SendFilesColumns holds the columns for the "send_files" table.
 	SendFilesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "task_id", Type: field.TypeString, Size: 20},
+		{Name: "task_id", Type: field.TypeString, Unique: true, Size: 20},
 		{Name: "task_name", Type: field.TypeString, Size: 2147483647},
 		{Name: "file_path", Type: field.TypeString, Size: 2147483647},
 		{Name: "file_id", Type: field.TypeString, Unique: true, Size: 20},
@@ -98,6 +98,13 @@ var (
 		Name:       "send_files",
 		Columns:    SendFilesColumns,
 		PrimaryKey: []*schema.Column{SendFilesColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "sendfile_task_id_file_path",
+				Unique:  true,
+				Columns: []*schema.Column{SendFilesColumns[1], SendFilesColumns[3]},
+			},
+		},
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{

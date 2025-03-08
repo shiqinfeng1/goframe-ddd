@@ -95,14 +95,13 @@ func recvSendFileChunk(ctx context.Context, body []byte, repo Repository) []byte
 
 	// 为每个收到的文件块创建一个fileSaver实例
 	// 从缓存中取出文件块持久化管理服务， 如果是首次存储，将先实例化一个文件接收器：NewFileSave
-	fsaver, err := getFileSaver(ctx, sc.TaskID, sc.FileID, repo)
+	fsaver, err := getFileSaver(ctx, sc.FileID, repo)
 	if err != nil {
 		g.Log().Errorf(ctx, "get filesaver fail:%v", err)
 		return fileChunkAckToBytes(ctx, []byte("save error"))
 	}
 
 	if err := fsaver.SaveChunk(ctx, &fileChunk{
-		taskId:     sc.TaskID,
 		fileId:     sc.FileID,
 		offset:     sc.ChunkOffset,
 		data:       chunkBytes,

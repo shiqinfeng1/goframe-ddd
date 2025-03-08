@@ -4,7 +4,6 @@ import "context"
 
 // SendChunk is the model entity for the SendChunk schema.
 type SendChunk struct {
-	TaskID      string `json:"task_id,omitempty"`
 	FileID      string `json:"file_id,omitempty"`
 	SendFileID  int    `json:"sendfile_id,omitempty"` // 对应sendfile表的id
 	ChunkIndex  int    `json:"chunk_index,omitempty"`
@@ -32,7 +31,6 @@ type SendFile struct {
 }
 
 type RecvChunk struct {
-	TaskID      string `json:"task_id,omitempty"`
 	FileID      string `json:"file_id,omitempty"`
 	ChunkIndex  int    `json:"chunk_index,omitempty"`
 	ChunkOffset int64  `json:"chunk_offset,omitempty"`
@@ -59,8 +57,8 @@ type Repository interface {
 	UpdateSendChunk(ctx context.Context, sendChunk *SendChunk) error
 	UpdateSendStatus(ctx context.Context, taskId string, status Status) error
 	GetRecvTask(ctx context.Context, taskId string) ([]*RecvFile, error)
-	GetRecvTaskFile(ctx context.Context, taskId, fileId string) (*RecvFile, error)
-	SaveRecvFile(ctx context.Context, recvile *RecvFile) error
+	GetRecvFile(ctx context.Context, fileId string) (*RecvFile, error)
+	SaveRecvFile(ctx context.Context, rf *RecvFile) error
 	UpdateRecvChunk(ctx context.Context, recvChunk *RecvChunk) (bool, error)
-	CountOfRecvedChunks(ctx context.Context, taskId, fileId string) (int, error)
+	CountOfRecvedChunks(ctx context.Context, fileId string) (int, error)
 }
