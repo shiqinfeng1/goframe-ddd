@@ -104,6 +104,11 @@ var (
 				Unique:  true,
 				Columns: []*schema.Column{SendFilesColumns[1], SendFilesColumns[3]},
 			},
+			{
+				Name:    "sendfile_file_id",
+				Unique:  true,
+				Columns: []*schema.Column{SendFilesColumns[4]},
+			},
 		},
 	}
 	// Tables holds all the tables in the schema.

@@ -39,6 +39,7 @@ func (q *FileTransferMgr) AddTask(ctx context.Context, id, name, nodeId string, 
 	defer q.mutex.Unlock()
 	task := NewTransferTask(ctx, id, name, nodeId, paths, q.stream, q.repo)
 	q.tasks.Set(id, task)
+	q.cond.Signal()
 }
 
 // Start 开始处理队列中的任务
@@ -137,6 +138,7 @@ func (q *FileTransferMgr) ResumeTask(ctx context.Context, id string) {
 		task := v.(*TransferTask)
 		if task.taskId == id && task.status == StatusPaused {
 			task.status = StatusWaiting
+			q.cond.Signal()
 			return false
 		}
 		return true

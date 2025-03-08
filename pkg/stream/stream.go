@@ -57,6 +57,43 @@ func (s *StreamMgr) Startup(ctx context.Context, recvHandler filemgr.RecvStreamH
 	}
 }
 
+func (s *StreamMgr) acceptStream(ctx context.Context, session *smux.Session) {
+	defer session.Close()
+	g.Log().Info(ctx, "session ready to accept stream ...")
+	for {
+		// 等待接收一个stream
+		stream, err := session.AcceptStream()
+		if err != nil {
+			if errors.Is(err, io.ErrClosedPipe) {
+				g.Log().Warning(ctx, "accept stream fail: stream pipe is closed")
+				return
+			}
+			g.Log().Errorf(ctx, "session accept stream fail:%v", err)
+			return
+		}
+		g.Log().Infof(ctx, "accept stream ok. remote:%v -> local:%v stream.id=%v", stream.RemoteAddr(), stream.LocalAddr(), stream.ID())
+		// 在协程中处理数据
+		go func(stm *smux.Stream) {
+			for {
+				if err := s.recvHandler(session, stm); err != nil {
+					if gerror.Is(err, io.EOF) {
+						g.Log().Infof(ctx, "exit current stream recv handler ok")
+						return
+					}
+					g.Log().Error(ctx, err)
+					return
+				}
+			}
+			// 服务端处理完数据后，不需要主动关闭， 等待发起方主动关闭
+			// if err := stm.Close(); err != nil {
+			// 	g.Log().Errorf(ctx, "close stream.id=%v fail:%v", stm.ID(), err)
+			// 	return
+			// }
+			// g.Log().Infof(ctx, "close stream ok. remote:%v -> local:%v stream.id=%v", stm.RemoteAddr(), stm.LocalAddr(), stream.ID())
+		}(stream)
+	}
+}
+
 // 服务端接收一个数据流，首次接收握手消息时，会先启动服务，每个客户端的连接会被缓存
 func (s *StreamMgr) StartupServer(ctx context.Context, addr string) error {
 	return s.transport.NewServer(ctx, addr, func(conn net.Conn) {
@@ -65,39 +102,11 @@ func (s *StreamMgr) StartupServer(ctx context.Context, addr string) error {
 			g.Log().Error(ctx, err)
 			return
 		}
-		go func() {
-			defer session.Close()
-			g.Log().Info(ctx, "session ready to accept stream ...")
-			for {
-				// 等待接收一个stream
-				stream, err := session.AcceptStream()
-				if err != nil {
-					if errors.Is(err, io.ErrClosedPipe) {
-						g.Log().Warning(ctx, "accept stream fail: stream pipe is closed")
-						return
-					}
-					g.Log().Errorf(ctx, "session accept stream fail:%v", err)
-					return
-				}
-				g.Log().Infof(ctx, "accept stream ok. remote:%v -> local:%v stream.id=%v", stream.RemoteAddr(), stream.LocalAddr(), stream.ID())
-				// 在协程中处理数据
-				go func(stm *smux.Stream) {
-					if err := s.recvHandler(ctx, session, stm); err != nil {
-						g.Log().Error(ctx, err)
-						return
-					}
-					if err := stm.Close(); err != nil {
-						g.Log().Errorf(ctx, "close stream.id=%v fail:%v", stm.ID(), err)
-						return
-					}
-					g.Log().Infof(ctx, "close stream ok. remote:%v -> local:%v stream.id=%v", stm.RemoteAddr(), stm.LocalAddr(), stream.ID())
-				}(stream)
-			}
-		}()
+		go s.acceptStream(ctx, session)
 	})
 }
 
-func (s *StreamMgr) startup(ctx context.Context, addr string) error {
+func (s *StreamMgr) startupClient(ctx context.Context, addr string) error {
 	if s.clientSessIsRunning.Load() {
 		return nil
 	}
@@ -113,11 +122,12 @@ func (s *StreamMgr) startup(ctx context.Context, addr string) error {
 	s.clientSess = session
 	s.clientSessIsRunning.Store(true)
 	// 会话建立成功， 立即主动发起握手
-	err = s.SendByClient(ctx, func(ctx context.Context, stm *smux.Stream) error {
-		if err := filemgr.ReqHandshakeWithSync(ctx, stm); err != nil {
+	err = s.SendByClient(ctx, func(stm *smux.Stream) error {
+		c := gctx.New()
+		if err := filemgr.ReqHandshakeWithSync(c, stm); err != nil {
 			return gerror.Wrap(err, "handshake fail")
 		}
-		g.Log().Infof(ctx, "my nodeId is %v, handshake to server:%v ok", filemgr.MyClientID, addr)
+		g.Log().Infof(c, "my nodeId is %v, handshake to server:%v ok", filemgr.MyClientID, addr)
 		return nil
 	})
 	if err != nil {
@@ -126,6 +136,7 @@ func (s *StreamMgr) startup(ctx context.Context, addr string) error {
 		conn.Close()
 		s.clientSessIsRunning.Store(false)
 	}
+	go s.acceptStream(ctx, session)
 	return err
 }
 
@@ -134,7 +145,7 @@ func (s *StreamMgr) StartupClient(ctx context.Context, addr string) {
 	ticker := time.NewTicker(time.Second * 3)
 	go func() {
 		for range ticker.C {
-			if err := s.startup(ctx, addr); err != nil {
+			if err := s.startupClient(ctx, addr); err != nil {
 				g.Log().Errorf(ctx, "filemgr connect to server fail:%v", err)
 				continue
 			}
@@ -157,7 +168,7 @@ func (s *StreamMgr) send(ctx context.Context, session *smux.Session, handler fil
 	g.Log().Infof(ctx, "open stresm ok. local:%v -> remote:%v stream.id=%v", stream.LocalAddr(), stream.RemoteAddr(), stream.ID())
 	// 在协程中处理数据
 	go func(s *smux.Stream) {
-		if err := handler(ctx, s); err != nil {
+		if err := handler(s); err != nil {
 			g.Log().Warning(ctx, err)
 			// 即使返回失败，也需要关闭stream
 		}

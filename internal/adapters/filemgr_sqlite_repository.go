@@ -5,6 +5,7 @@ import (
 
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent"
+	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent/recvchunk"
 	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent/recvfile"
 	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent/sendfile"
 	"github.com/shiqinfeng1/goframe-ddd/internal/domain/filemgr"
@@ -22,12 +23,15 @@ func NewFilemgrRepo(db *ent.Client) *filemgrRepo {
 }
 
 func (f *filemgrRepo) GetSendFile(ctx context.Context, taskId, filePath string) (*filemgr.SendFile, error) {
-	sf, err := f.db.SendFile.
+	query := f.db.SendFile.
 		Query().
-		Where(sendfile.TaskID(taskId), sendfile.FilePath(filePath)).
-		Only(ctx)
+		Where(sendfile.TaskID(taskId), sendfile.FilePath(filePath))
+	if exist, _ := query.Exist(ctx); !exist {
+		return nil, nil
+	}
+	sf, err := query.Only(ctx)
 	if err != nil {
-		return nil, gerror.Wrap(err, "query sandfile fail")
+		return nil, gerror.Wrap(err, "query sendfile fail")
 	}
 	out := &filemgr.SendFile{
 		ID:             sf.ID,
@@ -46,13 +50,17 @@ func (f *filemgrRepo) GetSendFile(ctx context.Context, taskId, filePath string) 
 }
 
 func (f *filemgrRepo) GetSendTask(ctx context.Context, taskId string) ([]*filemgr.SendFile, error) {
-	sfs, err := f.db.SendFile.
+	query := f.db.SendFile.
 		Query().
-		Where(sendfile.TaskID(taskId)).
-		All(ctx)
-	if err != nil {
-		return nil, gerror.Wrap(err, "query sandfile fail")
+		Where(sendfile.TaskID(taskId))
+	if exist, _ := query.Exist(ctx); !exist {
+		return []*filemgr.SendFile{}, nil
 	}
+	sfs, err := query.All(ctx)
+	if err != nil {
+		return nil, gerror.Wrap(err, "query sendfile fail")
+	}
+
 	var out []*filemgr.SendFile
 	for _, sf := range sfs {
 		out = append(out, &filemgr.SendFile{
@@ -137,13 +145,17 @@ func (f *filemgrRepo) UpdateSendChunk(ctx context.Context, sc *filemgr.SendChunk
 }
 
 func (f *filemgrRepo) GetRecvTask(ctx context.Context, taskId string) ([]*filemgr.RecvFile, error) {
-	sfs, err := f.db.RecvFile.
+	query := f.db.RecvFile.
 		Query().
-		Where(recvfile.TaskID(taskId)).
-		All(ctx)
-	if err != nil {
-		return nil, gerror.Wrap(err, "query sandfile fail")
+		Where(recvfile.TaskID(taskId))
+	if exist, _ := query.Exist(ctx); !exist {
+		return []*filemgr.RecvFile{}, nil
 	}
+	sfs, err := query.All(ctx)
+	if err != nil {
+		return nil, gerror.Wrap(err, "query recvfile fail")
+	}
+
 	var out []*filemgr.RecvFile
 	for _, sf := range sfs {
 		out = append(out, &filemgr.RecvFile{
@@ -229,13 +241,17 @@ func (f *filemgrRepo) UpdateRecvChunk(ctx context.Context, rc *filemgr.RecvChunk
 }
 
 func (f *filemgrRepo) GetRecvFile(ctx context.Context, fileId string) (*filemgr.RecvFile, error) {
-	rf, err := f.db.RecvFile.
+	query := f.db.RecvFile.
 		Query().
-		Where(recvfile.FileID(fileId)).
-		Only(ctx)
-	if err != nil {
-		return nil, gerror.Wrap(err, "query sandfile fail")
+		Where(recvfile.FileID(fileId))
+	if exist, _ := query.Exist(ctx); !exist {
+		return nil, nil
 	}
+	rf, err := query.Only(ctx)
+	if err != nil {
+		return nil, gerror.Wrap(err, "query recvfile fail")
+	}
+
 	out := &filemgr.RecvFile{
 		TaskID:         rf.TaskID,
 		TaskName:       rf.TaskName,
@@ -251,7 +267,20 @@ func (f *filemgrRepo) GetRecvFile(ctx context.Context, fileId string) (*filemgr.
 }
 
 func (f *filemgrRepo) CountOfRecvedChunks(ctx context.Context, fileId string) (int, error) {
-	return 0, nil
+	id, err := f.db.RecvFile.
+		Query().
+		Where(recvfile.FileID(fileId)).OnlyID(ctx)
+	if err != nil {
+		return 0, gerror.Wrap(err, "query recvfile fail")
+	}
+	cnt, err := f.db.RecvChunk.
+		Query().
+		Where(recvchunk.RecvfileID(id)).
+		Count(ctx)
+	if err != nil {
+		return 0, gerror.Wrap(err, "count recvchunk fail")
+	}
+	return cnt, nil
 }
 
 func (f *filemgrRepo) UpdateSendStatus(ctx context.Context, fileId string, status filemgr.Status) error {

@@ -1,6 +1,7 @@
 package filemgr
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"encoding/json"
@@ -16,6 +17,16 @@ var recvedPath = ""
 func init() {
 	home, _ := gfile.Home()
 	recvedPath = filepath.Join(home, "Downloads")
+}
+
+func msgToBytesWithExtraLen(_ context.Context, magic string, msg msgType, body []byte, extralen int) []byte {
+	data := make([]byte, headerLen+len(body))
+	copy(data[0:3], []byte(magic))
+	data[3] = msg.Byte()
+	binary.LittleEndian.PutUint32(data[4:8], uint32(len(body)+extralen))
+
+	copy(data[8:], body)
+	return data
 }
 
 func msgToBytes(_ context.Context, magic string, msg msgType, body []byte) []byte {
@@ -44,8 +55,8 @@ func fileInfoAckToBytes(ctx context.Context, body []byte) []byte {
 	return msgToBytes(ctx, ackMagic, msgFileInfo, body)
 }
 
-func fileChunkMsgToBytes(ctx context.Context, body []byte) []byte {
-	return msgToBytes(ctx, reqMagic, msgFileChunk, body)
+func fileChunkMsgToBytes(ctx context.Context, body []byte, extralen int) []byte {
+	return msgToBytesWithExtraLen(ctx, reqMagic, msgFileChunk, body, extralen)
 }
 
 func fileChunkAckToBytes(ctx context.Context, body []byte) []byte {
@@ -54,25 +65,25 @@ func fileChunkAckToBytes(ctx context.Context, body []byte) []byte {
 
 // recvSendFile 处理收到的文件信息，不管是否处理成功，都需要回复给发送方
 func recvSendFile(ctx context.Context, body []byte, repo Repository) []byte {
-	var sendFile SendFile
-	if err := json.Unmarshal(body, &sendFile); err != nil {
+	var sf SendFile
+	if err := json.Unmarshal(body, &sf); err != nil {
 		g.Log().Errorf(ctx, "recv sendfile fail:%v", err)
 		return fileInfoAckToBytes(ctx, []byte("unmarshal fail"))
 	}
 	var path string
-	oldpath := sendFile.FilePath
+	oldpath := sf.FilePath
 	// 检查是否重名，如果重名，那就在文件名后面追加(x)重命名
-	path = utils.NextFileName(sendFile.FilePath, recvedPath)
+	path = utils.NextFileName(sf.FilePath, recvedPath)
 	g.Log().Debugf(ctx, "file save path: %v", path)
 
 	err := repo.SaveRecvFile(ctx, &RecvFile{
-		TaskID:         sendFile.TaskID,
-		TaskName:       sendFile.TaskName,
+		TaskID:         sf.TaskID,
+		TaskName:       sf.TaskName,
 		FilePathSave:   path,
 		FilePathOrigin: oldpath,
-		FileId:         sendFile.FileId,
-		FileSize:       sendFile.FileSize,
-		ChunkNumTotal:  sendFile.ChunkNumTotal,
+		FileId:         sf.FileId,
+		FileSize:       sf.FileSize,
+		ChunkNumTotal:  sf.ChunkNumTotal,
 		ChunkNumRecved: 0,
 		Status:         0,
 	})
@@ -81,12 +92,13 @@ func recvSendFile(ctx context.Context, body []byte, repo Repository) []byte {
 		return fileInfoAckToBytes(ctx, []byte("save error"))
 	}
 
-	return fileInfoAckToBytes(ctx, []byte(path))
+	return fileInfoAckToBytes(ctx, []byte(gfile.Basename(oldpath)))
 }
 
 func recvSendFileChunk(ctx context.Context, body []byte, repo Repository) []byte {
 	var sc SendChunk
-	if err := json.Unmarshal(body, &sc); err != nil {
+	decoder := json.NewDecoder(bytes.NewReader(body))
+	if err := decoder.Decode(&sc); err != nil {
 		g.Log().Errorf(ctx, "recv sendChunk fail:%v", err)
 		return fileChunkAckToBytes(ctx, []byte("unmarshal fail"))
 	}

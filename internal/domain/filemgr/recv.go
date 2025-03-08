@@ -6,12 +6,13 @@ import (
 
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/xtaci/smux"
 )
 
 // 从kcp的stream中接收数据头
-func recvHeader(_ context.Context, stream io.Reader) (*header, error) {
+func recvHeader(ctx context.Context, stream io.Reader) (*header, error) {
 	// 读取消息头
 	headerBytes := make([]byte, headerLen)
 	n, err := stream.Read(headerBytes)
@@ -26,10 +27,11 @@ func recvHeader(_ context.Context, stream io.Reader) (*header, error) {
 	if err := h.ErrIfInvalid(); err != nil {
 		return nil, err
 	}
+	g.Log().Debugf(ctx, "recv msg header: %v", h)
 	return h, nil
 }
 
-func recvBody(_ context.Context, stream io.Reader, bodyLen uint32) ([]byte, error) {
+func recvBody(ctx context.Context, stream io.Reader, bodyLen uint32) ([]byte, error) {
 	bodyBytes := make([]byte, bodyLen)
 	var m int = 0
 	for {
@@ -38,7 +40,7 @@ func recvBody(_ context.Context, stream io.Reader, bodyLen uint32) ([]byte, erro
 			return nil, gerror.Wrap(err, "recv body fail")
 		}
 		m += n
-		// g.Log().Infof(ctx, "server recv %v bytes  stream.id=%v", n, s.ID())
+		g.Log().Debugf(ctx, "recv msg body %v bytes", n)
 		if m == int(bodyLen) {
 			break
 		}
@@ -65,7 +67,8 @@ func ackHandshake(ctx context.Context, sesion *smux.Session, stream io.Writer, b
 	return nil
 }
 
-func (f *FileTransferMgr) StreamRecvHandler(ctx context.Context, sesion *smux.Session, stream io.ReadWriter) error {
+func (f *FileTransferMgr) StreamRecvHandler(sesion *smux.Session, stream io.ReadWriter) error {
+	ctx := gctx.New()
 	header, err := recvHeader(ctx, stream)
 	if err != nil {
 		return err
@@ -86,7 +89,7 @@ func (f *FileTransferMgr) StreamRecvHandler(ctx context.Context, sesion *smux.Se
 		ack := handler(ctx, body, f.repo)
 		// 回复握手确认消息
 		if _, err := stream.Write(ack); err != nil {
-			return gerror.Wrap(err, "handshake fail")
+			return gerror.Wrap(err, "write ack fail")
 		}
 	} else {
 		return gerror.Newf("not register handler for msg type:%v", header.typ)

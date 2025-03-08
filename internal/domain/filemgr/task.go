@@ -10,6 +10,8 @@ import (
 
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/rs/xid"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/utils"
@@ -18,8 +20,8 @@ import (
 )
 
 type (
-	RecvStreamHandleFunc func(context.Context, *smux.Session, io.ReadWriter) error
-	SendStreamHandleFunc func(context.Context, *smux.Stream) error
+	RecvStreamHandleFunc func(*smux.Session, io.ReadWriter) error
+	SendStreamHandleFunc func(*smux.Stream) error
 )
 
 // 数据流管理
@@ -195,14 +197,15 @@ func (t *TransferTask) syncFileInfoToPeer(ctx context.Context, sendFile *SendFil
 	if err != nil {
 		return gerror.Wrap(err, "fileinfo write stream fail")
 	}
+	g.Log().Debugf(ctx, "send msg fileinfo ok: %v", string(fiBytes))
 	// 接收响应数据
 	respBody, err := recvAck(ctx, stm, msgFileInfo)
 	if err != nil {
 		return err
 	}
-	filePath := gconv.String(respBody)
-	if sendFile.FilePath != filePath {
-		return gerror.Newf("sync fileinfo fail. not match filepath: exp:%v fact:%v", sendFile.FilePath, filePath)
+	filename := gconv.String(respBody)
+	if gfile.Basename(sendFile.FilePath) != filename {
+		return gerror.Newf("sync fileinfo fail. not match filepath: exp:%v fact:%v", gfile.Basename(sendFile.FilePath), filename)
 	}
 	return nil
 }
@@ -216,8 +219,9 @@ func (t *TransferTask) syncEventToPeer(ctx context.Context, status Status, stm i
 	// 分块获取文件数据,串行发送
 	_, err := stm.Write(fiBytes)
 	if err != nil {
-		return gerror.Wrap(err, "fileinfo write stream fail")
+		return gerror.Wrap(err, "fileevent write stream fail")
 	}
+	g.Log().Debugf(ctx, "send msg event ok: %v", string(fiBytes))
 	// 接收响应数据
 	respBody, err := recvAck(ctx, stm, msgFileEvent)
 	if err != nil {
@@ -239,13 +243,14 @@ func (t *TransferTask) sendChunk(ctx context.Context, sendFile *SendFile, file *
 			}
 			return true, nil
 		}
+
 		body, _ := json.Marshal(&SendChunk{
 			FileID:      sendFile.FileId,
 			ChunkIndex:  sendFile.ChunkNumSended,
 			ChunkOffset: t.chunkOffsets[i],
 			ChunkSize:   chunkSize,
 		})
-		fcBytes := fileChunkMsgToBytes(ctx, body)
+		fcBytes := fileChunkMsgToBytes(ctx, body, chunkSize)
 		// 分块获取文件数据,串行发送
 		section := io.NewSectionReader(file, t.chunkOffsets[i], int64(chunkSize))
 		// 再次检查读取的数据是否一致
@@ -260,6 +265,7 @@ func (t *TransferTask) sendChunk(ctx context.Context, sendFile *SendFile, file *
 		if n != len(fcBytes) {
 			return false, gerror.Newf("write stream fail:n(%v) != len(header)(%v)", n, len(fcBytes))
 		}
+		g.Log().Debugf(ctx, "send msg filechunk header ok: %v", string(fcBytes))
 		written, err := io.CopyN(stm, section, section.Size()) // s.Write([]byte(msg))
 		if err != nil {
 			return false, gerror.Wrap(err, "filechunk data write fail")
@@ -295,6 +301,7 @@ func (t *TransferTask) sendChunk(ctx context.Context, sendFile *SendFile, file *
 }
 
 func (t *TransferTask) worker(ctx context.Context) {
+	g.Log().Debugf(ctx, "start a filetransfer task for id:%v name:%v nodeid:%v", t.taskId, t.taskName, t.nodeId)
 	finishChan := make(chan struct{})
 	for {
 		select {
@@ -313,7 +320,8 @@ func (t *TransferTask) worker(ctx context.Context) {
 			t.notifyStatus.Store(StatusSending.val)
 
 			// 执行发送任务
-			doSend := func(ctx context.Context, stm *smux.Stream) error {
+			doSend := func(stm *smux.Stream) error {
+				ctx := gctx.New()
 				defer close(finishChan)
 				// 遍历所有待发送的文件
 				for _, filePath := range t.paths {
@@ -367,6 +375,7 @@ func (t *TransferTask) worker(ctx context.Context) {
 					postHandle(false)
 					return
 				}
+				g.Log().Debugf(ctx, "server-side get session for nodeid:%v", t.nodeId)
 				if err := t.stream.SendByServer(ctx, sess, doSend); err != nil {
 					g.Log().Errorf(ctx, "send file by server fail:%v", err)
 					postHandle(false)
