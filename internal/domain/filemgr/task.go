@@ -290,7 +290,7 @@ func (t *TransferTask) sendChunk(ctx context.Context, sendFile *SendFile, file *
 		if err := t.repo.UpdateSendChunk(ctx, &SendChunk{
 			FileID:      sendFile.FileId,
 			SendFileID:  sendFile.ID, // 关联sendfile的i主键d
-			ChunkIndex:  i,
+			ChunkIndex:  sendFile.ChunkNumSended,
 			ChunkOffset: t.chunkOffsets[i],
 			ChunkSize:   chunkSize,
 		}); err != nil {

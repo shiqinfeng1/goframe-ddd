@@ -114,7 +114,6 @@ func recvSendFileChunk(ctx context.Context, body []byte, repo Repository) []byte
 	}
 
 	if err := fsaver.SaveChunk(ctx, &fileChunk{
-		fileId:     sc.FileID,
 		offset:     sc.ChunkOffset,
 		data:       chunkBytes,
 		chunkIndex: uint32(sc.ChunkIndex),

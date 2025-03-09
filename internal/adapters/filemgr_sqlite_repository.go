@@ -193,18 +193,18 @@ func (f *filemgrRepo) SaveRecvFile(ctx context.Context, rf *filemgr.RecvFile) er
 }
 
 // 插入sendchunk和更新sendfile的chunk统计
-func (f *filemgrRepo) UpdateRecvChunk(ctx context.Context, rc *filemgr.RecvChunk) (bool, error) {
+func (f *filemgrRepo) UpdateRecvChunk(ctx context.Context, rc *filemgr.RecvChunk) (*filemgr.RecvFile, error) {
 	// 开始事务
 	tx, err := f.db.Tx(ctx)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	rf, err := tx.RecvFile.
 		Query().
 		Where(recvfile.FileID(rc.FileID)).
 		Only(ctx)
 	if err != nil {
-		return false, tx.Rollback()
+		return nil, tx.Rollback()
 	}
 	// 插入filechunk记录
 	_, err = tx.RecvChunk.
@@ -215,39 +215,46 @@ func (f *filemgrRepo) UpdateRecvChunk(ctx context.Context, rc *filemgr.RecvChunk
 		SetRecvFileID(rf.ID).
 		Save(ctx)
 	if err != nil {
-		return false, tx.Rollback()
+		return nil, tx.Rollback()
 	}
-	var (
-		status   int
-		finished bool
-	)
+	var status int
 	if rf.ChunkNumTotal == rf.ChunkNumRecved+1 {
 		status = filemgr.StatusSuccessful.Int()
-		finished = true
 	} else {
 		status = filemgr.StatusSending.Int()
 	}
-	_, err = tx.RecvFile.
+	newrf, err := tx.RecvFile.
 		UpdateOneID(rf.ID).
 		AddChunkNumRecved(1).
 		SetStatus(status).
 		Save(ctx)
 	if err != nil {
-		return false, tx.Rollback()
+		return nil, tx.Rollback()
 	}
 
+	out := &filemgr.RecvFile{
+		TaskID:         newrf.TaskID,
+		TaskName:       newrf.TaskName,
+		FilePathSave:   newrf.FilePathSave,
+		FilePathOrigin: newrf.FilePathOrigin,
+		FileId:         newrf.FileID,
+		FileSize:       newrf.FileSize,
+		ChunkNumTotal:  newrf.ChunkNumTotal,
+		ChunkNumRecved: newrf.ChunkNumRecved,
+		Status:         newrf.Status,
+	}
 	// 提交事务C
-	return finished, tx.Commit()
+	return out, tx.Commit()
 }
 
 func (f *filemgrRepo) GetRecvFile(ctx context.Context, fileId string) (*filemgr.RecvFile, error) {
-	query := f.db.RecvFile.
-		Query().
-		Where(recvfile.FileID(fileId))
-	if exist, _ := query.Exist(ctx); !exist {
+	if exist, _ := f.db.RecvFile.Query().
+		Where(recvfile.FileID(fileId)).Exist(ctx); !exist {
 		return nil, nil
 	}
-	rf, err := query.Only(ctx)
+	rf, err := f.db.RecvFile.
+		Query().
+		Where(recvfile.FileID(fileId)).Only(ctx)
 	if err != nil {
 		return nil, gerror.Wrap(err, "query recvfile fail")
 	}

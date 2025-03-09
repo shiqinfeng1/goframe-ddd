@@ -59,6 +59,6 @@ type Repository interface {
 	GetRecvTask(ctx context.Context, taskId string) ([]*RecvFile, error)
 	GetRecvFile(ctx context.Context, fileId string) (*RecvFile, error)
 	SaveRecvFile(ctx context.Context, rf *RecvFile) error
-	UpdateRecvChunk(ctx context.Context, recvChunk *RecvChunk) (bool, error)
+	UpdateRecvChunk(ctx context.Context, recvChunk *RecvChunk) (*RecvFile, error)
 	CountOfRecvedChunks(ctx context.Context, fileId string) (int, error)
 }

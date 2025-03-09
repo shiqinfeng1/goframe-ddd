@@ -13,8 +13,6 @@ import (
 )
 
 type fileChunk struct {
-	taskId     string
-	fileId     string
 	offset     int64
 	data       []byte
 	chunkIndex uint32
@@ -22,6 +20,7 @@ type fileChunk struct {
 }
 
 type fileSaver struct {
+	fileId        string
 	inst          *os.File
 	path          string
 	timeoutTicker *time.Ticker
@@ -55,54 +54,59 @@ func (fs *fileSaver) saveChunkData(fc *fileChunk) error {
 }
 
 // 监听对端取消发送的事件：发送方取消之后，需要通知接收方释放资源
-func (fs *fileSaver) monitorEvent(ctx context.Context, fileId string) {
+func (fs *fileSaver) monitorEvent(ctx context.Context) {
 	for {
 		select {
 		case status := <-fs.eventNotify: // 监控是否有取消发送的通知
-			// 1. 关闭 filesaver 实例
-			fs.Close() // 发送方取消发送，退出和关闭filersaver
 			// 2. 删除文件
 			if status == StatusCancel {
 				// todo 删除文件
 			}
 			if status == StatusPaused {
-				g.Log().Infof(ctx, "pause recv file success. fileId:%v", fileId)
+				g.Log().Infof(ctx, "pause recv file success. fileId:%v", fs.fileId)
 			}
 			// todo 更新recvfile状态 为取消或暂停
 			// 删除实例
-			removeFileSaver(ctx, fileId)
-			g.Log().Infof(ctx, "cancel recv file success. fileId:%v", fileId)
+			err := removeFileSaver(ctx, fs.fileId)
+			g.Log().Infof(ctx, "cancel recv file success. fileId:%v err:%v", fs.fileId, err)
 			return
 		case <-fs.timeoutTicker.C: // 强制超时时间5分钟关闭fileSaver，防止对端异常退出，filesaver资源无法正常释放，设置一个超时时间
-			fs.Close()
 			// todo 更新recvfile状态 为 中断
-			removeFileSaver(ctx, fileId)
-			g.Log().Infof(ctx, "force stop recv file success")
+			err := removeFileSaver(ctx, fs.fileId)
+			g.Log().Infof(ctx, "force stop recv file success. fileId:%v err:%v", fs.fileId, err)
 			return
 		}
 	}
 }
 
 func (fs *fileSaver) SaveChunk(ctx context.Context, fc *fileChunk) error {
+	// 每个文件块超时5分钟， 如果超时未收到下一个块，主动释放资源
 	if fs.timeoutTicker != nil {
 		fs.timeoutTicker.Reset(5 * time.Minute)
 	}
 	if err := fs.saveChunkData(fc); err != nil {
+		removeFileSaver(ctx, fs.fileId)
 		return err
 	}
-	finished, err := fs.repo.UpdateRecvChunk(ctx, &RecvChunk{
-		FileID:      fc.fileId,
+	newrf, err := fs.repo.UpdateRecvChunk(ctx, &RecvChunk{
+		FileID:      fs.fileId,
 		ChunkIndex:  int(fc.chunkIndex),
 		ChunkOffset: fc.offset,
 		ChunkSize:   len(fc.data),
 	})
 	if err != nil {
+		removeFileSaver(ctx, fs.fileId)
 		return gerror.Wrapf(err, "save recvfile fail")
 	}
-
-	if finished {
-		fs.Close()
-		removeFileSaver(ctx, fc.fileId)
+	g.Log().Debugf(ctx, "recv file chunk[%v/%v]:%v", newrf.ChunkNumRecved, newrf.ChunkNumTotal, fs.path)
+	if NewStatus(uint32(newrf.Status)) == StatusSuccessful {
+		fs.inst.Close()
+		fs.inst = nil
+		if err := gfile.Rename(fs.path+".downloading", fs.path); err != nil {
+			return gerror.Wrapf(err, "rename recvfile fail:%v", fs.path)
+		}
+		g.Log().Infof(ctx, "recv file ok:%v", fs.path)
+		removeFileSaver(ctx, fs.fileId)
 	}
 	return nil
 }
@@ -120,6 +124,7 @@ func getFileSaver(ctx context.Context, fileId string, repo Repository) (*fileSav
 		if err != nil {
 			return nil, err
 		}
+
 		// 指定的文件已存在， 但是对应的downloading文件不存在，那么不需要新建对应的downloading文件
 		if gfile.IsFile(recvFile.FilePathSave) {
 			if !gfile.IsFile(recvFile.FilePathSave + ".downloading") {
@@ -141,6 +146,7 @@ func getFileSaver(ctx context.Context, fileId string, repo Repository) (*fileSav
 		}
 		// 块数据保存的管理结构
 		fs := &fileSaver{
+			fileId:        fileId,
 			path:          recvFile.FilePathSave, // 使用实际保存的路径，如果重名，文件名可能被重命名
 			timeoutTicker: time.NewTicker(5 * time.Minute),
 			inst:          file,
@@ -148,7 +154,7 @@ func getFileSaver(ctx context.Context, fileId string, repo Repository) (*fileSav
 			eventNotify:   make(chan Status),
 		}
 
-		go fs.monitorEvent(ctx, fileId)
+		go fs.monitorEvent(ctx)
 		return fs, nil
 	}), 0)
 	if err != nil {
@@ -159,6 +165,7 @@ func getFileSaver(ctx context.Context, fileId string, repo Repository) (*fileSav
 	if err != nil || fs == nil {
 		return nil, gerror.Newf("get file saver fail:%v", err)
 	}
+
 	return fs, nil
 }
 
@@ -185,9 +192,10 @@ func removeFileSaver(ctx context.Context, fileId string) error {
 	}
 	var fs *fileSaver
 	err = val.Scan(&fs)
-	if err != nil || fs == nil {
+	if err != nil {
 		return gerror.Newf("must get file saver fail:%v", err)
 	}
+	// 释放filesaver资源
 	fs.Close()
 	return nil
 }

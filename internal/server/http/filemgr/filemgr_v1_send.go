@@ -14,16 +14,17 @@ import (
 )
 
 func (c *ControllerV1) StartSendFile(ctx context.Context, req *v1.StartSendFileReq) (res *v1.StartSendFileRes, err error) {
+	res = &v1.StartSendFileRes{}
 	if g.Cfg().MustGet(ctx, "filemgr.isCloud").Bool() {
 		if req.NodeId == "" {
-			return nil, errors.ErrInvalidNodeId
+			return res, errors.ErrInvalidNodeId
 		}
 	} else {
 		req.NodeId = ""
 	}
 	for _, v := range req.FilePath {
 		if !filepath.IsAbs(v) {
-			return nil, errors.ErrNotAbsFilePath(v)
+			return res, errors.ErrNotAbsFilePath(v)
 		}
 		// 发送文件夹
 		if gfile.IsDir(v) {
@@ -35,9 +36,9 @@ func (c *ControllerV1) StartSendFile(ctx context.Context, req *v1.StartSendFileR
 				return ""
 			})
 			if len(files) == 0 {
-				return nil, errors.ErrEmptyDir(v)
+				return res, errors.ErrEmptyDir(v)
 			}
-			_, err = c.app.Commands.StartSendFile(ctx, &command.StartSendFileInput{
+			c.app.Commands.StartSendFile(ctx, &command.StartSendFileInput{
 				BaseName: gfile.Basename(v),
 				Files:    files,
 				NodeId:   req.NodeId,
@@ -48,9 +49,9 @@ func (c *ControllerV1) StartSendFile(ctx context.Context, req *v1.StartSendFileR
 				files = append(files, v)
 			}
 			if len(files) == 0 {
-				return nil, errors.ErrInvalidFiles(gconv.String(req.FilePath))
+				return res, errors.ErrInvalidFiles(gconv.String(req.FilePath))
 			}
-			_, err = c.app.Commands.StartSendFile(ctx, &command.StartSendFileInput{
+			c.app.Commands.StartSendFile(ctx, &command.StartSendFileInput{
 				BaseName: gfile.Basename(v),
 				Files:    files,
 				NodeId:   req.NodeId,
@@ -58,10 +59,11 @@ func (c *ControllerV1) StartSendFile(ctx context.Context, req *v1.StartSendFileR
 		}
 	}
 
-	return
+	return res, nil
 }
 
 func (c *ControllerV1) PauseSendFile(ctx context.Context, req *v1.PauseSendFileReq) (res *v1.PauseSendFileRes, err error) {
+	res = &v1.PauseSendFileRes{}
 	_, err = c.app.Commands.PauseSendFile(ctx, &command.PauseSendFileInput{
 		TaskId: req.TaskId,
 	})
@@ -69,6 +71,7 @@ func (c *ControllerV1) PauseSendFile(ctx context.Context, req *v1.PauseSendFileR
 }
 
 func (c *ControllerV1) CancelSendFile(ctx context.Context, req *v1.CancelSendFileReq) (res *v1.CancelSendFileRes, err error) {
+	res = &v1.CancelSendFileRes{}
 	_, err = c.app.Commands.CancelSendFile(ctx, &command.CancelSendFileInput{
 		TaskId: req.TaskId,
 	})
@@ -76,6 +79,7 @@ func (c *ControllerV1) CancelSendFile(ctx context.Context, req *v1.CancelSendFil
 }
 
 func (c *ControllerV1) ResumeSendFile(ctx context.Context, req *v1.ResumeSendFileReq) (res *v1.ResumeSendFileRes, err error) {
+	res = &v1.ResumeSendFileRes{}
 	_, err = c.app.Commands.ResumeSendFile(ctx, &command.ResumeSendFileInput{
 		TaskId: req.TaskId,
 	})

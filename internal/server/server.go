@@ -4,6 +4,7 @@ import (
 	"github.com/gogf/gf/contrib/rpc/grpcx/v2"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
+	"github.com/gogf/gf/v2/os/gctx"
 	grpc_filemgr "github.com/shiqinfeng1/goframe-ddd/internal/server/grpc/filemgr"
 	http_filemgr "github.com/shiqinfeng1/goframe-ddd/internal/server/http/filemgr"
 )
@@ -11,6 +12,9 @@ import (
 func NewHttpServer() *ghttp.Server {
 	// 启动http服务
 	s := g.Server()
+	if g.Cfg().MustGet(gctx.New(), "pprof").Bool() {
+		s.EnablePProf()
+	}
 	s.BindMiddlewareDefault(func(r *ghttp.Request) {
 		r.Response.CORSDefault()
 		r.Middleware.Next()
