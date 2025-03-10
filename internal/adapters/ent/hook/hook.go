@@ -9,6 +9,18 @@ import (
 	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent"
 )
 
+// The FileTransferTaskFunc type is an adapter to allow the use of ordinary
+// function as FileTransferTask mutator.
+type FileTransferTaskFunc func(context.Context, *ent.FileTransferTaskMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f FileTransferTaskFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.FileTransferTaskMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.FileTransferTaskMutation", m)
+}
+
 // The RecvChunkFunc type is an adapter to allow the use of ordinary
 // function as RecvChunk mutator.
 type RecvChunkFunc func(context.Context, *ent.RecvChunkMutation) (ent.Value, error)

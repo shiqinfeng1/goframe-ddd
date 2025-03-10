@@ -85,7 +85,7 @@ func recvSendFile(ctx context.Context, body []byte, repo Repository) []byte {
 		FileSize:       sf.FileSize,
 		ChunkNumTotal:  sf.ChunkNumTotal,
 		ChunkNumRecved: 0,
-		Status:         0,
+		Status:         sf.Status,
 	})
 	if err != nil {
 		g.Log().Errorf(ctx, "save recvfile fail:%v", err)

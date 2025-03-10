@@ -5,6 +5,7 @@ import (
 
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent"
+	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent/filetransfertask"
 	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent/recvchunk"
 	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent/recvfile"
 	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent/sendfile"
@@ -23,40 +24,103 @@ func NewFilemgrRepo(db *ent.Client) *filemgrRepo {
 }
 
 func (f *filemgrRepo) GetSendFile(ctx context.Context, taskId, filePath string) (*filemgr.SendFile, error) {
-	query := f.db.SendFile.
+	if exist, err := f.db.FileTransferTask.
 		Query().
-		Where(sendfile.TaskID(taskId), sendfile.FilePath(filePath))
-	if exist, _ := query.Exist(ctx); !exist {
+		Where(filetransfertask.TaskID(taskId)).
+		Exist(ctx); !exist {
+		return nil, gerror.Wrap(err, "query task fail")
+	}
+	task, err := f.db.FileTransferTask.
+		Query().
+		Where(filetransfertask.TaskID(taskId)).
+		Only(ctx)
+	if err != nil {
+		return nil, gerror.Wrap(err, "query sendfile fail")
+	}
+
+	if exist, _ := f.db.SendFile.
+		Query().
+		Where(sendfile.TaskID(taskId), sendfile.FilePath(filePath)).
+		Exist(ctx); !exist {
 		return nil, nil
 	}
-	sf, err := query.Only(ctx)
+	sf, err := f.db.SendFile.
+		Query().
+		Where(sendfile.TaskID(taskId), sendfile.FilePath(filePath)).
+		Only(ctx)
 	if err != nil {
 		return nil, gerror.Wrap(err, "query sendfile fail")
 	}
 	out := &filemgr.SendFile{
 		ID:             sf.ID,
 		TaskID:         sf.TaskID,
-		TaskName:       sf.TaskName,
+		TaskName:       task.TaskName,
 		FilePath:       sf.FilePath,
 		FileId:         sf.FileID,
 		FileSize:       sf.FileSize,
 		ChunkNumTotal:  sf.ChunkNumTotal,
 		ChunkNumSended: sf.ChunkNumSended,
 		Status:         sf.Status,
-		Elapsed:        sf.Elapsed,
-		Speed:          sf.Speed,
 	}
 	return out, nil
 }
 
-func (f *filemgrRepo) GetSendTask(ctx context.Context, taskId string) ([]*filemgr.SendFile, error) {
-	query := f.db.SendFile.
+func (f *filemgrRepo) GetNotCompletedTasks(ctx context.Context) ([]*filemgr.FileTransferTask, map[string][]*filemgr.SendFile, error) {
+	exist, _ := f.db.FileTransferTask.
 		Query().
-		Where(sendfile.TaskID(taskId))
-	if exist, _ := query.Exist(ctx); !exist {
+		Where(filetransfertask.StatusIn(
+			filemgr.StatusWaiting.Int(),
+			filemgr.StatusSending.Int(),
+			filemgr.StatusPaused.Int(),
+			filemgr.StatusFailed.Int())).Exist(ctx)
+	if !exist {
+		return []*filemgr.FileTransferTask{}, map[string][]*filemgr.SendFile{}, nil
+	}
+
+	tasks, err := f.db.FileTransferTask.
+		Query().
+		Where(filetransfertask.StatusIn(
+			filemgr.StatusWaiting.Int(),
+			filemgr.StatusSending.Int(),
+			filemgr.StatusPaused.Int(),
+			filemgr.StatusFailed.Int())).All(ctx)
+	if err != nil {
+		return nil, nil, gerror.Wrap(err, "query filetransfertask fail")
+	}
+	out := make(map[string][]*filemgr.SendFile)
+	outTasks := make([]*filemgr.FileTransferTask, 0)
+
+	for _, task := range tasks {
+		outTasks = append(outTasks, &filemgr.FileTransferTask{
+			TaskID:   task.TaskID,
+			TaskName: task.TaskName,
+			NodeID:   task.NodeID,
+			Elapsed:  task.Elapsed,
+			Speed:    task.Speed,
+			Status:   task.Status,
+		})
+
+		out[task.TaskID] = make([]*filemgr.SendFile, 0)
+		sfs, err := f.GetSendFilesByTask(ctx, task.TaskID)
+		if err != nil {
+			return nil, nil, err
+		}
+		out[task.TaskID] = append(out[task.TaskID], sfs...)
+	}
+
+	return outTasks, out, nil
+}
+
+func (f *filemgrRepo) GetSendFilesByTask(ctx context.Context, taskId string) ([]*filemgr.SendFile, error) {
+	exist, _ := f.db.SendFile.
+		Query().
+		Where(sendfile.TaskID(taskId)).Exist(ctx)
+	if !exist {
 		return []*filemgr.SendFile{}, nil
 	}
-	sfs, err := query.All(ctx)
+	sfs, err := f.db.SendFile.
+		Query().
+		Where(sendfile.TaskID(taskId)).All(ctx)
 	if err != nil {
 		return nil, gerror.Wrap(err, "query sendfile fail")
 	}
@@ -66,33 +130,41 @@ func (f *filemgrRepo) GetSendTask(ctx context.Context, taskId string) ([]*filemg
 		out = append(out, &filemgr.SendFile{
 			ID:             sf.ID,
 			TaskID:         sf.TaskID,
-			TaskName:       sf.TaskName,
 			FilePath:       sf.FilePath,
 			FileId:         sf.FileID,
 			FileSize:       sf.FileSize,
 			ChunkNumTotal:  sf.ChunkNumTotal,
 			ChunkNumSended: sf.ChunkNumSended,
 			Status:         sf.Status,
-			Elapsed:        sf.Elapsed,
-			Speed:          sf.Speed,
 		})
 	}
 	return out, nil
+}
+
+func (f *filemgrRepo) SaveTask(ctx context.Context, ftt *filemgr.FileTransferTask) error {
+	_, err := f.db.FileTransferTask.
+		Create().
+		SetTaskID(ftt.TaskID).
+		SetTaskName(ftt.TaskName).
+		SetNodeID(ftt.NodeID).
+		SetStatus(ftt.Status).
+		Save(ctx)
+	if err != nil {
+		return gerror.Wrap(err, "save sendfile fail")
+	}
+	return nil
 }
 
 func (f *filemgrRepo) SaveSendFile(ctx context.Context, sf *filemgr.SendFile) (int, error) {
 	created, err := f.db.SendFile.
 		Create().
 		SetTaskID(sf.TaskID).
-		SetTaskName(sf.TaskName).
 		SetFilePath(sf.FilePath).
 		SetFileID(sf.FileId).
 		SetFileSize(sf.FileSize).
 		SetChunkNumTotal(sf.ChunkNumTotal).
 		SetChunkNumSended(sf.ChunkNumSended).
 		SetStatus(sf.Status).
-		SetElapsed(sf.Elapsed).
-		SetSpeed(sf.Speed).
 		Save(ctx)
 	if err != nil {
 		return 0, gerror.Wrap(err, "save sendfile fail")
@@ -112,7 +184,8 @@ func (f *filemgrRepo) UpdateSendChunk(ctx context.Context, sc *filemgr.SendChunk
 		Where(sendfile.FileID(sc.FileID)).
 		Only(ctx)
 	if err != nil {
-		return tx.Rollback()
+		tx.Rollback()
+		return gerror.Wrapf(err, "query sendfile fail")
 	}
 	// 插入filechunk记录
 	_, err = tx.SendChunk.
@@ -123,7 +196,8 @@ func (f *filemgrRepo) UpdateSendChunk(ctx context.Context, sc *filemgr.SendChunk
 		SetSendFileID(sf.ID).
 		Save(ctx)
 	if err != nil {
-		return tx.Rollback()
+		tx.Rollback()
+		return gerror.Wrapf(err, "save chunk fail")
 	}
 	var status int
 	if sf.ChunkNumTotal == sf.ChunkNumSended+1 {
@@ -137,21 +211,31 @@ func (f *filemgrRepo) UpdateSendChunk(ctx context.Context, sc *filemgr.SendChunk
 		SetStatus(status).
 		Save(ctx)
 	if err != nil {
-		return tx.Rollback()
+		tx.Rollback()
+		return gerror.Wrapf(err, "update sendfile fail")
 	}
-
+	_, err = tx.FileTransferTask.
+		Update().
+		Where(filetransfertask.TaskID(sf.TaskID)).
+		SetStatus(status).
+		Save(ctx)
+	if err != nil {
+		tx.Rollback()
+		return gerror.Wrapf(err, "update task status fail")
+	}
 	// 提交事务C
 	return tx.Commit()
 }
 
 func (f *filemgrRepo) GetRecvTask(ctx context.Context, taskId string) ([]*filemgr.RecvFile, error) {
-	query := f.db.RecvFile.
+	if exist, _ := f.db.RecvFile.
 		Query().
-		Where(recvfile.TaskID(taskId))
-	if exist, _ := query.Exist(ctx); !exist {
+		Where(recvfile.TaskID(taskId)).Exist(ctx); !exist {
 		return []*filemgr.RecvFile{}, nil
 	}
-	sfs, err := query.All(ctx)
+	sfs, err := f.db.RecvFile.
+		Query().
+		Where(recvfile.TaskID(taskId)).All(ctx)
 	if err != nil {
 		return nil, gerror.Wrap(err, "query recvfile fail")
 	}
@@ -197,14 +281,15 @@ func (f *filemgrRepo) UpdateRecvChunk(ctx context.Context, rc *filemgr.RecvChunk
 	// 开始事务
 	tx, err := f.db.Tx(ctx)
 	if err != nil {
-		return nil, err
+		return nil, gerror.Wrap(err, "open tx fail")
 	}
 	rf, err := tx.RecvFile.
 		Query().
 		Where(recvfile.FileID(rc.FileID)).
 		Only(ctx)
 	if err != nil {
-		return nil, tx.Rollback()
+		tx.Rollback()
+		return nil, gerror.Wrap(err, "query recvfile fail")
 	}
 	// 插入filechunk记录
 	_, err = tx.RecvChunk.
@@ -215,7 +300,8 @@ func (f *filemgrRepo) UpdateRecvChunk(ctx context.Context, rc *filemgr.RecvChunk
 		SetRecvFileID(rf.ID).
 		Save(ctx)
 	if err != nil {
-		return nil, tx.Rollback()
+		tx.Rollback()
+		return nil, gerror.Wrap(err, "query recvchunk fail")
 	}
 	var status int
 	if rf.ChunkNumTotal == rf.ChunkNumRecved+1 {
@@ -229,7 +315,8 @@ func (f *filemgrRepo) UpdateRecvChunk(ctx context.Context, rc *filemgr.RecvChunk
 		SetStatus(status).
 		Save(ctx)
 	if err != nil {
-		return nil, tx.Rollback()
+		tx.Rollback()
+		return nil, gerror.Wrap(err, "save recvfile fail")
 	}
 
 	out := &filemgr.RecvFile{
@@ -250,7 +337,7 @@ func (f *filemgrRepo) UpdateRecvChunk(ctx context.Context, rc *filemgr.RecvChunk
 func (f *filemgrRepo) GetRecvFile(ctx context.Context, fileId string) (*filemgr.RecvFile, error) {
 	if exist, _ := f.db.RecvFile.Query().
 		Where(recvfile.FileID(fileId)).Exist(ctx); !exist {
-		return nil, nil
+		return &filemgr.RecvFile{}, nil
 	}
 	rf, err := f.db.RecvFile.
 		Query().
@@ -290,14 +377,54 @@ func (f *filemgrRepo) CountOfRecvedChunks(ctx context.Context, fileId string) (i
 	return cnt, nil
 }
 
-func (f *filemgrRepo) UpdateSendStatus(ctx context.Context, fileId string, status filemgr.Status) error {
+func (f *filemgrRepo) UpdateSpeed(ctx context.Context, taskid, elapsed, speed string) error {
+	_, err := f.db.FileTransferTask.
+		Update().
+		Where(filetransfertask.TaskID(taskid)).
+		SetElapsed(elapsed).
+		SetSpeed(speed).
+		Save(ctx)
+	if err != nil {
+		return gerror.Wrap(err, "update task status fail")
+	}
+	return nil
+}
+
+func (f *filemgrRepo) UpdateTaskStatus(ctx context.Context, taskid, fileId string, status filemgr.Status) error {
+	// 开始事务
+	tx, err := f.db.Tx(ctx)
+	if err != nil {
+		return gerror.Wrap(err, "open tx fail")
+	}
+	_, err = tx.FileTransferTask.
+		Update().
+		Where(filetransfertask.TaskID(taskid)).
+		SetStatus(status.Int()).
+		Save(ctx)
+	if err != nil {
+		tx.Rollback()
+		return gerror.Wrap(err, "update task status fail")
+	}
+	_, err = tx.SendFile.
+		Update().
+		Where(sendfile.FileID(fileId)).
+		SetStatus(status.Int()).
+		Save(ctx)
+	if err != nil {
+		tx.Rollback()
+		return gerror.Wrap(err, "update sendfile status fail")
+	}
+	return tx.Commit()
+}
+
+func (f *filemgrRepo) UpdateRecvStatus(ctx context.Context, fileId string, status filemgr.Status) error {
 	_, err := f.db.SendFile.
 		Update().
 		Where(sendfile.FileID(fileId)).
 		SetStatus(status.Int()).
 		Save(ctx)
 	if err != nil {
-		return gerror.Wrap(err, "update sendfile status fail")
+		return gerror.Wrap(err, "update recvfile status fail")
 	}
 	return nil
 }

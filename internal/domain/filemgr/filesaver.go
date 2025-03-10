@@ -57,23 +57,33 @@ func (fs *fileSaver) saveChunkData(fc *fileChunk) error {
 func (fs *fileSaver) monitorEvent(ctx context.Context) {
 	for {
 		select {
-		case status := <-fs.eventNotify: // 监控是否有取消发送的通知
+		case status := <-fs.eventNotify: // 监控事件通知(取消、暂停)
 			// 2. 删除文件
 			if status == StatusCancel {
-				// todo 删除文件
+				g.Log().Infof(ctx, "TODO: 任务已取消，需删除文件:%v", fs.path)
 			}
-			if status == StatusPaused {
-				g.Log().Infof(ctx, "pause recv file success. fileId:%v", fs.fileId)
+			// 更新recvfile状态 为取消或暂停
+			if err := fs.repo.UpdateRecvStatus(ctx, fs.fileId, status); err != nil {
+				g.Log().Errorf(ctx, "update recvfile fileId:%v status fail:%v", fs.fileId, err)
+				return
 			}
-			// todo 更新recvfile状态 为取消或暂停
 			// 删除实例
-			err := removeFileSaver(ctx, fs.fileId)
-			g.Log().Infof(ctx, "cancel recv file success. fileId:%v err:%v", fs.fileId, err)
+			if err := removeFileSaver(ctx, fs.fileId); err != nil {
+				g.Log().Errorf(ctx, "remove filesaver fileId:%v fail:%v", fs.fileId, err)
+				return
+			}
+			g.Log().Infof(ctx, "update fileId:%v to status:%v ok", fs.fileId, status)
 			return
 		case <-fs.timeoutTicker.C: // 强制超时时间5分钟关闭fileSaver，防止对端异常退出，filesaver资源无法正常释放，设置一个超时时间
-			// todo 更新recvfile状态 为 中断
-			err := removeFileSaver(ctx, fs.fileId)
-			g.Log().Infof(ctx, "force stop recv file success. fileId:%v err:%v", fs.fileId, err)
+			if err := fs.repo.UpdateRecvStatus(ctx, fs.fileId, StatusFailed); err != nil {
+				g.Log().Errorf(ctx, "update recvfile fileId:%v status to fail:%v", fs.fileId, err)
+				return
+			}
+			if err := removeFileSaver(ctx, fs.fileId); err != nil {
+				g.Log().Errorf(ctx, "force stop recv file fileId:%v fail:%v", fs.fileId, err)
+				return
+			}
+			g.Log().Errorf(ctx, "force stop recv file success. fileId:%v", fs.fileId)
 			return
 		}
 	}
@@ -124,7 +134,9 @@ func getFileSaver(ctx context.Context, fileId string, repo Repository) (*fileSav
 		if err != nil {
 			return nil, err
 		}
-
+		if recvFile.FilePathSave == "" {
+			return nil, gerror.Newf("not found recvfile:%v", fileId)
+		}
 		// 指定的文件已存在， 但是对应的downloading文件不存在，那么不需要新建对应的downloading文件
 		if gfile.IsFile(recvFile.FilePathSave) {
 			if !gfile.IsFile(recvFile.FilePathSave + ".downloading") {

@@ -1,6 +1,9 @@
 package v1
 
-import "github.com/gogf/gf/v2/frame/g"
+import (
+	"github.com/gogf/gf/v2/frame/g"
+	"github.com/shiqinfeng1/goframe-ddd/internal/application/query"
+)
 
 type StartSendFileReq struct {
 	g.Meta   `path:"/file/startSend" tags:"文件收发" method:"post" summary:"开始发送文件"`
@@ -32,4 +35,15 @@ type ResumeSendFileReq struct {
 }
 type ResumeSendFileRes struct {
 	g.Meta `status:"200"`
+}
+
+type SendingTaskListReq struct {
+	g.Meta `path:"/task/list" tags:"文件收发" method:"post" summary:"查询任务列表"`
+}
+
+type SendingTaskListRes struct {
+	g.Meta   `status:"200"`
+	Running  int          `json:"runnings" dc:"正在运行的发送任务数量"`
+	MaxTasks int          `json:"max_tasks" dc:"同时运行的最大发送任务数量"`
+	Tasks    []query.Task `json:"tasks" dc:"已连接节点客户端id列表"`
 }

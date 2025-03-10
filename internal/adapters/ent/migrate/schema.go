@@ -8,6 +8,31 @@ import (
 )
 
 var (
+	// FileTransferTasksColumns holds the columns for the "file_transfer_tasks" table.
+	FileTransferTasksColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "task_id", Type: field.TypeString, Unique: true, Size: 20},
+		{Name: "task_name", Type: field.TypeString, Size: 2147483647},
+		{Name: "node_id", Type: field.TypeString, Size: 2147483647},
+		{Name: "status", Type: field.TypeInt, Default: 0},
+		{Name: "elapsed", Type: field.TypeString, Size: 16, Default: ""},
+		{Name: "speed", Type: field.TypeString, Size: 16, Default: ""},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "created_at", Type: field.TypeTime},
+	}
+	// FileTransferTasksTable holds the schema information for the "file_transfer_tasks" table.
+	FileTransferTasksTable = &schema.Table{
+		Name:       "file_transfer_tasks",
+		Columns:    FileTransferTasksColumns,
+		PrimaryKey: []*schema.Column{FileTransferTasksColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "filetransfertask_task_id",
+				Unique:  true,
+				Columns: []*schema.Column{FileTransferTasksColumns[1]},
+			},
+		},
+	}
 	// RecvChunksColumns holds the columns for the "recv_chunks" table.
 	RecvChunksColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -81,15 +106,12 @@ var (
 	SendFilesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "task_id", Type: field.TypeString, Unique: true, Size: 20},
-		{Name: "task_name", Type: field.TypeString, Size: 2147483647},
 		{Name: "file_path", Type: field.TypeString, Size: 2147483647},
 		{Name: "file_id", Type: field.TypeString, Unique: true, Size: 20},
 		{Name: "file_size", Type: field.TypeInt64},
 		{Name: "chunk_num_total", Type: field.TypeInt},
 		{Name: "chunk_num_sended", Type: field.TypeInt, Default: 0},
 		{Name: "status", Type: field.TypeInt, Default: 0},
-		{Name: "elapsed", Type: field.TypeString, Size: 16, Default: ""},
-		{Name: "speed", Type: field.TypeString, Size: 16, Default: ""},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "created_at", Type: field.TypeTime},
 	}
@@ -102,17 +124,18 @@ var (
 			{
 				Name:    "sendfile_task_id_file_path",
 				Unique:  true,
-				Columns: []*schema.Column{SendFilesColumns[1], SendFilesColumns[3]},
+				Columns: []*schema.Column{SendFilesColumns[1], SendFilesColumns[2]},
 			},
 			{
 				Name:    "sendfile_file_id",
 				Unique:  true,
-				Columns: []*schema.Column{SendFilesColumns[4]},
+				Columns: []*schema.Column{SendFilesColumns[3]},
 			},
 		},
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		FileTransferTasksTable,
 		RecvChunksTable,
 		RecvFilesTable,
 		SendChunksTable,

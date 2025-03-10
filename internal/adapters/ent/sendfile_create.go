@@ -27,12 +27,6 @@ func (sfc *SendFileCreate) SetTaskID(s string) *SendFileCreate {
 	return sfc
 }
 
-// SetTaskName sets the "task_name" field.
-func (sfc *SendFileCreate) SetTaskName(s string) *SendFileCreate {
-	sfc.mutation.SetTaskName(s)
-	return sfc
-}
-
 // SetFilePath sets the "file_path" field.
 func (sfc *SendFileCreate) SetFilePath(s string) *SendFileCreate {
 	sfc.mutation.SetFilePath(s)
@@ -81,34 +75,6 @@ func (sfc *SendFileCreate) SetStatus(i int) *SendFileCreate {
 func (sfc *SendFileCreate) SetNillableStatus(i *int) *SendFileCreate {
 	if i != nil {
 		sfc.SetStatus(*i)
-	}
-	return sfc
-}
-
-// SetElapsed sets the "elapsed" field.
-func (sfc *SendFileCreate) SetElapsed(s string) *SendFileCreate {
-	sfc.mutation.SetElapsed(s)
-	return sfc
-}
-
-// SetNillableElapsed sets the "elapsed" field if the given value is not nil.
-func (sfc *SendFileCreate) SetNillableElapsed(s *string) *SendFileCreate {
-	if s != nil {
-		sfc.SetElapsed(*s)
-	}
-	return sfc
-}
-
-// SetSpeed sets the "speed" field.
-func (sfc *SendFileCreate) SetSpeed(s string) *SendFileCreate {
-	sfc.mutation.SetSpeed(s)
-	return sfc
-}
-
-// SetNillableSpeed sets the "speed" field if the given value is not nil.
-func (sfc *SendFileCreate) SetNillableSpeed(s *string) *SendFileCreate {
-	if s != nil {
-		sfc.SetSpeed(*s)
 	}
 	return sfc
 }
@@ -199,14 +165,6 @@ func (sfc *SendFileCreate) defaults() {
 		v := sendfile.DefaultStatus
 		sfc.mutation.SetStatus(v)
 	}
-	if _, ok := sfc.mutation.Elapsed(); !ok {
-		v := sendfile.DefaultElapsed
-		sfc.mutation.SetElapsed(v)
-	}
-	if _, ok := sfc.mutation.Speed(); !ok {
-		v := sendfile.DefaultSpeed
-		sfc.mutation.SetSpeed(v)
-	}
 	if _, ok := sfc.mutation.UpdatedAt(); !ok {
 		v := sendfile.DefaultUpdatedAt()
 		sfc.mutation.SetUpdatedAt(v)
@@ -225,14 +183,6 @@ func (sfc *SendFileCreate) check() error {
 	if v, ok := sfc.mutation.TaskID(); ok {
 		if err := sendfile.TaskIDValidator(v); err != nil {
 			return &ValidationError{Name: "task_id", err: fmt.Errorf(`ent: validator failed for field "SendFile.task_id": %w`, err)}
-		}
-	}
-	if _, ok := sfc.mutation.TaskName(); !ok {
-		return &ValidationError{Name: "task_name", err: errors.New(`ent: missing required field "SendFile.task_name"`)}
-	}
-	if v, ok := sfc.mutation.TaskName(); ok {
-		if err := sendfile.TaskNameValidator(v); err != nil {
-			return &ValidationError{Name: "task_name", err: fmt.Errorf(`ent: validator failed for field "SendFile.task_name": %w`, err)}
 		}
 	}
 	if _, ok := sfc.mutation.FilePath(); !ok {
@@ -273,22 +223,6 @@ func (sfc *SendFileCreate) check() error {
 	if _, ok := sfc.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "SendFile.status"`)}
 	}
-	if _, ok := sfc.mutation.Elapsed(); !ok {
-		return &ValidationError{Name: "elapsed", err: errors.New(`ent: missing required field "SendFile.elapsed"`)}
-	}
-	if v, ok := sfc.mutation.Elapsed(); ok {
-		if err := sendfile.ElapsedValidator(v); err != nil {
-			return &ValidationError{Name: "elapsed", err: fmt.Errorf(`ent: validator failed for field "SendFile.elapsed": %w`, err)}
-		}
-	}
-	if _, ok := sfc.mutation.Speed(); !ok {
-		return &ValidationError{Name: "speed", err: errors.New(`ent: missing required field "SendFile.speed"`)}
-	}
-	if v, ok := sfc.mutation.Speed(); ok {
-		if err := sendfile.SpeedValidator(v); err != nil {
-			return &ValidationError{Name: "speed", err: fmt.Errorf(`ent: validator failed for field "SendFile.speed": %w`, err)}
-		}
-	}
 	if _, ok := sfc.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "SendFile.updated_at"`)}
 	}
@@ -325,10 +259,6 @@ func (sfc *SendFileCreate) createSpec() (*SendFile, *sqlgraph.CreateSpec) {
 		_spec.SetField(sendfile.FieldTaskID, field.TypeString, value)
 		_node.TaskID = value
 	}
-	if value, ok := sfc.mutation.TaskName(); ok {
-		_spec.SetField(sendfile.FieldTaskName, field.TypeString, value)
-		_node.TaskName = value
-	}
 	if value, ok := sfc.mutation.FilePath(); ok {
 		_spec.SetField(sendfile.FieldFilePath, field.TypeString, value)
 		_node.FilePath = value
@@ -352,14 +282,6 @@ func (sfc *SendFileCreate) createSpec() (*SendFile, *sqlgraph.CreateSpec) {
 	if value, ok := sfc.mutation.Status(); ok {
 		_spec.SetField(sendfile.FieldStatus, field.TypeInt, value)
 		_node.Status = value
-	}
-	if value, ok := sfc.mutation.Elapsed(); ok {
-		_spec.SetField(sendfile.FieldElapsed, field.TypeString, value)
-		_node.Elapsed = value
-	}
-	if value, ok := sfc.mutation.Speed(); ok {
-		_spec.SetField(sendfile.FieldSpeed, field.TypeString, value)
-		_node.Speed = value
 	}
 	if value, ok := sfc.mutation.UpdatedAt(); ok {
 		_spec.SetField(sendfile.FieldUpdatedAt, field.TypeTime, value)

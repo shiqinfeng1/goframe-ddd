@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent/filetransfertask"
 	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent/recvchunk"
 	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent/recvfile"
 	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent/sendchunk"
@@ -26,6 +27,8 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// FileTransferTask is the client for interacting with the FileTransferTask builders.
+	FileTransferTask *FileTransferTaskClient
 	// RecvChunk is the client for interacting with the RecvChunk builders.
 	RecvChunk *RecvChunkClient
 	// RecvFile is the client for interacting with the RecvFile builders.
@@ -45,6 +48,7 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.FileTransferTask = NewFileTransferTaskClient(c.config)
 	c.RecvChunk = NewRecvChunkClient(c.config)
 	c.RecvFile = NewRecvFileClient(c.config)
 	c.SendChunk = NewSendChunkClient(c.config)
@@ -139,12 +143,13 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:       ctx,
-		config:    cfg,
-		RecvChunk: NewRecvChunkClient(cfg),
-		RecvFile:  NewRecvFileClient(cfg),
-		SendChunk: NewSendChunkClient(cfg),
-		SendFile:  NewSendFileClient(cfg),
+		ctx:              ctx,
+		config:           cfg,
+		FileTransferTask: NewFileTransferTaskClient(cfg),
+		RecvChunk:        NewRecvChunkClient(cfg),
+		RecvFile:         NewRecvFileClient(cfg),
+		SendChunk:        NewSendChunkClient(cfg),
+		SendFile:         NewSendFileClient(cfg),
 	}, nil
 }
 
@@ -162,19 +167,20 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:       ctx,
-		config:    cfg,
-		RecvChunk: NewRecvChunkClient(cfg),
-		RecvFile:  NewRecvFileClient(cfg),
-		SendChunk: NewSendChunkClient(cfg),
-		SendFile:  NewSendFileClient(cfg),
+		ctx:              ctx,
+		config:           cfg,
+		FileTransferTask: NewFileTransferTaskClient(cfg),
+		RecvChunk:        NewRecvChunkClient(cfg),
+		RecvFile:         NewRecvFileClient(cfg),
+		SendChunk:        NewSendChunkClient(cfg),
+		SendFile:         NewSendFileClient(cfg),
 	}, nil
 }
 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		RecvChunk.
+//		FileTransferTask.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -196,6 +202,7 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.FileTransferTask.Use(hooks...)
 	c.RecvChunk.Use(hooks...)
 	c.RecvFile.Use(hooks...)
 	c.SendChunk.Use(hooks...)
@@ -205,6 +212,7 @@ func (c *Client) Use(hooks ...Hook) {
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
+	c.FileTransferTask.Intercept(interceptors...)
 	c.RecvChunk.Intercept(interceptors...)
 	c.RecvFile.Intercept(interceptors...)
 	c.SendChunk.Intercept(interceptors...)
@@ -214,6 +222,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *FileTransferTaskMutation:
+		return c.FileTransferTask.mutate(ctx, m)
 	case *RecvChunkMutation:
 		return c.RecvChunk.mutate(ctx, m)
 	case *RecvFileMutation:
@@ -224,6 +234,139 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.SendFile.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// FileTransferTaskClient is a client for the FileTransferTask schema.
+type FileTransferTaskClient struct {
+	config
+}
+
+// NewFileTransferTaskClient returns a client for the FileTransferTask from the given config.
+func NewFileTransferTaskClient(c config) *FileTransferTaskClient {
+	return &FileTransferTaskClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `filetransfertask.Hooks(f(g(h())))`.
+func (c *FileTransferTaskClient) Use(hooks ...Hook) {
+	c.hooks.FileTransferTask = append(c.hooks.FileTransferTask, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `filetransfertask.Intercept(f(g(h())))`.
+func (c *FileTransferTaskClient) Intercept(interceptors ...Interceptor) {
+	c.inters.FileTransferTask = append(c.inters.FileTransferTask, interceptors...)
+}
+
+// Create returns a builder for creating a FileTransferTask entity.
+func (c *FileTransferTaskClient) Create() *FileTransferTaskCreate {
+	mutation := newFileTransferTaskMutation(c.config, OpCreate)
+	return &FileTransferTaskCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of FileTransferTask entities.
+func (c *FileTransferTaskClient) CreateBulk(builders ...*FileTransferTaskCreate) *FileTransferTaskCreateBulk {
+	return &FileTransferTaskCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *FileTransferTaskClient) MapCreateBulk(slice any, setFunc func(*FileTransferTaskCreate, int)) *FileTransferTaskCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &FileTransferTaskCreateBulk{err: fmt.Errorf("calling to FileTransferTaskClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*FileTransferTaskCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &FileTransferTaskCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for FileTransferTask.
+func (c *FileTransferTaskClient) Update() *FileTransferTaskUpdate {
+	mutation := newFileTransferTaskMutation(c.config, OpUpdate)
+	return &FileTransferTaskUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *FileTransferTaskClient) UpdateOne(ftt *FileTransferTask) *FileTransferTaskUpdateOne {
+	mutation := newFileTransferTaskMutation(c.config, OpUpdateOne, withFileTransferTask(ftt))
+	return &FileTransferTaskUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *FileTransferTaskClient) UpdateOneID(id int) *FileTransferTaskUpdateOne {
+	mutation := newFileTransferTaskMutation(c.config, OpUpdateOne, withFileTransferTaskID(id))
+	return &FileTransferTaskUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for FileTransferTask.
+func (c *FileTransferTaskClient) Delete() *FileTransferTaskDelete {
+	mutation := newFileTransferTaskMutation(c.config, OpDelete)
+	return &FileTransferTaskDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *FileTransferTaskClient) DeleteOne(ftt *FileTransferTask) *FileTransferTaskDeleteOne {
+	return c.DeleteOneID(ftt.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *FileTransferTaskClient) DeleteOneID(id int) *FileTransferTaskDeleteOne {
+	builder := c.Delete().Where(filetransfertask.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &FileTransferTaskDeleteOne{builder}
+}
+
+// Query returns a query builder for FileTransferTask.
+func (c *FileTransferTaskClient) Query() *FileTransferTaskQuery {
+	return &FileTransferTaskQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeFileTransferTask},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a FileTransferTask entity by its id.
+func (c *FileTransferTaskClient) Get(ctx context.Context, id int) (*FileTransferTask, error) {
+	return c.Query().Where(filetransfertask.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *FileTransferTaskClient) GetX(ctx context.Context, id int) *FileTransferTask {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *FileTransferTaskClient) Hooks() []Hook {
+	return c.hooks.FileTransferTask
+}
+
+// Interceptors returns the client interceptors.
+func (c *FileTransferTaskClient) Interceptors() []Interceptor {
+	return c.inters.FileTransferTask
+}
+
+func (c *FileTransferTaskClient) mutate(ctx context.Context, m *FileTransferTaskMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&FileTransferTaskCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&FileTransferTaskUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&FileTransferTaskUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&FileTransferTaskDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown FileTransferTask mutation op: %q", m.Op())
 	}
 }
 
@@ -826,9 +969,9 @@ func (c *SendFileClient) mutate(ctx context.Context, m *SendFileMutation) (Value
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		RecvChunk, RecvFile, SendChunk, SendFile []ent.Hook
+		FileTransferTask, RecvChunk, RecvFile, SendChunk, SendFile []ent.Hook
 	}
 	inters struct {
-		RecvChunk, RecvFile, SendChunk, SendFile []ent.Interceptor
+		FileTransferTask, RecvChunk, RecvFile, SendChunk, SendFile []ent.Interceptor
 	}
 )

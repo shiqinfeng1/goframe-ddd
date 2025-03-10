@@ -5,6 +5,7 @@ package ent
 import (
 	"time"
 
+	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent/filetransfertask"
 	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent/recvchunk"
 	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent/recvfile"
 	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent/schema"
@@ -16,6 +17,60 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	filetransfertaskFields := schema.FileTransferTask{}.Fields()
+	_ = filetransfertaskFields
+	// filetransfertaskDescTaskID is the schema descriptor for task_id field.
+	filetransfertaskDescTaskID := filetransfertaskFields[0].Descriptor()
+	// filetransfertask.TaskIDValidator is a validator for the "task_id" field. It is called by the builders before save.
+	filetransfertask.TaskIDValidator = func() func(string) error {
+		validators := filetransfertaskDescTaskID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(task_id string) error {
+			for _, fn := range fns {
+				if err := fn(task_id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// filetransfertaskDescTaskName is the schema descriptor for task_name field.
+	filetransfertaskDescTaskName := filetransfertaskFields[1].Descriptor()
+	// filetransfertask.TaskNameValidator is a validator for the "task_name" field. It is called by the builders before save.
+	filetransfertask.TaskNameValidator = filetransfertaskDescTaskName.Validators[0].(func(string) error)
+	// filetransfertaskDescNodeID is the schema descriptor for node_id field.
+	filetransfertaskDescNodeID := filetransfertaskFields[2].Descriptor()
+	// filetransfertask.NodeIDValidator is a validator for the "node_id" field. It is called by the builders before save.
+	filetransfertask.NodeIDValidator = filetransfertaskDescNodeID.Validators[0].(func(string) error)
+	// filetransfertaskDescStatus is the schema descriptor for status field.
+	filetransfertaskDescStatus := filetransfertaskFields[3].Descriptor()
+	// filetransfertask.DefaultStatus holds the default value on creation for the status field.
+	filetransfertask.DefaultStatus = filetransfertaskDescStatus.Default.(int)
+	// filetransfertaskDescElapsed is the schema descriptor for elapsed field.
+	filetransfertaskDescElapsed := filetransfertaskFields[4].Descriptor()
+	// filetransfertask.DefaultElapsed holds the default value on creation for the elapsed field.
+	filetransfertask.DefaultElapsed = filetransfertaskDescElapsed.Default.(string)
+	// filetransfertask.ElapsedValidator is a validator for the "elapsed" field. It is called by the builders before save.
+	filetransfertask.ElapsedValidator = filetransfertaskDescElapsed.Validators[0].(func(string) error)
+	// filetransfertaskDescSpeed is the schema descriptor for speed field.
+	filetransfertaskDescSpeed := filetransfertaskFields[5].Descriptor()
+	// filetransfertask.DefaultSpeed holds the default value on creation for the speed field.
+	filetransfertask.DefaultSpeed = filetransfertaskDescSpeed.Default.(string)
+	// filetransfertask.SpeedValidator is a validator for the "speed" field. It is called by the builders before save.
+	filetransfertask.SpeedValidator = filetransfertaskDescSpeed.Validators[0].(func(string) error)
+	// filetransfertaskDescUpdatedAt is the schema descriptor for updated_at field.
+	filetransfertaskDescUpdatedAt := filetransfertaskFields[6].Descriptor()
+	// filetransfertask.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	filetransfertask.DefaultUpdatedAt = filetransfertaskDescUpdatedAt.Default.(func() time.Time)
+	// filetransfertask.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	filetransfertask.UpdateDefaultUpdatedAt = filetransfertaskDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// filetransfertaskDescCreatedAt is the schema descriptor for created_at field.
+	filetransfertaskDescCreatedAt := filetransfertaskFields[7].Descriptor()
+	// filetransfertask.DefaultCreatedAt holds the default value on creation for the created_at field.
+	filetransfertask.DefaultCreatedAt = filetransfertaskDescCreatedAt.Default.(func() time.Time)
 	recvchunkFields := schema.RecvChunk{}.Fields()
 	_ = recvchunkFields
 	// recvchunkDescChunkIndex is the schema descriptor for chunk_index field.
@@ -160,16 +215,12 @@ func init() {
 			return nil
 		}
 	}()
-	// sendfileDescTaskName is the schema descriptor for task_name field.
-	sendfileDescTaskName := sendfileFields[1].Descriptor()
-	// sendfile.TaskNameValidator is a validator for the "task_name" field. It is called by the builders before save.
-	sendfile.TaskNameValidator = sendfileDescTaskName.Validators[0].(func(string) error)
 	// sendfileDescFilePath is the schema descriptor for file_path field.
-	sendfileDescFilePath := sendfileFields[2].Descriptor()
+	sendfileDescFilePath := sendfileFields[1].Descriptor()
 	// sendfile.FilePathValidator is a validator for the "file_path" field. It is called by the builders before save.
 	sendfile.FilePathValidator = sendfileDescFilePath.Validators[0].(func(string) error)
 	// sendfileDescFileID is the schema descriptor for file_id field.
-	sendfileDescFileID := sendfileFields[3].Descriptor()
+	sendfileDescFileID := sendfileFields[2].Descriptor()
 	// sendfile.FileIDValidator is a validator for the "file_id" field. It is called by the builders before save.
 	sendfile.FileIDValidator = func() func(string) error {
 		validators := sendfileDescFileID.Validators
@@ -187,41 +238,29 @@ func init() {
 		}
 	}()
 	// sendfileDescFileSize is the schema descriptor for file_size field.
-	sendfileDescFileSize := sendfileFields[4].Descriptor()
+	sendfileDescFileSize := sendfileFields[3].Descriptor()
 	// sendfile.FileSizeValidator is a validator for the "file_size" field. It is called by the builders before save.
 	sendfile.FileSizeValidator = sendfileDescFileSize.Validators[0].(func(int64) error)
 	// sendfileDescChunkNumTotal is the schema descriptor for chunk_num_total field.
-	sendfileDescChunkNumTotal := sendfileFields[5].Descriptor()
+	sendfileDescChunkNumTotal := sendfileFields[4].Descriptor()
 	// sendfile.ChunkNumTotalValidator is a validator for the "chunk_num_total" field. It is called by the builders before save.
 	sendfile.ChunkNumTotalValidator = sendfileDescChunkNumTotal.Validators[0].(func(int) error)
 	// sendfileDescChunkNumSended is the schema descriptor for chunk_num_sended field.
-	sendfileDescChunkNumSended := sendfileFields[6].Descriptor()
+	sendfileDescChunkNumSended := sendfileFields[5].Descriptor()
 	// sendfile.DefaultChunkNumSended holds the default value on creation for the chunk_num_sended field.
 	sendfile.DefaultChunkNumSended = sendfileDescChunkNumSended.Default.(int)
 	// sendfileDescStatus is the schema descriptor for status field.
-	sendfileDescStatus := sendfileFields[7].Descriptor()
+	sendfileDescStatus := sendfileFields[6].Descriptor()
 	// sendfile.DefaultStatus holds the default value on creation for the status field.
 	sendfile.DefaultStatus = sendfileDescStatus.Default.(int)
-	// sendfileDescElapsed is the schema descriptor for elapsed field.
-	sendfileDescElapsed := sendfileFields[8].Descriptor()
-	// sendfile.DefaultElapsed holds the default value on creation for the elapsed field.
-	sendfile.DefaultElapsed = sendfileDescElapsed.Default.(string)
-	// sendfile.ElapsedValidator is a validator for the "elapsed" field. It is called by the builders before save.
-	sendfile.ElapsedValidator = sendfileDescElapsed.Validators[0].(func(string) error)
-	// sendfileDescSpeed is the schema descriptor for speed field.
-	sendfileDescSpeed := sendfileFields[9].Descriptor()
-	// sendfile.DefaultSpeed holds the default value on creation for the speed field.
-	sendfile.DefaultSpeed = sendfileDescSpeed.Default.(string)
-	// sendfile.SpeedValidator is a validator for the "speed" field. It is called by the builders before save.
-	sendfile.SpeedValidator = sendfileDescSpeed.Validators[0].(func(string) error)
 	// sendfileDescUpdatedAt is the schema descriptor for updated_at field.
-	sendfileDescUpdatedAt := sendfileFields[10].Descriptor()
+	sendfileDescUpdatedAt := sendfileFields[7].Descriptor()
 	// sendfile.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	sendfile.DefaultUpdatedAt = sendfileDescUpdatedAt.Default.(func() time.Time)
 	// sendfile.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	sendfile.UpdateDefaultUpdatedAt = sendfileDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// sendfileDescCreatedAt is the schema descriptor for created_at field.
-	sendfileDescCreatedAt := sendfileFields[11].Descriptor()
+	sendfileDescCreatedAt := sendfileFields[8].Descriptor()
 	// sendfile.DefaultCreatedAt holds the default value on creation for the created_at field.
 	sendfile.DefaultCreatedAt = sendfileDescCreatedAt.Default.(func() time.Time)
 }

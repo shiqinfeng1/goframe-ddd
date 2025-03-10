@@ -6,6 +6,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// FileTransferTask is the predicate function for filetransfertask builders.
+type FileTransferTask func(*sql.Selector)
+
 // RecvChunk is the predicate function for recvchunk builders.
 type RecvChunk func(*sql.Selector)
 

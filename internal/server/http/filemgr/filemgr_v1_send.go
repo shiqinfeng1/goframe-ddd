@@ -10,6 +10,7 @@ import (
 
 	v1 "github.com/shiqinfeng1/goframe-ddd/api/http/filemgr/v1"
 	"github.com/shiqinfeng1/goframe-ddd/internal/application/command"
+	"github.com/shiqinfeng1/goframe-ddd/internal/application/query"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/errors"
 )
 
@@ -83,5 +84,15 @@ func (c *ControllerV1) ResumeSendFile(ctx context.Context, req *v1.ResumeSendFil
 	_, err = c.app.Commands.ResumeSendFile(ctx, &command.ResumeSendFileInput{
 		TaskId: req.TaskId,
 	})
+	return
+}
+
+func (c *ControllerV1) SendingTaskList(ctx context.Context, req *v1.SendingTaskListReq) (res *v1.SendingTaskListRes, err error) {
+	out, _ := c.app.Queries.GetTaskList(ctx, &query.TaskListInput{})
+	res = &v1.SendingTaskListRes{
+		Running:  out.Running,
+		MaxTasks: out.MaxTasks,
+		Tasks:    out.Tasks,
+	}
 	return
 }

@@ -19,8 +19,6 @@ type SendFile struct {
 	ID int `json:"id,omitempty"`
 	// TaskID holds the value of the "task_id" field.
 	TaskID string `json:"task_id,omitempty"`
-	// TaskName holds the value of the "task_name" field.
-	TaskName string `json:"task_name,omitempty"`
 	// FilePath holds the value of the "file_path" field.
 	FilePath string `json:"file_path,omitempty"`
 	// FileID holds the value of the "file_id" field.
@@ -33,10 +31,6 @@ type SendFile struct {
 	ChunkNumSended int `json:"chunk_num_sended,omitempty"`
 	// Status holds the value of the "status" field.
 	Status int `json:"status,omitempty"`
-	// Elapsed holds the value of the "elapsed" field.
-	Elapsed string `json:"elapsed,omitempty"`
-	// Speed holds the value of the "speed" field.
-	Speed string `json:"speed,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -72,7 +66,7 @@ func (*SendFile) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case sendfile.FieldID, sendfile.FieldFileSize, sendfile.FieldChunkNumTotal, sendfile.FieldChunkNumSended, sendfile.FieldStatus:
 			values[i] = new(sql.NullInt64)
-		case sendfile.FieldTaskID, sendfile.FieldTaskName, sendfile.FieldFilePath, sendfile.FieldFileID, sendfile.FieldElapsed, sendfile.FieldSpeed:
+		case sendfile.FieldTaskID, sendfile.FieldFilePath, sendfile.FieldFileID:
 			values[i] = new(sql.NullString)
 		case sendfile.FieldUpdatedAt, sendfile.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -102,12 +96,6 @@ func (sf *SendFile) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field task_id", values[i])
 			} else if value.Valid {
 				sf.TaskID = value.String
-			}
-		case sendfile.FieldTaskName:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field task_name", values[i])
-			} else if value.Valid {
-				sf.TaskName = value.String
 			}
 		case sendfile.FieldFilePath:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -144,18 +132,6 @@ func (sf *SendFile) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
 				sf.Status = int(value.Int64)
-			}
-		case sendfile.FieldElapsed:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field elapsed", values[i])
-			} else if value.Valid {
-				sf.Elapsed = value.String
-			}
-		case sendfile.FieldSpeed:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field speed", values[i])
-			} else if value.Valid {
-				sf.Speed = value.String
 			}
 		case sendfile.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -213,9 +189,6 @@ func (sf *SendFile) String() string {
 	builder.WriteString("task_id=")
 	builder.WriteString(sf.TaskID)
 	builder.WriteString(", ")
-	builder.WriteString("task_name=")
-	builder.WriteString(sf.TaskName)
-	builder.WriteString(", ")
 	builder.WriteString("file_path=")
 	builder.WriteString(sf.FilePath)
 	builder.WriteString(", ")
@@ -233,12 +206,6 @@ func (sf *SendFile) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", sf.Status))
-	builder.WriteString(", ")
-	builder.WriteString("elapsed=")
-	builder.WriteString(sf.Elapsed)
-	builder.WriteString(", ")
-	builder.WriteString("speed=")
-	builder.WriteString(sf.Speed)
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
 	builder.WriteString(sf.UpdatedAt.Format(time.ANSIC))

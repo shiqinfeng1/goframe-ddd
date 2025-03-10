@@ -26,3 +26,8 @@ func (h *Handler) ResumeSendFile(ctx context.Context, in *ResumeSendFileInput) (
 	h.fileTransfer.ResumeTask(ctx, in.TaskId)
 	return nil, nil
 }
+
+func (h *Handler) SendingTaskList(ctx context.Context, in *ResumeSendFileInput) (*ResumeSendFileOutput, error) {
+	h.fileTransfer.ResumeTask(ctx, in.TaskId)
+	return nil, nil
+}

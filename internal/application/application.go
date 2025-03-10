@@ -31,6 +31,6 @@ func New(ctx context.Context) *Application {
 
 	return &Application{
 		Commands: command.NewHandler(ftSrv),
-		Queries:  query.NewHandler(repo),
+		Queries:  query.NewHandler(ftSrv),
 	}
 }

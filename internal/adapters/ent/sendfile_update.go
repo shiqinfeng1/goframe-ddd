@@ -43,20 +43,6 @@ func (sfu *SendFileUpdate) SetNillableTaskID(s *string) *SendFileUpdate {
 	return sfu
 }
 
-// SetTaskName sets the "task_name" field.
-func (sfu *SendFileUpdate) SetTaskName(s string) *SendFileUpdate {
-	sfu.mutation.SetTaskName(s)
-	return sfu
-}
-
-// SetNillableTaskName sets the "task_name" field if the given value is not nil.
-func (sfu *SendFileUpdate) SetNillableTaskName(s *string) *SendFileUpdate {
-	if s != nil {
-		sfu.SetTaskName(*s)
-	}
-	return sfu
-}
-
 // SetFilePath sets the "file_path" field.
 func (sfu *SendFileUpdate) SetFilePath(s string) *SendFileUpdate {
 	sfu.mutation.SetFilePath(s)
@@ -169,34 +155,6 @@ func (sfu *SendFileUpdate) AddStatus(i int) *SendFileUpdate {
 	return sfu
 }
 
-// SetElapsed sets the "elapsed" field.
-func (sfu *SendFileUpdate) SetElapsed(s string) *SendFileUpdate {
-	sfu.mutation.SetElapsed(s)
-	return sfu
-}
-
-// SetNillableElapsed sets the "elapsed" field if the given value is not nil.
-func (sfu *SendFileUpdate) SetNillableElapsed(s *string) *SendFileUpdate {
-	if s != nil {
-		sfu.SetElapsed(*s)
-	}
-	return sfu
-}
-
-// SetSpeed sets the "speed" field.
-func (sfu *SendFileUpdate) SetSpeed(s string) *SendFileUpdate {
-	sfu.mutation.SetSpeed(s)
-	return sfu
-}
-
-// SetNillableSpeed sets the "speed" field if the given value is not nil.
-func (sfu *SendFileUpdate) SetNillableSpeed(s *string) *SendFileUpdate {
-	if s != nil {
-		sfu.SetSpeed(*s)
-	}
-	return sfu
-}
-
 // SetUpdatedAt sets the "updated_at" field.
 func (sfu *SendFileUpdate) SetUpdatedAt(t time.Time) *SendFileUpdate {
 	sfu.mutation.SetUpdatedAt(t)
@@ -287,11 +245,6 @@ func (sfu *SendFileUpdate) check() error {
 			return &ValidationError{Name: "task_id", err: fmt.Errorf(`ent: validator failed for field "SendFile.task_id": %w`, err)}
 		}
 	}
-	if v, ok := sfu.mutation.TaskName(); ok {
-		if err := sendfile.TaskNameValidator(v); err != nil {
-			return &ValidationError{Name: "task_name", err: fmt.Errorf(`ent: validator failed for field "SendFile.task_name": %w`, err)}
-		}
-	}
 	if v, ok := sfu.mutation.FilePath(); ok {
 		if err := sendfile.FilePathValidator(v); err != nil {
 			return &ValidationError{Name: "file_path", err: fmt.Errorf(`ent: validator failed for field "SendFile.file_path": %w`, err)}
@@ -312,16 +265,6 @@ func (sfu *SendFileUpdate) check() error {
 			return &ValidationError{Name: "chunk_num_total", err: fmt.Errorf(`ent: validator failed for field "SendFile.chunk_num_total": %w`, err)}
 		}
 	}
-	if v, ok := sfu.mutation.Elapsed(); ok {
-		if err := sendfile.ElapsedValidator(v); err != nil {
-			return &ValidationError{Name: "elapsed", err: fmt.Errorf(`ent: validator failed for field "SendFile.elapsed": %w`, err)}
-		}
-	}
-	if v, ok := sfu.mutation.Speed(); ok {
-		if err := sendfile.SpeedValidator(v); err != nil {
-			return &ValidationError{Name: "speed", err: fmt.Errorf(`ent: validator failed for field "SendFile.speed": %w`, err)}
-		}
-	}
 	return nil
 }
 
@@ -339,9 +282,6 @@ func (sfu *SendFileUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := sfu.mutation.TaskID(); ok {
 		_spec.SetField(sendfile.FieldTaskID, field.TypeString, value)
-	}
-	if value, ok := sfu.mutation.TaskName(); ok {
-		_spec.SetField(sendfile.FieldTaskName, field.TypeString, value)
 	}
 	if value, ok := sfu.mutation.FilePath(); ok {
 		_spec.SetField(sendfile.FieldFilePath, field.TypeString, value)
@@ -372,12 +312,6 @@ func (sfu *SendFileUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := sfu.mutation.AddedStatus(); ok {
 		_spec.AddField(sendfile.FieldStatus, field.TypeInt, value)
-	}
-	if value, ok := sfu.mutation.Elapsed(); ok {
-		_spec.SetField(sendfile.FieldElapsed, field.TypeString, value)
-	}
-	if value, ok := sfu.mutation.Speed(); ok {
-		_spec.SetField(sendfile.FieldSpeed, field.TypeString, value)
 	}
 	if value, ok := sfu.mutation.UpdatedAt(); ok {
 		_spec.SetField(sendfile.FieldUpdatedAt, field.TypeTime, value)
@@ -457,20 +391,6 @@ func (sfuo *SendFileUpdateOne) SetTaskID(s string) *SendFileUpdateOne {
 func (sfuo *SendFileUpdateOne) SetNillableTaskID(s *string) *SendFileUpdateOne {
 	if s != nil {
 		sfuo.SetTaskID(*s)
-	}
-	return sfuo
-}
-
-// SetTaskName sets the "task_name" field.
-func (sfuo *SendFileUpdateOne) SetTaskName(s string) *SendFileUpdateOne {
-	sfuo.mutation.SetTaskName(s)
-	return sfuo
-}
-
-// SetNillableTaskName sets the "task_name" field if the given value is not nil.
-func (sfuo *SendFileUpdateOne) SetNillableTaskName(s *string) *SendFileUpdateOne {
-	if s != nil {
-		sfuo.SetTaskName(*s)
 	}
 	return sfuo
 }
@@ -587,34 +507,6 @@ func (sfuo *SendFileUpdateOne) AddStatus(i int) *SendFileUpdateOne {
 	return sfuo
 }
 
-// SetElapsed sets the "elapsed" field.
-func (sfuo *SendFileUpdateOne) SetElapsed(s string) *SendFileUpdateOne {
-	sfuo.mutation.SetElapsed(s)
-	return sfuo
-}
-
-// SetNillableElapsed sets the "elapsed" field if the given value is not nil.
-func (sfuo *SendFileUpdateOne) SetNillableElapsed(s *string) *SendFileUpdateOne {
-	if s != nil {
-		sfuo.SetElapsed(*s)
-	}
-	return sfuo
-}
-
-// SetSpeed sets the "speed" field.
-func (sfuo *SendFileUpdateOne) SetSpeed(s string) *SendFileUpdateOne {
-	sfuo.mutation.SetSpeed(s)
-	return sfuo
-}
-
-// SetNillableSpeed sets the "speed" field if the given value is not nil.
-func (sfuo *SendFileUpdateOne) SetNillableSpeed(s *string) *SendFileUpdateOne {
-	if s != nil {
-		sfuo.SetSpeed(*s)
-	}
-	return sfuo
-}
-
 // SetUpdatedAt sets the "updated_at" field.
 func (sfuo *SendFileUpdateOne) SetUpdatedAt(t time.Time) *SendFileUpdateOne {
 	sfuo.mutation.SetUpdatedAt(t)
@@ -718,11 +610,6 @@ func (sfuo *SendFileUpdateOne) check() error {
 			return &ValidationError{Name: "task_id", err: fmt.Errorf(`ent: validator failed for field "SendFile.task_id": %w`, err)}
 		}
 	}
-	if v, ok := sfuo.mutation.TaskName(); ok {
-		if err := sendfile.TaskNameValidator(v); err != nil {
-			return &ValidationError{Name: "task_name", err: fmt.Errorf(`ent: validator failed for field "SendFile.task_name": %w`, err)}
-		}
-	}
 	if v, ok := sfuo.mutation.FilePath(); ok {
 		if err := sendfile.FilePathValidator(v); err != nil {
 			return &ValidationError{Name: "file_path", err: fmt.Errorf(`ent: validator failed for field "SendFile.file_path": %w`, err)}
@@ -741,16 +628,6 @@ func (sfuo *SendFileUpdateOne) check() error {
 	if v, ok := sfuo.mutation.ChunkNumTotal(); ok {
 		if err := sendfile.ChunkNumTotalValidator(v); err != nil {
 			return &ValidationError{Name: "chunk_num_total", err: fmt.Errorf(`ent: validator failed for field "SendFile.chunk_num_total": %w`, err)}
-		}
-	}
-	if v, ok := sfuo.mutation.Elapsed(); ok {
-		if err := sendfile.ElapsedValidator(v); err != nil {
-			return &ValidationError{Name: "elapsed", err: fmt.Errorf(`ent: validator failed for field "SendFile.elapsed": %w`, err)}
-		}
-	}
-	if v, ok := sfuo.mutation.Speed(); ok {
-		if err := sendfile.SpeedValidator(v); err != nil {
-			return &ValidationError{Name: "speed", err: fmt.Errorf(`ent: validator failed for field "SendFile.speed": %w`, err)}
 		}
 	}
 	return nil
@@ -788,9 +665,6 @@ func (sfuo *SendFileUpdateOne) sqlSave(ctx context.Context) (_node *SendFile, er
 	if value, ok := sfuo.mutation.TaskID(); ok {
 		_spec.SetField(sendfile.FieldTaskID, field.TypeString, value)
 	}
-	if value, ok := sfuo.mutation.TaskName(); ok {
-		_spec.SetField(sendfile.FieldTaskName, field.TypeString, value)
-	}
 	if value, ok := sfuo.mutation.FilePath(); ok {
 		_spec.SetField(sendfile.FieldFilePath, field.TypeString, value)
 	}
@@ -820,12 +694,6 @@ func (sfuo *SendFileUpdateOne) sqlSave(ctx context.Context) (_node *SendFile, er
 	}
 	if value, ok := sfuo.mutation.AddedStatus(); ok {
 		_spec.AddField(sendfile.FieldStatus, field.TypeInt, value)
-	}
-	if value, ok := sfuo.mutation.Elapsed(); ok {
-		_spec.SetField(sendfile.FieldElapsed, field.TypeString, value)
-	}
-	if value, ok := sfuo.mutation.Speed(); ok {
-		_spec.SetField(sendfile.FieldSpeed, field.TypeString, value)
 	}
 	if value, ok := sfuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(sendfile.FieldUpdatedAt, field.TypeTime, value)

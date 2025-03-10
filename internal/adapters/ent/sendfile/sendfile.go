@@ -16,8 +16,6 @@ const (
 	FieldID = "id"
 	// FieldTaskID holds the string denoting the task_id field in the database.
 	FieldTaskID = "task_id"
-	// FieldTaskName holds the string denoting the task_name field in the database.
-	FieldTaskName = "task_name"
 	// FieldFilePath holds the string denoting the file_path field in the database.
 	FieldFilePath = "file_path"
 	// FieldFileID holds the string denoting the file_id field in the database.
@@ -30,10 +28,6 @@ const (
 	FieldChunkNumSended = "chunk_num_sended"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
-	// FieldElapsed holds the string denoting the elapsed field in the database.
-	FieldElapsed = "elapsed"
-	// FieldSpeed holds the string denoting the speed field in the database.
-	FieldSpeed = "speed"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -55,15 +49,12 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldTaskID,
-	FieldTaskName,
 	FieldFilePath,
 	FieldFileID,
 	FieldFileSize,
 	FieldChunkNumTotal,
 	FieldChunkNumSended,
 	FieldStatus,
-	FieldElapsed,
-	FieldSpeed,
 	FieldUpdatedAt,
 	FieldCreatedAt,
 }
@@ -81,8 +72,6 @@ func ValidColumn(column string) bool {
 var (
 	// TaskIDValidator is a validator for the "task_id" field. It is called by the builders before save.
 	TaskIDValidator func(string) error
-	// TaskNameValidator is a validator for the "task_name" field. It is called by the builders before save.
-	TaskNameValidator func(string) error
 	// FilePathValidator is a validator for the "file_path" field. It is called by the builders before save.
 	FilePathValidator func(string) error
 	// FileIDValidator is a validator for the "file_id" field. It is called by the builders before save.
@@ -95,14 +84,6 @@ var (
 	DefaultChunkNumSended int
 	// DefaultStatus holds the default value on creation for the "status" field.
 	DefaultStatus int
-	// DefaultElapsed holds the default value on creation for the "elapsed" field.
-	DefaultElapsed string
-	// ElapsedValidator is a validator for the "elapsed" field. It is called by the builders before save.
-	ElapsedValidator func(string) error
-	// DefaultSpeed holds the default value on creation for the "speed" field.
-	DefaultSpeed string
-	// SpeedValidator is a validator for the "speed" field. It is called by the builders before save.
-	SpeedValidator func(string) error
 	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
@@ -122,11 +103,6 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 // ByTaskID orders the results by the task_id field.
 func ByTaskID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTaskID, opts...).ToFunc()
-}
-
-// ByTaskName orders the results by the task_name field.
-func ByTaskName(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldTaskName, opts...).ToFunc()
 }
 
 // ByFilePath orders the results by the file_path field.
@@ -157,16 +133,6 @@ func ByChunkNumSended(opts ...sql.OrderTermOption) OrderOption {
 // ByStatus orders the results by the status field.
 func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
-}
-
-// ByElapsed orders the results by the elapsed field.
-func ByElapsed(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldElapsed, opts...).ToFunc()
-}
-
-// BySpeed orders the results by the speed field.
-func BySpeed(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldSpeed, opts...).ToFunc()
 }
 
 // ByUpdatedAt orders the results by the updated_at field.

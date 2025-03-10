@@ -15,6 +15,15 @@ type EventMsg struct {
 	Status int    `json:"status,omitempty"`
 }
 
+type FileTransferTask struct {
+	TaskID   string `json:"task_id,omitempty"`
+	TaskName string `json:"task_name,omitempty"`
+	NodeID   string `json:"node_id,omitempty"`
+	Status   int    `json:"status,omitempty"`
+	Elapsed  string `json:"elapsed,omitempty"`
+	Speed    string `json:"speed,omitempty"`
+}
+
 // SendFile is the model entity for the SendFile schema.
 type SendFile struct {
 	ID             int    `json:"id,omitempty"`
@@ -26,8 +35,6 @@ type SendFile struct {
 	ChunkNumTotal  int    `json:"chunk_num_total,omitempty"`
 	ChunkNumSended int    `json:"chunk_num_sended,omitempty"`
 	Status         int    `json:"status,omitempty"`
-	Elapsed        string `json:"elapsed,omitempty"`
-	Speed          string `json:"speed,omitempty"`
 }
 
 type RecvChunk struct {
@@ -51,11 +58,15 @@ type RecvFile struct {
 }
 
 type Repository interface {
+	SaveTask(ctx context.Context, ftt *FileTransferTask) error
 	GetSendFile(ctx context.Context, taskId, filePath string) (*SendFile, error)
-	GetSendTask(ctx context.Context, taskId string) ([]*SendFile, error)
+	GetSendFilesByTask(ctx context.Context, taskId string) ([]*SendFile, error)
+	GetNotCompletedTasks(ctx context.Context) ([]*FileTransferTask, map[string][]*SendFile, error)
 	SaveSendFile(ctx context.Context, sendFile *SendFile) (int, error)
 	UpdateSendChunk(ctx context.Context, sendChunk *SendChunk) error
-	UpdateSendStatus(ctx context.Context, taskId string, status Status) error
+	UpdateSpeed(ctx context.Context, taskid, elapsed, speed string) error
+	UpdateTaskStatus(ctx context.Context, taskId, fileId string, status Status) error
+	UpdateRecvStatus(ctx context.Context, taskId string, status Status) error
 	GetRecvTask(ctx context.Context, taskId string) ([]*RecvFile, error)
 	GetRecvFile(ctx context.Context, fileId string) (*RecvFile, error)
 	SaveRecvFile(ctx context.Context, rf *RecvFile) error

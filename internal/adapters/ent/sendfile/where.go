@@ -60,11 +60,6 @@ func TaskID(v string) predicate.SendFile {
 	return predicate.SendFile(sql.FieldEQ(FieldTaskID, v))
 }
 
-// TaskName applies equality check predicate on the "task_name" field. It's identical to TaskNameEQ.
-func TaskName(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldEQ(FieldTaskName, v))
-}
-
 // FilePath applies equality check predicate on the "file_path" field. It's identical to FilePathEQ.
 func FilePath(v string) predicate.SendFile {
 	return predicate.SendFile(sql.FieldEQ(FieldFilePath, v))
@@ -93,16 +88,6 @@ func ChunkNumSended(v int) predicate.SendFile {
 // Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
 func Status(v int) predicate.SendFile {
 	return predicate.SendFile(sql.FieldEQ(FieldStatus, v))
-}
-
-// Elapsed applies equality check predicate on the "elapsed" field. It's identical to ElapsedEQ.
-func Elapsed(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldEQ(FieldElapsed, v))
-}
-
-// Speed applies equality check predicate on the "speed" field. It's identical to SpeedEQ.
-func Speed(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldEQ(FieldSpeed, v))
 }
 
 // UpdatedAt applies equality check predicate on the "updated_at" field. It's identical to UpdatedAtEQ.
@@ -178,71 +163,6 @@ func TaskIDEqualFold(v string) predicate.SendFile {
 // TaskIDContainsFold applies the ContainsFold predicate on the "task_id" field.
 func TaskIDContainsFold(v string) predicate.SendFile {
 	return predicate.SendFile(sql.FieldContainsFold(FieldTaskID, v))
-}
-
-// TaskNameEQ applies the EQ predicate on the "task_name" field.
-func TaskNameEQ(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldEQ(FieldTaskName, v))
-}
-
-// TaskNameNEQ applies the NEQ predicate on the "task_name" field.
-func TaskNameNEQ(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldNEQ(FieldTaskName, v))
-}
-
-// TaskNameIn applies the In predicate on the "task_name" field.
-func TaskNameIn(vs ...string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldIn(FieldTaskName, vs...))
-}
-
-// TaskNameNotIn applies the NotIn predicate on the "task_name" field.
-func TaskNameNotIn(vs ...string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldNotIn(FieldTaskName, vs...))
-}
-
-// TaskNameGT applies the GT predicate on the "task_name" field.
-func TaskNameGT(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldGT(FieldTaskName, v))
-}
-
-// TaskNameGTE applies the GTE predicate on the "task_name" field.
-func TaskNameGTE(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldGTE(FieldTaskName, v))
-}
-
-// TaskNameLT applies the LT predicate on the "task_name" field.
-func TaskNameLT(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldLT(FieldTaskName, v))
-}
-
-// TaskNameLTE applies the LTE predicate on the "task_name" field.
-func TaskNameLTE(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldLTE(FieldTaskName, v))
-}
-
-// TaskNameContains applies the Contains predicate on the "task_name" field.
-func TaskNameContains(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldContains(FieldTaskName, v))
-}
-
-// TaskNameHasPrefix applies the HasPrefix predicate on the "task_name" field.
-func TaskNameHasPrefix(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldHasPrefix(FieldTaskName, v))
-}
-
-// TaskNameHasSuffix applies the HasSuffix predicate on the "task_name" field.
-func TaskNameHasSuffix(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldHasSuffix(FieldTaskName, v))
-}
-
-// TaskNameEqualFold applies the EqualFold predicate on the "task_name" field.
-func TaskNameEqualFold(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldEqualFold(FieldTaskName, v))
-}
-
-// TaskNameContainsFold applies the ContainsFold predicate on the "task_name" field.
-func TaskNameContainsFold(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldContainsFold(FieldTaskName, v))
 }
 
 // FilePathEQ applies the EQ predicate on the "file_path" field.
@@ -533,136 +453,6 @@ func StatusLT(v int) predicate.SendFile {
 // StatusLTE applies the LTE predicate on the "status" field.
 func StatusLTE(v int) predicate.SendFile {
 	return predicate.SendFile(sql.FieldLTE(FieldStatus, v))
-}
-
-// ElapsedEQ applies the EQ predicate on the "elapsed" field.
-func ElapsedEQ(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldEQ(FieldElapsed, v))
-}
-
-// ElapsedNEQ applies the NEQ predicate on the "elapsed" field.
-func ElapsedNEQ(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldNEQ(FieldElapsed, v))
-}
-
-// ElapsedIn applies the In predicate on the "elapsed" field.
-func ElapsedIn(vs ...string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldIn(FieldElapsed, vs...))
-}
-
-// ElapsedNotIn applies the NotIn predicate on the "elapsed" field.
-func ElapsedNotIn(vs ...string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldNotIn(FieldElapsed, vs...))
-}
-
-// ElapsedGT applies the GT predicate on the "elapsed" field.
-func ElapsedGT(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldGT(FieldElapsed, v))
-}
-
-// ElapsedGTE applies the GTE predicate on the "elapsed" field.
-func ElapsedGTE(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldGTE(FieldElapsed, v))
-}
-
-// ElapsedLT applies the LT predicate on the "elapsed" field.
-func ElapsedLT(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldLT(FieldElapsed, v))
-}
-
-// ElapsedLTE applies the LTE predicate on the "elapsed" field.
-func ElapsedLTE(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldLTE(FieldElapsed, v))
-}
-
-// ElapsedContains applies the Contains predicate on the "elapsed" field.
-func ElapsedContains(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldContains(FieldElapsed, v))
-}
-
-// ElapsedHasPrefix applies the HasPrefix predicate on the "elapsed" field.
-func ElapsedHasPrefix(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldHasPrefix(FieldElapsed, v))
-}
-
-// ElapsedHasSuffix applies the HasSuffix predicate on the "elapsed" field.
-func ElapsedHasSuffix(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldHasSuffix(FieldElapsed, v))
-}
-
-// ElapsedEqualFold applies the EqualFold predicate on the "elapsed" field.
-func ElapsedEqualFold(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldEqualFold(FieldElapsed, v))
-}
-
-// ElapsedContainsFold applies the ContainsFold predicate on the "elapsed" field.
-func ElapsedContainsFold(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldContainsFold(FieldElapsed, v))
-}
-
-// SpeedEQ applies the EQ predicate on the "speed" field.
-func SpeedEQ(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldEQ(FieldSpeed, v))
-}
-
-// SpeedNEQ applies the NEQ predicate on the "speed" field.
-func SpeedNEQ(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldNEQ(FieldSpeed, v))
-}
-
-// SpeedIn applies the In predicate on the "speed" field.
-func SpeedIn(vs ...string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldIn(FieldSpeed, vs...))
-}
-
-// SpeedNotIn applies the NotIn predicate on the "speed" field.
-func SpeedNotIn(vs ...string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldNotIn(FieldSpeed, vs...))
-}
-
-// SpeedGT applies the GT predicate on the "speed" field.
-func SpeedGT(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldGT(FieldSpeed, v))
-}
-
-// SpeedGTE applies the GTE predicate on the "speed" field.
-func SpeedGTE(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldGTE(FieldSpeed, v))
-}
-
-// SpeedLT applies the LT predicate on the "speed" field.
-func SpeedLT(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldLT(FieldSpeed, v))
-}
-
-// SpeedLTE applies the LTE predicate on the "speed" field.
-func SpeedLTE(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldLTE(FieldSpeed, v))
-}
-
-// SpeedContains applies the Contains predicate on the "speed" field.
-func SpeedContains(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldContains(FieldSpeed, v))
-}
-
-// SpeedHasPrefix applies the HasPrefix predicate on the "speed" field.
-func SpeedHasPrefix(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldHasPrefix(FieldSpeed, v))
-}
-
-// SpeedHasSuffix applies the HasSuffix predicate on the "speed" field.
-func SpeedHasSuffix(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldHasSuffix(FieldSpeed, v))
-}
-
-// SpeedEqualFold applies the EqualFold predicate on the "speed" field.
-func SpeedEqualFold(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldEqualFold(FieldSpeed, v))
-}
-
-// SpeedContainsFold applies the ContainsFold predicate on the "speed" field.
-func SpeedContainsFold(v string) predicate.SendFile {
-	return predicate.SendFile(sql.FieldContainsFold(FieldSpeed, v))
 }
 
 // UpdatedAtEQ applies the EQ predicate on the "updated_at" field.

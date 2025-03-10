@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent/filetransfertask"
 	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent/recvchunk"
 	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent/recvfile"
 	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent/sendchunk"
@@ -76,10 +77,11 @@ var (
 func checkColumn(table, column string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			recvchunk.Table: recvchunk.ValidColumn,
-			recvfile.Table:  recvfile.ValidColumn,
-			sendchunk.Table: sendchunk.ValidColumn,
-			sendfile.Table:  sendfile.ValidColumn,
+			filetransfertask.Table: filetransfertask.ValidColumn,
+			recvchunk.Table:        recvchunk.ValidColumn,
+			recvfile.Table:         recvfile.ValidColumn,
+			sendchunk.Table:        sendchunk.ValidColumn,
+			sendfile.Table:         sendfile.ValidColumn,
 		})
 	})
 	return columnCheck(table, column)

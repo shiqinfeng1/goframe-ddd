@@ -29,17 +29,42 @@ func NewFileTransferService(maxTasks int, stm StreamIntf, repo Repository) *File
 		stream:   stm,
 		repo:     repo,
 	}
+	ctx := gctx.New()
+	// 从数据库中取出未完成的任务
+	tasks, sendfiles, err := q.repo.GetNotCompletedTasks(ctx)
+	if err != nil {
+		g.Log().Fatalf(ctx, "get not completed task fail:%v", err)
+	}
+
+	var paths []string
+	for _, task := range tasks {
+		for _, sf := range sendfiles[task.TaskID] {
+			paths = append(paths, sf.FilePath)
+		}
+		newtask := NewTransferTask(ctx, task.TaskID, task.TaskName, task.NodeID, paths, NewStatus(uint32(task.Status)), q.stream, q.repo)
+		// 缓存到tasks队列
+		q.tasks.Set(task.TaskID, newtask)
+		// todo 何时触发重新发送未完成的任务?
+	}
 
 	q.notify = make(chan struct{}, 16) // 运行多个任务通知缓存到通道里
-	q.start(gctx.New())
+	q.start(ctx)
 	return q
+}
+
+func (q *FileTransferMgr) GetMaxAndRunning(ctx context.Context) (int, int) {
+	return q.running, q.maxTasks
+}
+
+func (q *FileTransferMgr) GetNotCompletedTasks(ctx context.Context) ([]*FileTransferTask, map[string][]*SendFile, error) {
+	return q.repo.GetNotCompletedTasks(ctx)
 }
 
 // AddTask 向队列中添加一个新的文件发送任务
 func (q *FileTransferMgr) AddTask(ctx context.Context, id, name, nodeId string, paths []string) {
 	q.mutex.Lock()
 	defer q.mutex.Unlock()
-	task := NewTransferTask(ctx, id, name, nodeId, paths, q.stream, q.repo)
+	task := NewTransferTask(ctx, id, name, nodeId, paths, StatusWaiting, q.stream, q.repo)
 	q.tasks.Set(id, task)
 	q.notify <- struct{}{}
 }
@@ -172,7 +197,7 @@ func (q *FileTransferMgr) ResumeTask(ctx context.Context, id string) {
 	q.mutex.Lock()
 	q.tasks.Iterator(func(k string, v any) bool {
 		task = v.(*TransferTask)
-		if task.taskId == id && task.status == StatusPaused {
+		if task.taskId == id && (task.status == StatusPaused || task.status == StatusFailed) {
 			task.status = StatusWaiting
 			found = true
 			return false
