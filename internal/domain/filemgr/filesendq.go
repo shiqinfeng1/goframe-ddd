@@ -87,7 +87,6 @@ func (q *FileTransferMgr) start(ctx context.Context) {
 				continue
 			}
 			// 找到第一个等待发送的任务
-			var needRemove string
 			q.tasks.Iterator(func(k string, v any) bool {
 				task := v.(*TransferTask)
 				if task.status == StatusWaiting {
@@ -98,29 +97,21 @@ func (q *FileTransferMgr) start(ctx context.Context) {
 						q.mutex.Lock()
 						if success {
 							task.status = StatusSuccessful
-							needRemove = k
+							q.tasks.Remove(k)
+							g.Log().Debugf(ctx, "task:%v(%v) finished success: %v!", task.taskId, task.taskName, task.status)
 						} else {
 							task.status = StatusFailed
+							g.Log().Debugf(ctx, "task:%v(%v) finished fail: %v!", task.taskId, task.taskName, task.status)
 						}
 						q.running--
 						q.mutex.Unlock()
-						g.Log().Debugf(ctx, "task:%v(%v) finished with %v!", task.taskId, task.taskName, task.status)
 						q.notify <- struct{}{}
 					}
 					return false
 				}
 				return true
 			})
-			g.Log().Infof(ctx, "task:%v(%v) needRemove:%v", oldTask.taskId, oldTask.taskName, needRemove)
-			// 任务执行完成，从队列中移除
-			if needRemove != "" {
-				old := q.tasks.Remove(needRemove)
-				oldTask = old.(*TransferTask)
-			}
 			q.mutex.Unlock()
-			if needRemove != "" {
-				g.Log().Infof(ctx, "task:%v(%v) do success. remove it!", oldTask.taskId, oldTask.taskName)
-			}
 		}
 	}()
 }

@@ -338,6 +338,7 @@ func (t *TransferTask) worker(ctx context.Context) {
 					elapsed := fmt.Sprintf("%v", end)
 					speed := fmt.Sprintf("%vMB/s", float64(totalWritten)/1024/1024/end.Seconds())
 					t.repo.UpdateSpeed(ctx, t.taskId, elapsed, speed)
+					g.Log().Debugf(ctx, "update task:%v(%v) speed:%v elapsed:%v", t.taskId, t.taskName, speed, elapsed)
 					close(finishChan)
 				}()
 				// 遍历所有待发送的文件

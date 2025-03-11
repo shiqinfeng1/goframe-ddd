@@ -27,7 +27,7 @@ func recvHeader(ctx context.Context, stream io.Reader) (*header, error) {
 	if err := h.ErrIfInvalid(); err != nil {
 		return nil, err
 	}
-	g.Log().Debugf(ctx, "recv msg header: %v", h)
+	// g.Log().Debugf(ctx, "recv msg header: %v", h)
 	return h, nil
 }
 
