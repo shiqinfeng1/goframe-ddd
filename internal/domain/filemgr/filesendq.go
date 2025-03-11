@@ -75,12 +75,12 @@ func (q *FileTransferMgr) start(ctx context.Context) {
 		for {
 			<-q.notify // 等待通知
 			q.mutex.Lock()
-			for q.running >= q.maxTasks {
+			if q.running >= q.maxTasks {
 				g.Log().Infof(ctx, "%v task is running, waitting...", q.running)
 				q.mutex.Unlock()
 				continue
 			}
-			for q.tasks.Size() == 0 {
+			if q.tasks.Size() == 0 {
 				g.Log().Infof(ctx, "no task in queue!")
 				q.mutex.Unlock()
 				continue
