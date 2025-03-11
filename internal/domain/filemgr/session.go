@@ -46,7 +46,7 @@ func (s *SessionMgr) checkLiveness() {
 		for _, key := range keys {
 			val, _ := s.serverSess.Get(ctx, key)
 			var sess *smux.Session
-			if err := val.Scan(&sess); err != nil {
+			if err := val.Scan(&sess); err != nil || sess == nil {
 				g.Log().Warning(ctx, "nodeId=%v session is invalid:%v", key, err)
 				continue
 			}
@@ -79,7 +79,7 @@ func (s *SessionMgr) SaveSession(ctx context.Context, nodeId string, sess *smux.
 			return gerror.Wrapf(err, "remove old session fail. nodeId=%v", nodeId)
 		}
 		var oldSess *smux.Session
-		if err := oldVal.Scan(&s); err != nil {
+		if err := oldVal.Scan(&oldSess); err != nil || oldSess == nil {
 			return gerror.Wrapf(err, "scan old session fail. nodeId=%v", nodeId)
 		}
 		if err := oldSess.Close(); err != nil {
@@ -104,7 +104,7 @@ func (s *SessionMgr) GetSession(ctx context.Context, nodeId string) (*smux.Sessi
 		return nil, gerror.Wrapf(err, "get session fail. nodeId=%v", nodeId)
 	}
 	var sess *smux.Session
-	if err := item.Scan(&sess); err != nil {
+	if err := item.Scan(&sess); err != nil || sess == nil {
 		return nil, gerror.Wrapf(err, "scan session fail. nodeId=%v", nodeId)
 	}
 	return sess, nil

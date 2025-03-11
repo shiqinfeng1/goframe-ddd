@@ -335,7 +335,7 @@ func (t *TransferTask) worker(ctx context.Context) {
 				start := time.Now()
 				defer func() {
 					end := time.Since(start)
-					elapsed := fmt.Sprintf("%v", end)
+					elapsed := fmt.Sprintf("%v", end.String())
 					speed := fmt.Sprintf("%.2fMB/s", float64(totalWritten)/1024/1024/end.Seconds())
 					t.repo.UpdateSpeed(ctx, t.taskId, elapsed, speed)
 					g.Log().Debugf(ctx, "update task:%v(%v) speed:%v elapsed:%v", t.taskId, t.taskName, speed, elapsed)

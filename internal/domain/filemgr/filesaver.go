@@ -108,7 +108,7 @@ func (fs *fileSaver) SaveChunk(ctx context.Context, fc *fileChunk) error {
 		removeFileSaver(ctx, fs.fileId)
 		return gerror.Wrapf(err, "save recvfile fail")
 	}
-	g.Log().Debugf(ctx, "recv file chunk[%v/%v]:%v", newrf.ChunkNumRecved, newrf.ChunkNumTotal, fs.path)
+	// g.Log().Debugf(ctx, "recv file chunk[%v/%v]:%v", newrf.ChunkNumRecved, newrf.ChunkNumTotal, fs.path)
 	if NewStatus(uint32(newrf.Status)) == StatusSuccessful {
 		fs.inst.Close()
 		fs.inst = nil
@@ -204,7 +204,7 @@ func removeFileSaver(ctx context.Context, fileId string) error {
 	}
 	var fs *fileSaver
 	err = val.Scan(&fs)
-	if err != nil {
+	if err != nil || fs == nil {
 		return gerror.Newf("must get file saver fail:%v", err)
 	}
 	// 释放filesaver资源
