@@ -38,7 +38,7 @@ type ResumeSendFileRes struct {
 }
 
 type SendingTaskListReq struct {
-	g.Meta `path:"/task/list" tags:"文件收发" method:"post" summary:"查询任务列表"`
+	g.Meta `path:"/task/sendingList" tags:"文件收发" method:"post" summary:"查询未完成的任务列表"`
 }
 
 type SendingTaskListRes struct {
@@ -46,4 +46,22 @@ type SendingTaskListRes struct {
 	Running  int          `json:"runnings" dc:"正在运行的发送任务数量"`
 	MaxTasks int          `json:"max_tasks" dc:"同时运行的最大发送任务数量"`
 	Tasks    []query.Task `json:"tasks" dc:"已连接节点客户端id列表"`
+}
+
+type CompletedTaskListReq struct {
+	g.Meta `path:"/task/completedList" tags:"文件收发" method:"post" summary:"查询已完成的任务列表"`
+}
+
+type CompletedTaskListRes struct {
+	g.Meta `status:"200"`
+	Tasks  []query.Task `json:"tasks" dc:"已连接节点客户端id列表"`
+}
+
+type RemoveTaskReq struct {
+	g.Meta  `path:"/task/remove" tags:"文件收发" method:"post" summary:"删除任务"`
+	TaskIds []string `p:"task_ids" v:"required" dc:"任务id列表"`
+}
+
+type RemoveTaskRes struct {
+	g.Meta `status:"200"`
 }

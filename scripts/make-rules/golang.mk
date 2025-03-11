@@ -20,7 +20,7 @@ ifneq ($(DLV),)
 	GO_BUILD_FLAGS += -gcflags "all=-N -l"
 	LDFLAGS = ""
 endif
-GO_BUILD_FLAGS += -ldflags "$(GO_LDFLAGS)"
+GO_BUILD_FLAGS += -ldflags "-s -w $(GO_LDFLAGS)"
 
 ifeq ($(GOOS),windows)
 	GO_OUT_EXT := .exe
@@ -30,6 +30,7 @@ ifeq ($(GOOS),linux)
 endif
 ifeq ($(GOOS),darwin)
 	SED := sed -i ''
+	UPX_FLAG := --force-macos
 endif
 
 ifeq ($(ROOT_PACKAGE),)
@@ -74,6 +75,7 @@ go.build.%:
 	@echo "===========> Building binary $(COMMAND) $(VERSION) for $(OS) $(ARCH)"
 	@mkdir -p $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)
 	@CGO_ENABLED=1 GOOS=$(OS) GOARCH=$(ARCH) $(GO) build $(GO_BUILD_FLAGS) -o $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)/$(COMMAND)$(GO_OUT_EXT) $(ROOT_PACKAGE)/cmd/$(COMMAND)
+	upx $(UPX_FLAG) $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)/$(COMMAND)$(GO_OUT_EXT)
 
 # 编译当前平台的bin
 .PHONY: go.build

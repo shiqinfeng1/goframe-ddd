@@ -8,6 +8,7 @@ import (
 	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent/filetransfertask"
 	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent/recvchunk"
 	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent/recvfile"
+	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent/sendchunk"
 	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent/sendfile"
 	"github.com/shiqinfeng1/goframe-ddd/internal/domain/filemgr"
 )
@@ -65,6 +66,31 @@ func (f *filemgrRepo) GetSendFile(ctx context.Context, taskId, filePath string) 
 	return out, nil
 }
 
+func (f *filemgrRepo) RemoveTasks(ctx context.Context, taskids []string) error {
+	// 开始事务
+	tx, err := f.db.Tx(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = tx.FileTransferTask.Delete().Where(filetransfertask.TaskIDIn(taskids...)).Exec(ctx)
+	if err != nil {
+		return tx.Rollback()
+	}
+	ids, err := tx.SendFile.Query().Where(sendfile.TaskIDIn(taskids...)).IDs(ctx)
+	if err != nil {
+		return tx.Rollback()
+	}
+	_, err = tx.SendChunk.Delete().Where(sendchunk.SendfileIDIn(ids...)).Exec(ctx)
+	if err != nil {
+		return tx.Rollback()
+	}
+	_, err = tx.SendFile.Delete().Where(sendfile.TaskIDIn(taskids...)).Exec(ctx)
+	if err != nil {
+		return tx.Rollback()
+	}
+	return tx.Commit()
+}
+
 func (f *filemgrRepo) GetNotCompletedTasks(ctx context.Context) ([]*filemgr.FileTransferTask, map[string][]*filemgr.SendFile, error) {
 	exist, _ := f.db.FileTransferTask.
 		Query().
@@ -84,6 +110,44 @@ func (f *filemgrRepo) GetNotCompletedTasks(ctx context.Context) ([]*filemgr.File
 			filemgr.StatusSending.Int(),
 			filemgr.StatusPaused.Int(),
 			filemgr.StatusFailed.Int())).All(ctx)
+	if err != nil {
+		return nil, nil, gerror.Wrap(err, "query filetransfertask fail")
+	}
+	out := make(map[string][]*filemgr.SendFile)
+	outTasks := make([]*filemgr.FileTransferTask, 0)
+
+	for _, task := range tasks {
+		outTasks = append(outTasks, &filemgr.FileTransferTask{
+			TaskID:   task.TaskID,
+			TaskName: task.TaskName,
+			NodeID:   task.NodeID,
+			Elapsed:  task.Elapsed,
+			Speed:    task.Speed,
+			Status:   task.Status,
+		})
+
+		out[task.TaskID] = make([]*filemgr.SendFile, 0)
+		sfs, err := f.GetSendFilesByTask(ctx, task.TaskID)
+		if err != nil {
+			return nil, nil, err
+		}
+		out[task.TaskID] = append(out[task.TaskID], sfs...)
+	}
+
+	return outTasks, out, nil
+}
+
+func (f *filemgrRepo) GetCompletedTasks(ctx context.Context) ([]*filemgr.FileTransferTask, map[string][]*filemgr.SendFile, error) {
+	exist, _ := f.db.FileTransferTask.
+		Query().
+		Where(filetransfertask.StatusEQ(filemgr.StatusSuccessful.Int())).Exist(ctx)
+	if !exist {
+		return []*filemgr.FileTransferTask{}, map[string][]*filemgr.SendFile{}, nil
+	}
+
+	tasks, err := f.db.FileTransferTask.
+		Query().
+		Where(filetransfertask.StatusEQ(filemgr.StatusSuccessful.Int())).All(ctx)
 	if err != nil {
 		return nil, nil, gerror.Wrap(err, "query filetransfertask fail")
 	}

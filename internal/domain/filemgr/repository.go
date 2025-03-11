@@ -62,6 +62,8 @@ type Repository interface {
 	GetSendFile(ctx context.Context, taskId, filePath string) (*SendFile, error)
 	GetSendFilesByTask(ctx context.Context, taskId string) ([]*SendFile, error)
 	GetNotCompletedTasks(ctx context.Context) ([]*FileTransferTask, map[string][]*SendFile, error)
+	GetCompletedTasks(ctx context.Context) ([]*FileTransferTask, map[string][]*SendFile, error)
+	RemoveTasks(ctx context.Context, taskids []string) error
 	SaveSendFile(ctx context.Context, sendFile *SendFile) (int, error)
 	UpdateSendChunk(ctx context.Context, sendChunk *SendChunk) error
 	UpdateSpeed(ctx context.Context, taskid, elapsed, speed string) error

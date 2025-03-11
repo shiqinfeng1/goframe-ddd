@@ -92,6 +92,7 @@ type TransferTask struct {
 	chunkOffsets []int64
 	chunkSizes   []int
 	notifyStatus atomic.Uint32
+	exit         context.CancelFunc
 }
 
 func NewTransferTask(ctx context.Context, id, name, nodeId string, paths []string, status Status, stream StreamIntf, repo Repository) *TransferTask {
@@ -115,12 +116,27 @@ func NewTransferTask(ctx context.Context, id, name, nodeId string, paths []strin
 	}); err != nil {
 		g.Log().Errorf(ctx, "save task fail:%v", err)
 	}
-	go task.worker(ctx)
+	ctx2, cancel := context.WithCancel(ctx)
+	task.exit = cancel
+	go task.worker(ctx2)
 	return task
 }
 
+func (t *TransferTask) Exit() {
+	t.exit()
+	if t.sendFileChan != nil {
+		close(t.sendFileChan)
+	}
+	if t.pauseChan != nil {
+		close(t.pauseChan)
+	}
+	if t.cancelChan != nil {
+		close(t.cancelChan)
+	}
+}
+
 func (t *TransferTask) String() string {
-	return fmt.Sprintf("taskId:%v taskName:%v nodeId:%v paths:%+v", t.taskId, t.taskName, t.nodeId, t.paths)
+	return fmt.Sprintf("\n\t\ttaskId:%v \n\t\ttaskName:%v \n\t\tnodeId:%v \n\t\tpaths:%+v", t.taskId, t.taskName, t.nodeId, t.paths)
 }
 
 func (t *TransferTask) updateStatusAndNotifyPeer(ctx context.Context, fileId string, status Status, stm io.ReadWriter) error {
@@ -245,12 +261,8 @@ func (t *TransferTask) syncEventToPeer(ctx context.Context, status Status, stm i
 func (t *TransferTask) sendChunk(ctx context.Context, sendFile *SendFile, file *os.File, stm io.ReadWriter) (bool, int64, error) {
 	var written int64
 	for i, chunkSize := range t.chunkSizes {
-		status := NewStatus(t.notifyStatus.Load())
-		if status == StatusCancel || status == StatusPaused {
-			if err := t.updateStatusAndNotifyPeer(ctx, sendFile.FileId, status, stm); err != nil {
-				return true, written, err
-			}
-			return true, written, nil
+		if yes, err := t.checkIfInterrupt(ctx, sendFile.FileId, stm); yes {
+			return true, written, err
 		}
 
 		body, _ := json.Marshal(&SendChunk{
@@ -307,23 +319,40 @@ func (t *TransferTask) sendChunk(ctx context.Context, sendFile *SendFile, file *
 	return false, written, nil
 }
 
+func (t *TransferTask) checkIfInterrupt(ctx context.Context, fileId string, stm io.ReadWriter) (bool, error) {
+	status := NewStatus(t.notifyStatus.Load())
+	if status == StatusCancel || status == StatusPaused {
+		if err := t.updateStatusAndNotifyPeer(ctx, fileId, status, stm); err != nil {
+			return true, err
+		}
+		return true, nil
+	}
+	return false, nil
+}
+
 func (t *TransferTask) worker(ctx context.Context) {
 	g.Log().Debugf(ctx, "start a filetransfer task for id:%v name:%v nodeid:%v", t.taskId, t.taskName, t.nodeId)
 	finishChan := make(chan struct{})
+	defer func() {
+		g.Log().Infof(ctx, "exit transfer task loop ok. task:%v", t)
+	}()
 	for {
 		select {
+		case <-ctx.Done():
+			return
 		case <-finishChan:
-			g.Log().Infof(ctx, "exit file-tranfer task by finish:%v", t)
+			g.Log().Infof(ctx, "file-tranfer recv signal of finish")
 			return
 		case postHandle := <-t.cancelChan:
 			t.notifyStatus.Store(StatusCancel.val)
 			postHandle()
-			g.Log().Infof(ctx, "exit file-tranfer task by cancel:%v", t)
+			g.Log().Infof(ctx, "file-tranfer recv signal of cancel")
 		case postHandle := <-t.pauseChan:
 			t.notifyStatus.Store(StatusPaused.val)
 			postHandle()
-			g.Log().Infof(ctx, "exit file-tranfer task by pause:%v", t)
+			g.Log().Infof(ctx, "file-tranfer recv signal of pause")
 		case postHandle := <-t.sendFileChan:
+			// 当前任务状态为发送中
 			t.notifyStatus.Store(StatusSending.val)
 
 			// 执行发送任务
@@ -332,6 +361,7 @@ func (t *TransferTask) worker(ctx context.Context) {
 					ctx          = gctx.New()
 					totalWritten int64
 				)
+				// 统计发送耗时和速率
 				start := time.Now()
 				defer func() {
 					end := time.Since(start)
@@ -354,14 +384,10 @@ func (t *TransferTask) worker(ctx context.Context) {
 						continue
 					}
 
-					status := NewStatus(t.notifyStatus.Load())
-					if status == StatusCancel || status == StatusPaused {
-						if err := t.updateStatusAndNotifyPeer(ctx, sendFile.FileId, status, stm); err != nil {
-							file.Close()
-							return err // 直接返回，不需要执行postHandle，因为cancel和pause已执行各自的postHandle
-						}
+					// 检查文件发送是否被操作中断
+					if yes, err := t.checkIfInterrupt(ctx, sendFile.FileId, stm); yes {
 						file.Close()
-						return nil // 直接返回，不需要执行postHandle，因为cancel和pause已执行各自的postHandle
+						return err // 直接返回，不需要执行postHandle，因为cancel和pause已执行各自的postHandle
 					}
 
 					if err := t.updateStatusAndNotifyPeer(ctx, sendFile.FileId, StatusSending, stm); err != nil {

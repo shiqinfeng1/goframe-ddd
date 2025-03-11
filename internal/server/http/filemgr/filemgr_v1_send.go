@@ -87,12 +87,28 @@ func (c *ControllerV1) ResumeSendFile(ctx context.Context, req *v1.ResumeSendFil
 	return
 }
 
+func (c *ControllerV1) RemoveTask(ctx context.Context, req *v1.RemoveTaskReq) (res *v1.RemoveTaskRes, err error) {
+	res = &v1.RemoveTaskRes{}
+	_, err = c.app.Commands.RemoveTask(ctx, &command.RemoveTaskInput{
+		TaskIds: req.TaskIds,
+	})
+	return
+}
+
 func (c *ControllerV1) SendingTaskList(ctx context.Context, req *v1.SendingTaskListReq) (res *v1.SendingTaskListRes, err error) {
-	out, _ := c.app.Queries.GetTaskList(ctx, &query.TaskListInput{})
+	out, _ := c.app.Queries.GetSendingTaskList(ctx, &query.TaskListInput{})
 	res = &v1.SendingTaskListRes{
 		Running:  out.Running,
 		MaxTasks: out.MaxTasks,
 		Tasks:    out.Tasks,
+	}
+	return
+}
+
+func (c *ControllerV1) CompletedTaskList(ctx context.Context, req *v1.CompletedTaskListReq) (res *v1.CompletedTaskListRes, err error) {
+	out, _ := c.app.Queries.GetCompletedTaskList(ctx, &query.TaskListInput{})
+	res = &v1.CompletedTaskListRes{
+		Tasks: out.Tasks,
 	}
 	return
 }

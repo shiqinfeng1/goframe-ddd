@@ -60,6 +60,10 @@ func (q *FileTransferMgr) GetNotCompletedTasks(ctx context.Context) ([]*FileTran
 	return q.repo.GetNotCompletedTasks(ctx)
 }
 
+func (q *FileTransferMgr) GetCompletedTasks(ctx context.Context) ([]*FileTransferTask, map[string][]*SendFile, error) {
+	return q.repo.GetCompletedTasks(ctx)
+}
+
 // AddTask 向队列中添加一个新的文件发送任务
 func (q *FileTransferMgr) AddTask(ctx context.Context, id, name, nodeId string, paths []string) {
 	q.mutex.Lock()
@@ -95,9 +99,8 @@ func (q *FileTransferMgr) start(ctx context.Context) {
 					task.sendFileChan <- func(success bool) {
 						q.mutex.Lock()
 						if success {
-							task.status = StatusSuccessful
-							q.tasks.Remove(k)
-							g.Log().Debugf(ctx, "task:%v(%v) finished success: %v!", task.taskId, task.taskName, task.status)
+							q.tasks.Remove(k) // 直接移除 不需要更新状态为StatusSuccessful
+							g.Log().Debugf(ctx, "task:%v(%v) finished success: %v!", task.taskId, task.taskName, StatusSuccessful)
 						} else {
 							task.status = StatusFailed
 							g.Log().Debugf(ctx, "task:%v(%v) finished fail: %v!", task.taskId, task.taskName, task.status)
@@ -219,4 +222,19 @@ func (q *FileTransferMgr) GetTaskList(ctx context.Context) []*TransferTask {
 		out = append(out, v.(*TransferTask))
 	}
 	return out
+}
+
+func (q *FileTransferMgr) RemoveTask(ctx context.Context, taskIds []string) {
+	q.mutex.Lock()
+	defer q.mutex.Unlock()
+	for _, taskId := range taskIds {
+		if q.tasks.Contains(taskId) {
+			old := q.tasks.Remove(taskId)
+			task := old.(*TransferTask)
+			task.Exit()
+		}
+	}
+	if err := q.repo.RemoveTasks(ctx, taskIds); err != nil {
+		g.Log().Errorf(ctx, "remove task:%v fail", taskIds)
+	}
 }

@@ -11,6 +11,7 @@ type FileTransferService interface {
 	AddTask(ctx context.Context, taskId string, name string, nodeId string, path []string)
 	PauseTask(ctx context.Context, taskId string)
 	ResumeTask(ctx context.Context, taskId string)
+	RemoveTask(ctx context.Context, taskIds []string)
 	CancelTask(ctx context.Context, taskId string)
 	GetTaskStatus(ctx context.Context, taskId string) filemgr.Status
 }

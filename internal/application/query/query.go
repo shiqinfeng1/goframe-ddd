@@ -29,7 +29,7 @@ func (h *Handler) GetClientIds(ctx context.Context) ([]string, error) {
 	return nodeIds, nil
 }
 
-func (h *Handler) GetTaskList(ctx context.Context, in *TaskListInput) (*TaskListOutput, error) {
+func (h *Handler) GetSendingTaskList(ctx context.Context, in *TaskListInput) (*TaskListOutput, error) {
 	running, maxTasks := h.fileTransfer.GetMaxAndRunning(ctx)
 	tasks, sfs, err := h.fileTransfer.GetNotCompletedTasks(ctx)
 	if err != nil {
@@ -57,6 +57,38 @@ func (h *Handler) GetTaskList(ctx context.Context, in *TaskListInput) (*TaskList
 			Paths:         paths,
 			Status:        task.Status, // 任务状态 1:等待发送 2:正在发送 3:已暂停 4:已取消 5:发送失败 6:发送成功
 			SendedPercent: fmt.Sprintf("%.2f", sended/sendTotal),
+		})
+	}
+
+	return tasklist, nil
+}
+
+func (h *Handler) GetCompletedTaskList(ctx context.Context, in *TaskListInput) (*TaskListOutput, error) {
+	tasks, sfs, err := h.fileTransfer.GetCompletedTasks(ctx)
+	if err != nil {
+		g.Log().Error(ctx, err)
+		return nil, nil
+	}
+	tasklist := &TaskListOutput{}
+	for _, task := range tasks {
+		var (
+			paths             []string
+			sendTotal, sended float32
+		)
+		for _, sf := range sfs[task.TaskID] {
+			paths = append(paths, sf.FilePath)
+			sendTotal += float32(sf.ChunkNumTotal)
+			sended += float32(sf.ChunkNumSended)
+		}
+		tasklist.Tasks = append(tasklist.Tasks, Task{
+			TaskName:      task.TaskName,
+			TaskId:        task.TaskID,
+			NodeId:        task.NodeID,
+			Paths:         paths,
+			Status:        task.Status, // 任务状态 1:等待发送 2:正在发送 3:已暂停 4:已取消 5:发送失败 6:发送成功
+			SendedPercent: fmt.Sprintf("%.2f", 100*sended/sendTotal),
+			Speed:         task.Speed,
+			Elapsed:       task.Elapsed,
 		})
 	}
 

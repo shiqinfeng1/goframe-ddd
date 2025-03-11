@@ -10,4 +10,5 @@ import (
 type FileTransferService interface {
 	GetMaxAndRunning(ctx context.Context) (running int, maxtasks int)
 	GetNotCompletedTasks(ctx context.Context) ([]*filemgr.FileTransferTask, map[string][]*filemgr.SendFile, error)
+	GetCompletedTasks(ctx context.Context) ([]*filemgr.FileTransferTask, map[string][]*filemgr.SendFile, error)
 }
