@@ -26,13 +26,13 @@ func NewFilemgrRepo(db *ent.Client) *filemgrRepo {
 func (f *filemgrRepo) GetSendFile(ctx context.Context, taskId, filePath string) (*filemgr.SendFile, error) {
 	if exist, err := f.db.FileTransferTask.
 		Query().
-		Where(filetransfertask.TaskID(taskId)).
+		Where(filetransfertask.TaskIDEQ(taskId)).
 		Exist(ctx); !exist {
 		return nil, gerror.Wrap(err, "query task fail")
 	}
 	task, err := f.db.FileTransferTask.
 		Query().
-		Where(filetransfertask.TaskID(taskId)).
+		Where(filetransfertask.TaskIDEQ(taskId)).
 		Only(ctx)
 	if err != nil {
 		return nil, gerror.Wrap(err, "query sendfile fail")
@@ -40,13 +40,13 @@ func (f *filemgrRepo) GetSendFile(ctx context.Context, taskId, filePath string) 
 
 	if exist, _ := f.db.SendFile.
 		Query().
-		Where(sendfile.TaskID(taskId), sendfile.FilePath(filePath)).
+		Where(sendfile.TaskIDEQ(taskId), sendfile.FilePathEQ(filePath)).
 		Exist(ctx); !exist {
 		return nil, nil
 	}
 	sf, err := f.db.SendFile.
 		Query().
-		Where(sendfile.TaskID(taskId), sendfile.FilePath(filePath)).
+		Where(sendfile.TaskIDEQ(taskId), sendfile.FilePathEQ(filePath)).
 		Only(ctx)
 	if err != nil {
 		return nil, gerror.Wrap(err, "query sendfile fail")
@@ -114,13 +114,13 @@ func (f *filemgrRepo) GetNotCompletedTasks(ctx context.Context) ([]*filemgr.File
 func (f *filemgrRepo) GetSendFilesByTask(ctx context.Context, taskId string) ([]*filemgr.SendFile, error) {
 	exist, _ := f.db.SendFile.
 		Query().
-		Where(sendfile.TaskID(taskId)).Exist(ctx)
+		Where(sendfile.TaskIDEQ(taskId)).Exist(ctx)
 	if !exist {
 		return []*filemgr.SendFile{}, nil
 	}
 	sfs, err := f.db.SendFile.
 		Query().
-		Where(sendfile.TaskID(taskId)).All(ctx)
+		Where(sendfile.TaskIDEQ(taskId)).All(ctx)
 	if err != nil {
 		return nil, gerror.Wrap(err, "query sendfile fail")
 	}
@@ -181,7 +181,7 @@ func (f *filemgrRepo) UpdateSendChunk(ctx context.Context, sc *filemgr.SendChunk
 	}
 	sf, err := tx.SendFile.
 		Query().
-		Where(sendfile.FileID(sc.FileID)).
+		Where(sendfile.FileIDEQ(sc.FileID)).
 		Only(ctx)
 	if err != nil {
 		tx.Rollback()
@@ -216,7 +216,7 @@ func (f *filemgrRepo) UpdateSendChunk(ctx context.Context, sc *filemgr.SendChunk
 	}
 	_, err = tx.FileTransferTask.
 		Update().
-		Where(filetransfertask.TaskID(sf.TaskID)).
+		Where(filetransfertask.TaskIDEQ(sf.TaskID)).
 		SetStatus(status).
 		Save(ctx)
 	if err != nil {
@@ -230,12 +230,12 @@ func (f *filemgrRepo) UpdateSendChunk(ctx context.Context, sc *filemgr.SendChunk
 func (f *filemgrRepo) GetRecvTask(ctx context.Context, taskId string) ([]*filemgr.RecvFile, error) {
 	if exist, _ := f.db.RecvFile.
 		Query().
-		Where(recvfile.TaskID(taskId)).Exist(ctx); !exist {
+		Where(recvfile.TaskIDEQ(taskId)).Exist(ctx); !exist {
 		return []*filemgr.RecvFile{}, nil
 	}
 	sfs, err := f.db.RecvFile.
 		Query().
-		Where(recvfile.TaskID(taskId)).All(ctx)
+		Where(recvfile.TaskIDEQ(taskId)).All(ctx)
 	if err != nil {
 		return nil, gerror.Wrap(err, "query recvfile fail")
 	}
@@ -285,7 +285,7 @@ func (f *filemgrRepo) UpdateRecvChunk(ctx context.Context, rc *filemgr.RecvChunk
 	}
 	rf, err := tx.RecvFile.
 		Query().
-		Where(recvfile.FileID(rc.FileID)).
+		Where(recvfile.FileIDEQ(rc.FileID)).
 		Only(ctx)
 	if err != nil {
 		tx.Rollback()
@@ -336,12 +336,12 @@ func (f *filemgrRepo) UpdateRecvChunk(ctx context.Context, rc *filemgr.RecvChunk
 
 func (f *filemgrRepo) GetRecvFile(ctx context.Context, fileId string) (*filemgr.RecvFile, error) {
 	if exist, _ := f.db.RecvFile.Query().
-		Where(recvfile.FileID(fileId)).Exist(ctx); !exist {
+		Where(recvfile.FileIDEQ(fileId)).Exist(ctx); !exist {
 		return &filemgr.RecvFile{}, nil
 	}
 	rf, err := f.db.RecvFile.
 		Query().
-		Where(recvfile.FileID(fileId)).Only(ctx)
+		Where(recvfile.FileIDEQ(fileId)).Only(ctx)
 	if err != nil {
 		return nil, gerror.Wrap(err, "query recvfile fail")
 	}
@@ -363,13 +363,13 @@ func (f *filemgrRepo) GetRecvFile(ctx context.Context, fileId string) (*filemgr.
 func (f *filemgrRepo) CountOfRecvedChunks(ctx context.Context, fileId string) (int, error) {
 	id, err := f.db.RecvFile.
 		Query().
-		Where(recvfile.FileID(fileId)).OnlyID(ctx)
+		Where(recvfile.FileIDEQ(fileId)).OnlyID(ctx)
 	if err != nil {
 		return 0, gerror.Wrap(err, "query recvfile fail")
 	}
 	cnt, err := f.db.RecvChunk.
 		Query().
-		Where(recvchunk.RecvfileID(id)).
+		Where(recvchunk.RecvfileIDEQ(id)).
 		Count(ctx)
 	if err != nil {
 		return 0, gerror.Wrap(err, "count recvchunk fail")
@@ -380,7 +380,7 @@ func (f *filemgrRepo) CountOfRecvedChunks(ctx context.Context, fileId string) (i
 func (f *filemgrRepo) UpdateSpeed(ctx context.Context, taskid, elapsed, speed string) error {
 	_, err := f.db.FileTransferTask.
 		Update().
-		Where(filetransfertask.TaskID(taskid)).
+		Where(filetransfertask.TaskIDEQ(taskid)).
 		SetElapsed(elapsed).
 		SetSpeed(speed).
 		Save(ctx)
@@ -398,7 +398,7 @@ func (f *filemgrRepo) UpdateTaskStatus(ctx context.Context, taskid, fileId strin
 	}
 	_, err = tx.FileTransferTask.
 		Update().
-		Where(filetransfertask.TaskID(taskid)).
+		Where(filetransfertask.TaskIDEQ(taskid)).
 		SetStatus(status.Int()).
 		Save(ctx)
 	if err != nil {
@@ -407,7 +407,7 @@ func (f *filemgrRepo) UpdateTaskStatus(ctx context.Context, taskid, fileId strin
 	}
 	_, err = tx.SendFile.
 		Update().
-		Where(sendfile.FileID(fileId)).
+		Where(sendfile.FileIDEQ(fileId)).
 		SetStatus(status.Int()).
 		Save(ctx)
 	if err != nil {
@@ -420,7 +420,7 @@ func (f *filemgrRepo) UpdateTaskStatus(ctx context.Context, taskid, fileId strin
 func (f *filemgrRepo) UpdateRecvStatus(ctx context.Context, fileId string, status filemgr.Status) error {
 	_, err := f.db.SendFile.
 		Update().
-		Where(sendfile.FileID(fileId)).
+		Where(sendfile.FileIDEQ(fileId)).
 		SetStatus(status.Int()).
 		Save(ctx)
 	if err != nil {
