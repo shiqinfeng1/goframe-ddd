@@ -72,7 +72,6 @@ func (q *FileTransferMgr) AddTask(ctx context.Context, id, name, nodeId string, 
 // Start 开始处理队列中的任务
 func (q *FileTransferMgr) start(ctx context.Context) {
 	go func() {
-		var oldTask *TransferTask
 		for {
 			<-q.notify // 等待通知
 			q.mutex.Lock()
