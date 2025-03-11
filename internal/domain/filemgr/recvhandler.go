@@ -40,7 +40,7 @@ func recvBody(ctx context.Context, stream io.Reader, bodyLen uint32) ([]byte, er
 			return nil, gerror.Wrap(err, "recv body fail")
 		}
 		m += n
-		g.Log().Debugf(ctx, "recv msg body %v bytes", n)
+		// g.Log().Debugf(ctx, "recv msg body %v bytes", n)
 		if m == int(bodyLen) {
 			break
 		}

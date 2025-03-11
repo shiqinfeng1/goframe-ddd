@@ -111,6 +111,7 @@ func (q *FileTransferMgr) start(ctx context.Context) {
 				}
 				return true
 			})
+			g.Log().Infof(ctx, "task:%v(%v) needRemove:%v", oldTask.taskId, oldTask.taskName, needRemove)
 			// 任务执行完成，从队列中移除
 			if needRemove != "" {
 				old := q.tasks.Remove(needRemove)

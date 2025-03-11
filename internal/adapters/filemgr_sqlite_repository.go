@@ -150,7 +150,7 @@ func (f *filemgrRepo) SaveTask(ctx context.Context, ftt *filemgr.FileTransferTas
 		SetStatus(ftt.Status).
 		Save(ctx)
 	if err != nil {
-		return gerror.Wrap(err, "save sendfile fail")
+		return gerror.Wrap(err, "save task fail")
 	}
 	return nil
 }
@@ -271,7 +271,7 @@ func (f *filemgrRepo) SaveRecvFile(ctx context.Context, rf *filemgr.RecvFile) er
 		SetStatus(rf.Status).
 		Save(ctx)
 	if err != nil {
-		return gerror.Wrap(err, "save sendfile fail")
+		return gerror.Wrap(err, "save recvfile fail")
 	}
 	return nil
 }
