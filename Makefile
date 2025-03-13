@@ -177,7 +177,7 @@ tidy:
 
 .PHONY: image-arm
 image-arm:
-	sudo docker build -f cmd/Dockerfile --build-arg TARGET=./cmd/mgrid --build-arg COMMIT=$(GIT_COMMIT)  --build-arg VERSION=$(VERSION) --build-arg CC=aarch64-linux-gnu-gcc --build-arg GOARCH=arm64 --target production \
+	docker build -f cmd/Dockerfile --build-arg TARGET=./cmd/mgrid --build-arg COMMIT=$(GIT_COMMIT)  --build-arg VERSION=$(VERSION) --build-arg CC=aarch64-linux-gnu-gcc --build-arg GOARCH=arm64 --target production \
 		 --build-arg GOPRIVATE=$(GOPRIVATE) \
 		-t "mgrid:$(VERSION)-arm"  .
 # -t "$(CONTAINER_REGISTRY)/mgrid:$(IMAGE_TAG_ARM)"  .
