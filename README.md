@@ -24,6 +24,12 @@ $git clone https://github.com/shiqinfeng1/goframe-ddd.git
 
 1. 编译
 
+首次运行时执行：
+
+```bash
+$make tools
+```
+
 项目根目录下执行:
 
 ```bash

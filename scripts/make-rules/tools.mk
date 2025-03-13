@@ -72,6 +72,11 @@ install.go-mod-outdated:
 # 	@$(GO) install github.com/cweill/gotests/gotests@latest
 
 
+.PHONY: install.cc-arm64
+install.cc-arm64:
+	@sudo apt update
+	@sudo apt install -y build-essential crossbuild-essential-arm64
+
 .PHONY: install.gf
 install.gf:
 	@$(GO) install github.com/gogf/gf/cmd/gf/v2@latest
