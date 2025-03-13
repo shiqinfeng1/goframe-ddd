@@ -32,9 +32,6 @@ ifeq ($(GOOS),darwin)
 	SED := sed -i ''
 	UPX_FLAG := --force-macos
 endif
-ifeq ($(GOARCH),arm64)
-	CC := aarch64-linux-gnu-gcc
-endif
 
 ifeq ($(ROOT_PACKAGE),)
 	$(error the variable ROOT_PACKAGE must be set prior to including golang.mk)
@@ -75,6 +72,7 @@ go.build.%:
 	$(eval PLATFORM := $(word 1,$(subst ., ,$*)))
 	$(eval OS := $(word 1,$(subst _, ,$(PLATFORM))))
 	$(eval ARCH := $(word 2,$(subst _, ,$(PLATFORM))))
+	$(eval $(if $(filter arm64,$(ARCH)), CC := aarch64-linux-gnu-gcc))
 	@echo "===========> Building binary $(COMMAND) $(VERSION) for $(OS) $(ARCH)"
 	@mkdir -p $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)
 	CGO_ENABLED=1 GOOS=$(OS) GOARCH=$(ARCH) CC=$(CC) $(GO) build $(GO_BUILD_FLAGS) -o $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)/$(COMMAND)$(GO_OUT_EXT) $(ROOT_PACKAGE)/cmd/$(COMMAND)
