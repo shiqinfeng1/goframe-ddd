@@ -39,9 +39,39 @@ install_curl() {
             ;;
     esac
 }
-
+install_unzip() {
+    local distro=$(detect_distribution)
+    case $distro in
+        ubuntu|debian)
+            sudo apt-get update
+            sudo apt-get install -y unzip zip
+            ;;
+        centos|rhel)
+            sudo yum install -y unzip zip
+            ;;
+        fedora)
+            sudo dnf install -y unzip zip
+            ;;
+        arch)
+            sudo pacman -Syu --noconfirm unzip zip
+            ;;
+        alpine)
+            sudo apk add --no-cache unzip zip
+            ;;
+        *)
+            echo "不支持的 Linux 发行版: $distro"
+            exit 1
+            ;;
+    esac
+}
 # 定义 protoc 工具的下载地址
 PROTOBUF_RELEASES_URL="https://github.com/protocolbuffers/protobuf/releases"
+
+# 如果下载太慢，
+# 方法1 ：使用代理, 先确认代理可用
+# 方法2 ：替换github域名解析
+# export http_proxy="10.17.11.17:1080"
+# export https_proxy="10.17.11.17:1080"
 
 # 获取当前操作系统名称
 OS=$(uname -s)
@@ -57,10 +87,14 @@ case $OS in
       echo "'curl' tool not installed, try to install it."
       install_curl
     fi
+    if [ -z "$(which unzip 2>/dev/null)" ]; then
+      echo "'unzip' tool not installed, try to install it."
+      install_unzip
+    fi
     # 获取最新版本的下载链接
     DOWNLOAD_URL="$PROTOBUF_RELEASES_URL/download/v29.3/protoc-29.3-linux-x86_64.zip"
     # 下载并解压
-    curl -LO $DOWNLOAD_URL
+    curl -LO -c - $DOWNLOAD_URL
     unzip $(basename $DOWNLOAD_URL) -d protoc
     sudo cp protoc/bin/protoc /usr/local/bin/
     sudo chmod +x /usr/local/bin/protoc
@@ -69,7 +103,7 @@ case $OS in
     ;;
   Darwin)
     # 获取最新版本的下载链接
-    DOWNLOAD_URL="$PROTOBUF_RELEASES_URL/download/download/v29.3/protoc-29.3-osx-x86_64.zip"
+    DOWNLOAD_URL="$PROTOBUF_RELEASES_URL/download/v29.3/protoc-29.3-osx-x86_64.zip"
 
     # 下载并解压
     curl -LO $DOWNLOAD_URL

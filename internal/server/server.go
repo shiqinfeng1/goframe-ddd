@@ -19,7 +19,11 @@ func NewHttpServer() *ghttp.Server {
 		r.Response.CORSDefault()
 		r.Middleware.Next()
 	})
-
+	s.BindHandler("/health", func(r *ghttp.Request) {
+		r.Response.WriteJson(g.Map{
+			"status": "OK",
+		})
+	})
 	s.Group("/mgrid", func(group *ghttp.RouterGroup) {
 		group.Middleware(ghttp.MiddlewareHandlerResponse)
 		group.Bind(

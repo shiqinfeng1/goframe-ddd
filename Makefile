@@ -2,7 +2,7 @@
 .DEFAULT_GOAL := all
 
 .PHONY: all
-all: tidy gen cover build #gen lint  add-copyright 
+all: tidy gen cover build #lint  add-copyright 
 
 # ==============================================================================
 # Build options
@@ -14,7 +14,7 @@ ROOT_PACKAGE := $(shell go list -m)
 include scripts/make-rules/common.mk # make sure include common.mk at the first include line
 include scripts/make-rules/golang.mk
 # include scripts/make-rules/image.mk
-# include scripts/make-rules/deploy.mk
+include scripts/make-rules/deploy.mk
 # include scripts/make-rules/copyright.mk
 include scripts/make-rules/gen.mk
 include scripts/make-rules/release.mk
@@ -177,7 +177,7 @@ tidy:
 
 .PHONY: image-arm
 image-arm:
-	docker build -f cmd/Dockerfile --build-arg TARGET=./cmd/mgrid --build-arg COMMIT=$(GIT_COMMIT)  --build-arg VERSION=$(VERSION) --build-arg CC=aarch64-linux-gnu-gcc --build-arg GOARCH=arm64 --target production \
+	docker build -f Dockerfile --build-arg TARGET=./cmd/mgrid --build-arg COMMIT=$(GIT_COMMIT)  --build-arg VERSION=$(VERSION) --build-arg CC=aarch64-linux-gnu-gcc --build-arg GOARCH=arm64 --target production \
 		 --build-arg GOPRIVATE=$(GOPRIVATE) \
 		-t "mgrid:$(VERSION)-arm"  .
 # -t "$(CONTAINER_REGISTRY)/mgrid:$(IMAGE_TAG_ARM)"  .
