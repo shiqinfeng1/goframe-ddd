@@ -17,7 +17,7 @@ func main() {
 	httpSrv := server.NewHttpServer()
 	grpcSrv := server.NewGrpcServer()
 
-	// grpc服务徐需要手动关闭
+	// grpc服务需要手动关闭
 	signalHandler := func(sig os.Signal) {
 		g.Log().Infof(ctx, "signal received: %v, gracefully shutting down grpc server", sig.String())
 		grpcSrv.Stop()
