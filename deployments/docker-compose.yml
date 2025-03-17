@@ -1,10 +1,12 @@
 services:
   mgrid-runtime:
     image: runtime-infrastructure:latest
-    # container_name: mgrid-runtime
+    container_name: mgrid-runtime
     restart: "always"
     volumes:
       - ./artifacts:/app
+      - ./artifacts/supervisord.conf:/etc/supervisor/supervisord.conf
+      - ./varlogsupervisor:/var/log/supervisor
     working_dir: /app
     networks:
       - mgrid_network
@@ -12,9 +14,6 @@ services:
       - "31080:31080" 
       - "31081:31081" 
       - "31082:31082" 
-    # command: ["sh","-c","sleep 100000"]
-    entrypoint: >
-      /bin/sh -c "./patch.sh && ./mgrid"
     stop_grace_period: 10s
     deploy:
       restart_policy:
@@ -24,12 +23,11 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:31080/health"]
-      interval: 1m30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:31080/health"]
+    #   interval: 10s
+    #   timeout: 10s
+    #   retries: 3
     environment:
       - ENV_VARIABLE=value
     # security_opt:

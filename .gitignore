@@ -35,7 +35,8 @@ _output/
 .DS_Store
 log/*
 
-deployments/artifacts
+deployments/artifacts 
+deployments/varlogsupervisor
 
 
 
