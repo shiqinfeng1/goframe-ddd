@@ -7,6 +7,7 @@ require (
 	github.com/gogf/gf/contrib/rpc/grpcx/v2 v2.8.3
 	github.com/gogf/gf/v2 v2.8.3
 	github.com/mattn/go-sqlite3 v1.14.16
+	github.com/nats-io/nats.go v1.39.1
 	github.com/rs/xid v1.6.0
 	github.com/xtaci/kcp-go v5.4.20+incompatible
 	github.com/xtaci/smux v1.5.34
@@ -38,6 +39,7 @@ require (
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/grokify/html-strip-tags-go v0.1.0 // indirect
 	github.com/hashicorp/hcl/v2 v2.13.0 // indirect
+	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.8 // indirect
 	github.com/klauspost/reedsolomon v1.12.4 // indirect
 	github.com/magiconair/properties v1.8.9 // indirect
@@ -45,6 +47,8 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/mitchellh/go-wordwrap v0.0.0-20150314170334-ad45545899c7 // indirect
+	github.com/nats-io/nkeys v0.4.9 // indirect
+	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect

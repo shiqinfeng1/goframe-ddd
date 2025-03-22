@@ -2,13 +2,15 @@ services:
   mgrid-runtime:
     image: runtime-infrastructure:latest
     container_name: mgrid-runtime
-    restart: "always"
+    restart: unless-stopped
     volumes:
       - ./artifacts:/app
       - ./artifacts/supervisord.conf:/etc/supervisor/supervisord.conf
+      - ./artifacts/nats-server.conf:/etc/nats/nats-server.conf
       - ./running/var-log-supervisor:/var/log/supervisor
-      - ./running/rabbitmq-data:/var/lib/rabbitmq/mnesia  #TODO 挂载到独立存储空间中，防止占满系统存储空间
+      - ./running/var-log-nats:/var/log/nats
       - ./running/redis-data:/var/lib/redis        #TODO 挂载到独立存储空间中，防止占满系统存储空间
+      - ./running/nats-data:/var/lib/nats        #TODO 挂载到独立存储空间中，防止占满系统存储空间
     working_dir: /app
     networks:
       - mgrid_network
