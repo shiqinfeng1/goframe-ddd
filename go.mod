@@ -1,6 +1,6 @@
 module github.com/shiqinfeng1/goframe-ddd
 
-go 1.24.0
+go 1.24.1
 
 require (
 	entgo.io/ent v0.14.3
@@ -13,6 +13,7 @@ require (
 	github.com/xtaci/smux v1.5.34
 	go.uber.org/automaxprocs v1.6.0
 	golang.org/x/net v0.35.0
+	golang.org/x/sync v0.11.0
 	golang.org/x/time v0.10.0
 	google.golang.org/grpc v1.70.0
 	google.golang.org/protobuf v1.36.5
