@@ -8,6 +8,7 @@ import (
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/nats-io/nats.go/jetstream"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/metrics"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
 )
 
@@ -41,9 +42,9 @@ func (sm *SubscriptionManager) Subscribe(
 	ctx context.Context,
 	topic string,
 	js jetstream.JetStream,
-	cfg *Config) (*pubsub.Message, error) {
-
-	metrics.IncrementCounter(ctx, "app_pubsub_subscribe_total_count", "topic", topic)
+	cfg *Config,
+) (*pubsub.Message, error) {
+	metrics.IncrementCounter(ctx, metrics.NatsSubscribeTotalCount, "topic", topic)
 
 	if err := sm.validateSubscribePrerequisites(js, cfg); err != nil {
 		return nil, err
@@ -73,7 +74,7 @@ func (sm *SubscriptionManager) Subscribe(
 
 	select {
 	case msg := <-buffer:
-		metrics.IncrementCounter(ctx, "app_pubsub_subscribe_success_count", "topic", topic)
+		metrics.IncrementCounter(ctx, metrics.NatsSubscribeSuccessCount, "topic", topic)
 		return msg, nil
 	case <-ctx.Done():
 		return nil, ctx.Err()
@@ -108,7 +109,8 @@ func (sm *SubscriptionManager) getOrCreateBuffer(topic string) chan *pubsub.Mess
 
 // 创建或更新一个消费者
 func (*SubscriptionManager) createOrUpdateConsumer(
-	ctx context.Context, js jetstream.JetStream, topic string, cfg *Config) (jetstream.Consumer, error) {
+	ctx context.Context, js jetstream.JetStream, topic string, cfg *Config,
+) (jetstream.Consumer, error) {
 	// consumerName := fmt.Sprintf("%s_%s", cfg.Consumer, strings.ReplaceAll(topic, ".", "_"))
 	consumerName := cfg.Consumer
 	cons, err := js.CreateOrUpdateConsumer(ctx, cfg.Stream.Stream, jetstream.ConsumerConfig{
@@ -128,7 +130,8 @@ func (sm *SubscriptionManager) consumeMessages(
 	cons jetstream.Consumer,
 	topic string,
 	buffer chan *pubsub.Message,
-	cfg *Config) {
+	cfg *Config,
+) {
 	// TODO: propagate errors to caller
 	for {
 		select {
@@ -147,7 +150,8 @@ func (sm *SubscriptionManager) fetchAndProcessMessages(
 	cons jetstream.Consumer,
 	topic string,
 	buffer chan *pubsub.Message,
-	cfg *Config) error {
+	cfg *Config,
+) error {
 	msgs, err := cons.Fetch(1, jetstream.FetchMaxWait(cfg.MaxWait))
 	if err != nil {
 		return sm.handleFetchError(ctx, err, topic)
@@ -167,7 +171,8 @@ func (sm *SubscriptionManager) processFetchedMessages(
 	ctx context.Context,
 	msgs jetstream.MessageBatch,
 	topic string,
-	buffer chan *pubsub.Message) error {
+	buffer chan *pubsub.Message,
+) error {
 	for msg := range msgs.Messages() {
 		pubsubMsg := sm.createPubSubMessage(msg, topic)
 		if !sm.sendToBuffer(pubsubMsg, buffer) {

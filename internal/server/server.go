@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/gogf/gf/contrib/metric/otelmetric/v2"
 	"github.com/gogf/gf/contrib/rpc/grpcx/v2"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
@@ -27,6 +28,9 @@ func NewHttpServer() *ghttp.Server {
 			"status": "OK",
 		})
 	})
+	// 服务监控指标输出接口注册
+	s.BindHandler("/metrics", otelmetric.PrometheusHandler)
+
 	// 业务api接口注册
 	s.Group("/mgrid", func(group *ghttp.RouterGroup) {
 		group.Middleware(ghttp.MiddlewareHandlerResponse)
@@ -48,7 +52,7 @@ func NewGrpcServer() *grpcx.GrpcServer {
 }
 
 func NewSubscriptions() *pubsub.SubscriptionManager {
-	var subMgr = pubsub.NewSubscriptionManager()
+	subMgr := pubsub.NewSubscriptionManager()
 	subMgr.RegisterSubscription("", nil)
 
 	return subMgr

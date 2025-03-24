@@ -12,7 +12,7 @@ import (
 )
 
 // 从kcp的stream中接收数据头
-func recvHeader(ctx context.Context, stream io.Reader) (*header, error) {
+func recvHeader(_ context.Context, stream io.Reader) (*header, error) {
 	// 读取消息头
 	headerBytes := make([]byte, headerLen)
 	n, err := stream.Read(headerBytes)
@@ -31,7 +31,7 @@ func recvHeader(ctx context.Context, stream io.Reader) (*header, error) {
 	return h, nil
 }
 
-func recvBody(ctx context.Context, stream io.Reader, bodyLen uint32) ([]byte, error) {
+func recvBody(_ context.Context, stream io.Reader, bodyLen uint32) ([]byte, error) {
 	bodyBytes := make([]byte, bodyLen)
 	var m int = 0
 	for {

@@ -156,7 +156,8 @@ func (c *Client) cancelExistingSubscription(subject string) {
 }
 
 func (c *Client) createOrUpdateConsumer(
-	ctx context.Context, js jetstream.JetStream, subject, consumerName string) (jetstream.Consumer, error) {
+	ctx context.Context, js jetstream.JetStream, subject, consumerName string,
+) (jetstream.Consumer, error) {
 	cons, err := js.CreateOrUpdateConsumer(ctx, c.Config.Stream.Stream, jetstream.ConsumerConfig{
 		Durable:       consumerName,
 		AckPolicy:     jetstream.AckExplicitPolicy,
@@ -165,7 +166,7 @@ func (c *Client) createOrUpdateConsumer(
 		DeliverPolicy: jetstream.DeliverNewPolicy,
 	})
 	if err != nil {
-		c.logger.Errorf("failed to create or update consumer: %v", err)
+		g.Log().Errorf(ctx, "failed to create or update consumer: %v", err)
 		return nil, err
 	}
 
@@ -175,7 +176,7 @@ func (c *Client) createOrUpdateConsumer(
 func (c *Client) processMessages(ctx context.Context, cons jetstream.Consumer, subject string, handler messageHandler) {
 	for ctx.Err() == nil {
 		if err := c.fetchAndProcessMessages(ctx, cons, subject, handler); err != nil {
-			c.logger.Errorf("Error in message processing loop for subject %s: %v", subject, err)
+			g.Log().Errorf(ctx, "Error in message processing loop for subject %s: %v", subject, err)
 		}
 	}
 }
@@ -184,7 +185,7 @@ func (c *Client) fetchAndProcessMessages(ctx context.Context, cons jetstream.Con
 	msgs, err := cons.Fetch(1, jetstream.FetchMaxWait(c.Config.MaxWait))
 	if err != nil {
 		if !errors.Is(err, context.DeadlineExceeded) {
-			c.logger.Errorf("Error fetching messages for subject %s: %v", subject, err)
+			g.Log().Errorf(ctx, "Error fetching messages for subject %s: %v", subject, err)
 		}
 
 		return err
@@ -196,12 +197,12 @@ func (c *Client) fetchAndProcessMessages(ctx context.Context, cons jetstream.Con
 func (c *Client) processFetchedMessages(ctx context.Context, msgs jetstream.MessageBatch, handler messageHandler, subject string) error {
 	for msg := range msgs.Messages() {
 		if err := c.handleMessage(ctx, msg, handler); err != nil {
-			c.logger.Errorf("Error processing message: %v", err)
+			g.Log().Errorf(ctx, "Error processing message: %v", err)
 		}
 	}
 
 	if err := msgs.Error(); err != nil {
-		c.logger.Errorf("Error in message batch for subject %s: %v", subject, err)
+		g.Log().Errorf(ctx, "Error in message batch for subject %s: %v", subject, err)
 		return err
 	}
 
@@ -212,17 +213,17 @@ func (c *Client) handleMessage(ctx context.Context, msg jetstream.Msg, handler m
 	err := handler(ctx, msg)
 	if err == nil {
 		if ackErr := msg.Ack(); ackErr != nil {
-			c.logger.Errorf("Error sending ACK for message: %v", ackErr)
+			g.Log().Errorf(ctx, "Error sending ACK for message: %v", ackErr)
 			return ackErr
 		}
 
 		return nil
 	}
 
-	c.logger.Errorf("Error handling message: %v", err)
+	g.Log().Errorf(ctx, "Error handling message: %v", err)
 
 	if nakErr := msg.Nak(); nakErr != nil {
-		c.logger.Debugf("Error sending NAK for message: %v", nakErr)
+		g.Log().Debugf(ctx, "Error sending NAK for message: %v", nakErr)
 
 		return nakErr
 	}

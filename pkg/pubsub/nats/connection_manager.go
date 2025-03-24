@@ -8,6 +8,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/health"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/metrics"
 )
 
 //go:generate mockgen -destination=mock_jetstream.go -package=nats github.com/nats-io/nats.go/jetstream jStream,Stream,Consumer,Msg,MessageBatch
@@ -30,10 +31,11 @@ func (cm *ConnectionManager) jetStream() (jetstream.JetStream, error) {
 
 // NewConnectionManager creates a new ConnectionManager.
 func newConnectionManager(
+	ctx context.Context,
 	cfg *Config,
 	natsConnector Connector,
-	jetStreamCreator JetStreamCreator) *ConnectionManager {
-
+	jetStreamCreator JetStreamCreator,
+) *ConnectionManager {
 	// 设置连接器
 	if natsConnector == nil {
 		natsConnector = &defaultConnector{}
@@ -90,7 +92,7 @@ func (cm *ConnectionManager) Close(_ context.Context) {
 }
 
 func (cm *ConnectionManager) Publish(ctx context.Context, subject string, message []byte) error {
-	metrics.IncrementCounter(ctx, "app_pubsub_publish_total_count", "subject", subject)
+	metrics.IncrementCounter(ctx, metrics.NatsPublishTotalCount, "subject", subject)
 
 	if err := cm.validateJetStream(ctx, subject); err != nil {
 		return err
@@ -102,7 +104,7 @@ func (cm *ConnectionManager) Publish(ctx context.Context, subject string, messag
 		return err
 	}
 
-	metrics.IncrementCounter(ctx, "app_pubsub_publish_success_count", "subject", subject)
+	metrics.IncrementCounter(ctx, metrics.NatsPublishSuccessCount, "subject", subject)
 
 	return nil
 }

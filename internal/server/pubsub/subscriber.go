@@ -5,11 +5,12 @@ import (
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
 	"golang.org/x/sync/errgroup"
 )
 
 // 消息处理函数
-type SubscribeFunc func(ctx *context.Context) error
+type SubscribeFunc func(ctx context.Context, msg pubsub.Message) error
 
 type SubscriptionManager struct {
 	subscriptions map[string]SubscribeFunc
@@ -22,13 +23,13 @@ func NewSubscriptionManager() *SubscriptionManager {
 		group:         errgroup.Group{},
 	}
 }
+
 func (s *SubscriptionManager) Stop() {
 	s.GetSubscriber().Close()
 }
 
 // 运行nats订阅客户端
 func (s *SubscriptionManager) Run(ctx context.Context) error {
-
 	// Start subscribers concurrently using go-routines
 	for topic, handler := range s.Subscriptions() {
 		s.group.Go(func() error {
@@ -67,7 +68,6 @@ func (s *SubscriptionManager) StartSubscriber(ctx context.Context, topic string,
 
 func (s *SubscriptionManager) handleSubscription(ctx context.Context, topic string, handler SubscribeFunc) error {
 	msg, err := s.GetSubscriber().Subscribe(ctx, topic)
-
 	if err != nil {
 		g.Log().Errorf(ctx, "error while reading from topic %v, err: %v", topic, err.Error())
 
@@ -86,7 +86,6 @@ func (s *SubscriptionManager) handleSubscription(ctx context.Context, topic stri
 
 		return handler(ctx, msg)
 	}()
-
 	if err != nil {
 		g.Log().Errorf(ctx, "error in handler for topic %s: %v", topic, err)
 
