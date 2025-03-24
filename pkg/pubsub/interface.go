@@ -17,7 +17,7 @@ type Client interface {
 	CreateTopic(ctx context.Context, name string) error
 	DeleteTopic(ctx context.Context, name string) error
 
-	Close() error
+	Close(ctx context.Context) error
 }
 
 type Committer interface {

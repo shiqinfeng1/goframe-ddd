@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"sync"
 
@@ -18,12 +19,6 @@ func main() {
 	grpcSrv := server.NewGrpcServer()
 	subMgr := server.NewSubscriptions()
 
-	// grpc服务需要手动关闭
-	signalHandler := func(sig os.Signal) {
-		g.Log().Infof(ctx, "signal received: %v, gracefully shutting down grpc server", sig.String())
-		grpcSrv.Stop()
-		subMgr.Stop()
-	}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -41,15 +36,24 @@ func main() {
 	}()
 
 	wg.Add(1)
+	subCtx, cancel := context.WithCancel(ctx)
 	go func() {
 		defer wg.Done()
-		g.Log().Infof(ctx, "start nats subscrib ...")
-		if err := subMgr.Run(ctx); err != nil {
-			g.Log().Fatal(ctx, "subscription error : %v", err)
+		g.Log().Infof(subCtx, "start nats subscrib ...")
+		if err := subMgr.Run(subCtx); err != nil {
+			g.Log().Fatal(subCtx, "subscription error : %v", err)
 		}
-		g.Log().Infof(ctx, "exit nats subscrib ok")
+		g.Log().Infof(subCtx, "exit nats subscrib ok")
 	}()
 
+	// grpc服务需要手动关闭
+	// submgr 手动关闭
+	signalHandler := func(sig os.Signal) {
+		g.Log().Infof(ctx, "signal received: %v, gracefully shutting down grpc server", sig.String())
+		grpcSrv.Stop()
+		subMgr.Stop(subCtx)
+		cancel()
+	}
 	// 监听系统中断信号
 	gproc.AddSigHandlerShutdown(
 		signalHandler,

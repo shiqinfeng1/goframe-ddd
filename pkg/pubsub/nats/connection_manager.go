@@ -31,7 +31,6 @@ func (cm *ConnectionManager) jetStream() (jetstream.JetStream, error) {
 
 // NewConnectionManager creates a new ConnectionManager.
 func newConnectionManager(
-	ctx context.Context,
 	cfg *Config,
 	natsConnector Connector,
 	jetStreamCreator JetStreamCreator,
@@ -109,7 +108,7 @@ func (cm *ConnectionManager) Publish(ctx context.Context, subject string, messag
 	return nil
 }
 
-func (cm *ConnectionManager) validateJetStream(ctx context.Context, subject string) error {
+func (cm *ConnectionManager) validateJetStream(_ context.Context, subject string) error {
 	if cm.jStream == nil || subject == "" {
 		err := errJetStreamNotConfigured
 		return err

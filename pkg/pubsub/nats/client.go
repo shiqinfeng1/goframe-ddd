@@ -53,7 +53,7 @@ func (c *Client) Connect(ctx context.Context) error {
 		return err
 	}
 
-	connManager := newConnectionManager(ctx, c.Config, c.natsConnector, c.jetStreamCreator)
+	connManager := newConnectionManager(c.Config, c.natsConnector, c.jetStreamCreator)
 	if err := connManager.Connect(ctx); err != nil {
 		g.Log().Errorf(ctx, "failed to connect to NATS server at %v: %v", c.Config.Server, err)
 		return err
@@ -112,7 +112,7 @@ func (c *Client) Subscribe(ctx context.Context, topic string) (*pubsub.Message, 
 	}
 }
 
-func (c *Client) generateConsumerName(subject string) string {
+func (c *Client) generateConsumerName(_ string) string {
 	// return fmt.Sprintf("%s_%s", c.Config.Consumer, strings.ReplaceAll(subject, ".", "_"))
 	return c.Config.Consumer
 }
@@ -234,7 +234,6 @@ func (c *Client) handleMessage(ctx context.Context, msg jetstream.Msg, handler m
 // Close closes the Client.
 func (c *Client) Close(ctx context.Context) error {
 	c.subManager.Close()
-
 	if c.connManager != nil {
 		c.connManager.Close(ctx)
 	}
