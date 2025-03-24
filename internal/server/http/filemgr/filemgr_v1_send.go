@@ -9,8 +9,7 @@ import (
 	"github.com/gogf/gf/v2/util/gconv"
 
 	v1 "github.com/shiqinfeng1/goframe-ddd/api/http/filemgr/v1"
-	"github.com/shiqinfeng1/goframe-ddd/internal/application/command"
-	"github.com/shiqinfeng1/goframe-ddd/internal/application/query"
+	"github.com/shiqinfeng1/goframe-ddd/internal/application"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/errors"
 )
 
@@ -39,7 +38,7 @@ func (c *ControllerV1) StartSendFile(ctx context.Context, req *v1.StartSendFileR
 			if len(files) == 0 {
 				return res, errors.ErrEmptyDir(v)
 			}
-			c.app.Commands.StartSendFile(ctx, &command.StartSendFileInput{
+			c.app.StartSendFile(ctx, &application.StartSendFileInput{
 				BaseName: gfile.Basename(v),
 				Files:    files,
 				NodeId:   req.NodeId,
@@ -52,7 +51,7 @@ func (c *ControllerV1) StartSendFile(ctx context.Context, req *v1.StartSendFileR
 			if len(files) == 0 {
 				return res, errors.ErrInvalidFiles(gconv.String(req.FilePath))
 			}
-			c.app.Commands.StartSendFile(ctx, &command.StartSendFileInput{
+			c.app.StartSendFile(ctx, &application.StartSendFileInput{
 				BaseName: gfile.Basename(v),
 				Files:    files,
 				NodeId:   req.NodeId,
@@ -65,7 +64,7 @@ func (c *ControllerV1) StartSendFile(ctx context.Context, req *v1.StartSendFileR
 
 func (c *ControllerV1) PauseSendFile(ctx context.Context, req *v1.PauseSendFileReq) (res *v1.PauseSendFileRes, err error) {
 	res = &v1.PauseSendFileRes{}
-	_, err = c.app.Commands.PauseSendFile(ctx, &command.PauseSendFileInput{
+	_, err = c.app.PauseSendFile(ctx, &application.PauseSendFileInput{
 		TaskId: req.TaskId,
 	})
 	return
@@ -73,7 +72,7 @@ func (c *ControllerV1) PauseSendFile(ctx context.Context, req *v1.PauseSendFileR
 
 func (c *ControllerV1) CancelSendFile(ctx context.Context, req *v1.CancelSendFileReq) (res *v1.CancelSendFileRes, err error) {
 	res = &v1.CancelSendFileRes{}
-	_, err = c.app.Commands.CancelSendFile(ctx, &command.CancelSendFileInput{
+	_, err = c.app.CancelSendFile(ctx, &application.CancelSendFileInput{
 		TaskId: req.TaskId,
 	})
 	return
@@ -81,7 +80,7 @@ func (c *ControllerV1) CancelSendFile(ctx context.Context, req *v1.CancelSendFil
 
 func (c *ControllerV1) ResumeSendFile(ctx context.Context, req *v1.ResumeSendFileReq) (res *v1.ResumeSendFileRes, err error) {
 	res = &v1.ResumeSendFileRes{}
-	_, err = c.app.Commands.ResumeSendFile(ctx, &command.ResumeSendFileInput{
+	_, err = c.app.ResumeSendFile(ctx, &application.ResumeSendFileInput{
 		TaskId: req.TaskId,
 	})
 	return
@@ -89,14 +88,14 @@ func (c *ControllerV1) ResumeSendFile(ctx context.Context, req *v1.ResumeSendFil
 
 func (c *ControllerV1) RemoveTask(ctx context.Context, req *v1.RemoveTaskReq) (res *v1.RemoveTaskRes, err error) {
 	res = &v1.RemoveTaskRes{}
-	_, err = c.app.Commands.RemoveTask(ctx, &command.RemoveTaskInput{
+	_, err = c.app.RemoveTask(ctx, &application.RemoveTaskInput{
 		TaskIds: req.TaskIds,
 	})
 	return
 }
 
 func (c *ControllerV1) SendingTaskList(ctx context.Context, req *v1.SendingTaskListReq) (res *v1.SendingTaskListRes, err error) {
-	out, _ := c.app.Queries.GetSendingTaskList(ctx, &query.TaskListInput{})
+	out, _ := c.app.GetSendingTaskList(ctx, &application.TaskListInput{})
 	res = &v1.SendingTaskListRes{
 		Running:  out.Running,
 		MaxTasks: out.MaxTasks,
@@ -106,7 +105,7 @@ func (c *ControllerV1) SendingTaskList(ctx context.Context, req *v1.SendingTaskL
 }
 
 func (c *ControllerV1) CompletedTaskList(ctx context.Context, req *v1.CompletedTaskListReq) (res *v1.CompletedTaskListRes, err error) {
-	out, _ := c.app.Queries.GetCompletedTaskList(ctx, &query.TaskListInput{})
+	out, _ := c.app.GetCompletedTaskList(ctx, &application.TaskListInput{})
 	res = &v1.CompletedTaskListRes{
 		Tasks: out.Tasks,
 	}

@@ -2,7 +2,7 @@ package v1
 
 import (
 	"github.com/gogf/gf/v2/frame/g"
-	"github.com/shiqinfeng1/goframe-ddd/internal/application/query"
+	"github.com/shiqinfeng1/goframe-ddd/internal/application"
 )
 
 type StartSendFileReq struct {
@@ -43,9 +43,9 @@ type SendingTaskListReq struct {
 
 type SendingTaskListRes struct {
 	g.Meta   `status:"200"`
-	Running  int          `json:"runnings" dc:"正在运行的发送任务数量"`
-	MaxTasks int          `json:"max_tasks" dc:"同时运行的最大发送任务数量"`
-	Tasks    []query.Task `json:"tasks" dc:"已连接节点客户端id列表"`
+	Running  int                `json:"runnings" dc:"正在运行的发送任务数量"`
+	MaxTasks int                `json:"max_tasks" dc:"同时运行的最大发送任务数量"`
+	Tasks    []application.Task `json:"tasks" dc:"已连接节点客户端id列表"`
 }
 
 type CompletedTaskListReq struct {
@@ -54,7 +54,7 @@ type CompletedTaskListReq struct {
 
 type CompletedTaskListRes struct {
 	g.Meta `status:"200"`
-	Tasks  []query.Task `json:"tasks" dc:"已连接节点客户端id列表"`
+	Tasks  []application.Task `json:"tasks" dc:"已连接节点客户端id列表"`
 }
 
 type RemoveTaskReq struct {

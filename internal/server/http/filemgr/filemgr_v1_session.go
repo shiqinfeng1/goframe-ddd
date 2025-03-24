@@ -7,7 +7,7 @@ import (
 )
 
 func (c *ControllerV1) NodeList(ctx context.Context, req *v1.NodeListReq) (res *v1.NodeListRes, err error) {
-	out, err := c.app.Queries.GetClientIds(ctx)
+	out, err := c.app.GetClientIds(ctx)
 	res = &v1.NodeListRes{
 		NodeIds: out,
 	}

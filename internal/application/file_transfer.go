@@ -1,26 +1,41 @@
-package query
+package application
 
 import (
 	"context"
 	"fmt"
 
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/rs/xid"
 	"github.com/shiqinfeng1/goframe-ddd/internal/domain/filemgr"
 )
 
-type Handler struct {
-	fileTransfer FileTransferService
+func (h *Application) StartSendFile(ctx context.Context, in *StartSendFileInput) (*StartSendFileOutput, error) {
+	taskId := xid.New().String()
+	h.fileTransfer.AddTask(ctx, taskId, in.BaseName, in.NodeId, in.Files)
+	return nil, nil
 }
 
-func NewHandler(
-	fileTransfer FileTransferService,
-) *Handler {
-	return &Handler{
-		fileTransfer: fileTransfer,
-	}
+func (h *Application) PauseSendFile(ctx context.Context, in *PauseSendFileInput) (*PauseSendFileOutput, error) {
+	h.fileTransfer.PauseTask(ctx, in.TaskId)
+	return nil, nil
 }
 
-func (h *Handler) GetClientIds(ctx context.Context) ([]string, error) {
+func (h *Application) CancelSendFile(ctx context.Context, in *CancelSendFileInput) (*CancelSendFileOutput, error) {
+	h.fileTransfer.CancelTask(ctx, in.TaskId)
+	return nil, nil
+}
+
+func (h *Application) ResumeSendFile(ctx context.Context, in *ResumeSendFileInput) (*ResumeSendFileOutput, error) {
+	h.fileTransfer.ResumeTask(ctx, in.TaskId)
+	return nil, nil
+}
+
+func (h *Application) RemoveTask(ctx context.Context, in *RemoveTaskInput) (*RemoveTaskOutput, error) {
+	h.fileTransfer.RemoveTask(ctx, in.TaskIds)
+	return nil, nil
+}
+
+func (h *Application) GetClientIds(ctx context.Context) ([]string, error) {
 	nodeIds, err := filemgr.Session().GetNodeList(ctx)
 	if err != nil {
 		g.Log().Error(ctx, err)
@@ -29,7 +44,7 @@ func (h *Handler) GetClientIds(ctx context.Context) ([]string, error) {
 	return nodeIds, nil
 }
 
-func (h *Handler) GetSendingTaskList(ctx context.Context, in *TaskListInput) (*TaskListOutput, error) {
+func (h *Application) GetSendingTaskList(ctx context.Context, in *TaskListInput) (*TaskListOutput, error) {
 	running, maxTasks := h.fileTransfer.GetMaxAndRunning(ctx)
 	tasks, sfs, err := h.fileTransfer.GetNotCompletedTasks(ctx)
 	if err != nil {
@@ -63,7 +78,7 @@ func (h *Handler) GetSendingTaskList(ctx context.Context, in *TaskListInput) (*T
 	return tasklist, nil
 }
 
-func (h *Handler) GetCompletedTaskList(ctx context.Context, in *TaskListInput) (*TaskListOutput, error) {
+func (h *Application) GetCompletedTaskList(ctx context.Context, in *TaskListInput) (*TaskListOutput, error) {
 	tasks, sfs, err := h.fileTransfer.GetCompletedTasks(ctx)
 	if err != nil {
 		g.Log().Error(ctx, err)
