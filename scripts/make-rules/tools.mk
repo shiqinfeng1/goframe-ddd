@@ -63,9 +63,9 @@ install.github-release:
 install.go-mod-outdated:
 	@$(GO) install github.com/psampaz/go-mod-outdated@latest
 
-# .PHONY: install.mockgen
-# install.mockgen:
-# 	@$(GO) install github.com/golang/mock/mockgen@latest
+.PHONY: install.mockgen
+install.mockgen:
+	@$(GO) install go.uber.org/mock/mockgen@latest
 
 # .PHONY: install.gotests
 # install.gotests:

@@ -44,6 +44,7 @@ func (sm *SubscriptionManager) Subscribe(
 	js jetstream.JetStream,
 	cfg *Config,
 ) (*pubsub.Message, error) {
+
 	metrics.IncrementCounter(ctx, metrics.NatsSubscribeTotalCount, "topic", topic)
 
 	if err := sm.validateSubscribePrerequisites(js, cfg); err != nil {
@@ -111,8 +112,7 @@ func (sm *SubscriptionManager) getOrCreateBuffer(topic string) chan *pubsub.Mess
 func (*SubscriptionManager) createOrUpdateConsumer(
 	ctx context.Context, js jetstream.JetStream, topic string, cfg *Config,
 ) (jetstream.Consumer, error) {
-	// consumerName := fmt.Sprintf("%s_%s", cfg.Consumer, strings.ReplaceAll(topic, ".", "_"))
-	consumerName := cfg.Consumer
+	consumerName := generateConsumerName(cfg.Consumer, topic)
 	cons, err := js.CreateOrUpdateConsumer(ctx, cfg.Stream.Stream, jetstream.ConsumerConfig{
 		Durable:       consumerName,
 		AckPolicy:     jetstream.AckExplicitPolicy,
@@ -161,7 +161,9 @@ func (sm *SubscriptionManager) fetchAndProcessMessages(
 
 func (*SubscriptionManager) handleFetchError(ctx context.Context, err error, topic string) error {
 	if !errors.Is(err, context.DeadlineExceeded) {
-		g.Log().Errorf(ctx, "Error fetching messages for topic %s: %v", topic, err)
+		g.Log().Warningf(ctx, "error fetching messages for topic %s: %v", topic, err)
+	} else {
+		g.Log().Errorf(ctx, "fetching messages for topic %s fail: %v", topic, err)
 	}
 	time.Sleep(consumeMessageDelay)
 	return nil
@@ -176,7 +178,7 @@ func (sm *SubscriptionManager) processFetchedMessages(
 	for msg := range msgs.Messages() {
 		pubsubMsg := sm.createPubSubMessage(msg, topic)
 		if !sm.sendToBuffer(pubsubMsg, buffer) {
-			g.Log().Warningf(ctx, "Message buffer is full for topic %s. Consider increasing buffer size or processing messages faster.", topic)
+			g.Log().Warningf(ctx, "Message buffer is full for message %s. Consider increasing buffer size or processing messages faster.", pubsubMsg)
 		}
 	}
 	return sm.checkBatchError(ctx, msgs, topic)

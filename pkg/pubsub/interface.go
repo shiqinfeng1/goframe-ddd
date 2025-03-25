@@ -13,7 +13,7 @@ type Subscriber interface {
 type Client interface {
 	Publisher
 	Subscriber
-
+	Connect(ctx context.Context) error
 	CreateTopic(ctx context.Context, name string) error
 	DeleteTopic(ctx context.Context, name string) error
 

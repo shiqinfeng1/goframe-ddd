@@ -53,7 +53,6 @@ func NewGrpcServer() *grpcx.GrpcServer {
 
 func NewSubscriptions() *pubsub.SubscriptionManager {
 	subMgr := pubsub.NewSubscriptionManager()
-	subMgr.RegisterSubscription("", nil)
-
+	subMgr.RegisterSubscription("test.*", nil)
 	return subMgr
 }

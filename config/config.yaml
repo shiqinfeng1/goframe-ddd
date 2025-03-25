@@ -128,3 +128,9 @@ filemgr:
   addr: 10.17.11.13:31082  # 文件传输的服务地址
 
 pprof: true   # 开启性能分析
+
+nats:
+  serverAddr: "nats://localhost:4222"
+  consumerName: "consumer-goMgrid"
+  streamName: "stream-mgrid"
+  subjects: ["test.subj1.*","test.subj2.>"]

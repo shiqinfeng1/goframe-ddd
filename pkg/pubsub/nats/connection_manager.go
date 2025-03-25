@@ -11,7 +11,7 @@ import (
 	"github.com/shiqinfeng1/goframe-ddd/pkg/metrics"
 )
 
-//go:generate mockgen -destination=mock_jetstream.go -package=nats github.com/nats-io/nats.go/jetstream jStream,Stream,Consumer,Msg,MessageBatch
+//go:generate mockgen -destination=mock_jetstream.go -package=nats github.com/nats-io/nats.go/jetstream JetStream,Stream,Consumer,Msg,MessageBatch
 
 type ConnectionManager struct {
 	conn             ConnIntf
@@ -29,7 +29,7 @@ func (cm *ConnectionManager) jetStream() (jetstream.JetStream, error) {
 	return cm.jStream, nil
 }
 
-// NewConnectionManager creates a new ConnectionManager.
+// newConnectionManager creates a new ConnectionManager.
 func newConnectionManager(
 	cfg *Config,
 	natsConnector Connector,

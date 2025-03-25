@@ -103,7 +103,7 @@ go.lint: tools.verify.golangci-lint
 .PHONY: go.test
 go.test: tools.verify.go-junit-report
 	@echo "===========> Run unit test"
-# 开启并发竞态检测，找出代码中可能存在的并发问题
+# -shuffle=on: 开启并发竞态检测，找出代码中可能存在的并发问题  
 # 打乱测试用例的执行顺序，增强测试的随机性
 # 设置测试超时时间，避免测试无限期运行
 # 运行简短测试，跳过一些耗时较长的测试用例
@@ -111,12 +111,13 @@ go.test: tools.verify.go-junit-report
 # 执行测试用例，并生成的代码覆盖率数据文件coverage.out
 # 将测试结果同时输出到终端和 JUnit 格式的 XML 报告文件
 	@set -o pipefail;$(GO) test -race -cover -coverprofile=$(OUTPUT_DIR)/coverage.out \
-		-timeout=10m -shuffle=on -short -v `go list ./...|egrep -v $(EXCLUDE_TESTS)` 2>&1 | \
+		-timeout=10m  -short -v `go list ./...|egrep -v $(EXCLUDE_TESTS)` 2>&1 | \
 		tee >(go-junit-report --set-exit-code >$(OUTPUT_DIR)/report.xml)
 # remove mock_.*.go files from test coverage
 	@$(SED) '/api/d' $(OUTPUT_DIR)/coverage.out 
 	@$(SED) '/server/d' $(OUTPUT_DIR)/coverage.out 
 	@$(SED) '/adapters/d' $(OUTPUT_DIR)/coverage.out 
+	@$(SED) '/mock_/d' $(OUTPUT_DIR)/coverage.out 
 # 根据指定的代码覆盖率数据文件coverage.out生成 HTML 格式的报告
 	@$(GO) tool cover -html=$(OUTPUT_DIR)/coverage.out -o $(OUTPUT_DIR)/coverage.html
 

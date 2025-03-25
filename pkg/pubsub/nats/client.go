@@ -3,15 +3,16 @@ package nats
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/nats-io/nats.go/jetstream"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/health"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
 )
-
-//go:generate mockgen -destination=mock_tracer.go -package=nats go.opentelemetry.io/otel/trace Tracer
 
 const defaultRetryTimeout = 10 * time.Second
 
@@ -23,7 +24,7 @@ type Client struct {
 	subManager       SubscriptionManagerIntf
 	subscriptions    map[string]context.CancelFunc
 	subMutex         sync.Mutex
-	streamManager    StreamManagerInterface
+	streamManager    StreamManagerIntf
 	Config           *Config
 	natsConnector    Connector
 	jetStreamCreator JetStreamCreator
@@ -47,6 +48,11 @@ func New(cfg *Config) *Client {
 
 // Connect establishes a connection to NATS and sets up jStream.
 func (c *Client) Connect(ctx context.Context) error {
+	if c.connManager != nil && c.connManager.Health().Status == health.StatusUp {
+		g.Log().Warning(ctx, "NATS connection already established")
+		return nil
+	}
+
 	g.Log().Debugf(ctx, "connecting to NATS server at %v", c.Config.Server)
 
 	if err := c.validateAndPrepare(ctx); err != nil {
@@ -97,7 +103,6 @@ func (c *Client) Subscribe(ctx context.Context, topic string) (*pubsub.Message, 
 	for {
 		if !c.connManager.isConnected() {
 			time.Sleep(defaultRetryTimeout)
-
 			return nil, errClientNotConnected
 		}
 
@@ -112,9 +117,11 @@ func (c *Client) Subscribe(ctx context.Context, topic string) (*pubsub.Message, 
 	}
 }
 
-func (c *Client) generateConsumerName(_ string) string {
-	// return fmt.Sprintf("%s_%s", c.Config.Consumer, strings.ReplaceAll(subject, ".", "_"))
-	return c.Config.Consumer
+func generateConsumerName(consumer, subject string) string {
+	subject = strings.ReplaceAll(subject, ".", "_")
+	subject = strings.ReplaceAll(subject, "*", "token")
+	subject = strings.ReplaceAll(subject, ">", "tokens")
+	return fmt.Sprintf("%s_%s", consumer, subject)
 }
 
 func (c *Client) SubscribeWithHandler(ctx context.Context, subject string, handler messageHandler) error {
@@ -129,7 +136,7 @@ func (c *Client) SubscribeWithHandler(ctx context.Context, subject string, handl
 		return err
 	}
 
-	consumerName := c.generateConsumerName(subject)
+	consumerName := generateConsumerName(c.Config.Consumer, subject)
 
 	cons, err := c.createOrUpdateConsumer(ctx, js, subject, consumerName)
 	if err != nil {

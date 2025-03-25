@@ -2,6 +2,7 @@ package pubsub
 
 import (
 	"context"
+	"time"
 
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
@@ -21,10 +22,19 @@ type SubscriptionManager struct {
 }
 
 func NewSubscriptionManager() *SubscriptionManager {
+	ctx := gctx.New()
 	return &SubscriptionManager{
 		subscriptions: make(map[string]SubscribeFunc),
 		group:         errgroup.Group{},
-		client:        nats.New(&nats.Config{}),
+		client: nats.New(&nats.Config{
+			Server: g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
+			Stream: nats.StreamConfig{
+				Stream:   g.Cfg().MustGet(ctx, "nats.streamName").String(),
+				Subjects: g.Cfg().MustGet(ctx, "nats.subjects").Strings(),
+			},
+			MaxWait:  5 * time.Second,
+			Consumer: g.Cfg().MustGet(ctx, "nats.consumerName").String(),
+		}),
 	}
 }
 
@@ -34,6 +44,9 @@ func (s *SubscriptionManager) Stop(ctx context.Context) {
 
 // 运行nats订阅客户端
 func (s *SubscriptionManager) Run(ctx context.Context) error {
+	if err := s.client.Connect(ctx); err != nil {
+		return gerror.Wrapf(err, "run subscription manager fail")
+	}
 	// Start subscribers concurrently using go-routines
 	for topic, handler := range s.Subscriptions() {
 		s.group.Go(func() error {

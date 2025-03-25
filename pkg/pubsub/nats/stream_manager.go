@@ -24,6 +24,7 @@ func newStreamManager(js jetstream.JetStream) *StreamManager {
 // CreateStream creates a new jStream stream.
 func (sm *StreamManager) CreateStream(ctx context.Context, cfg StreamConfig) error {
 	g.Log().Debugf(ctx, "creating stream %s", cfg.Stream)
+	// todo：根据需求需要更详细配置
 	jsCfg := jetstream.StreamConfig{
 		Name:     cfg.Stream,
 		Subjects: cfg.Subjects,
@@ -72,14 +73,9 @@ func (sm *StreamManager) GetStream(ctx context.Context, name string) (jetstream.
 	stream, err := sm.js.Stream(ctx, name)
 	if err != nil {
 		if errors.Is(err, jetstream.ErrStreamNotFound) {
-			g.Log().Debugf(ctx, "stream %s not found", name)
-
-			return nil, err
+			return nil, gerror.Wrapf(err, "stream %s not found", name)
 		}
-
-		g.Log().Errorf(ctx, "failed to get stream %s: %v", name, err)
-
-		return nil, err
+		return nil, gerror.Wrapf(err, "failed to get stream %s", name)
 	}
 
 	return stream, nil

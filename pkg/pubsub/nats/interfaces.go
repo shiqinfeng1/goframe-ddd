@@ -9,7 +9,7 @@ import (
 	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
 )
 
-//go:generate mockgen -destination=mock_client.go -package=nats -source=./interfaces.go Client,Subscription,ConnIntf,ConnectionManagerIntf,SubscriptionManagerIntf,StreamManagerInterface
+//go:generate mockgen -destination=mock_client.go -package=nats -source=./interfaces.go Client,Subscription,ConnIntf,ConnectionManagerIntf,SubscriptionManagerIntf,StreamManagerIntf
 
 // ConnIntf represents the main Client connection.
 type ConnIntf interface {
@@ -59,8 +59,8 @@ type SubscriptionManagerIntf interface {
 	Close()
 }
 
-// StreamManagerInterface represents the main Stream Manager.
-type StreamManagerInterface interface {
+// StreamManagerIntf represents the main Stream Manager.
+type StreamManagerIntf interface {
 	CreateStream(ctx context.Context, cfg StreamConfig) error
 	DeleteStream(ctx context.Context, name string) error
 	CreateOrUpdateStream(ctx context.Context, cfg *jetstream.StreamConfig) (jetstream.Stream, error)
