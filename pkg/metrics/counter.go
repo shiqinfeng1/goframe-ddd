@@ -11,6 +11,8 @@ import (
 )
 
 var (
+	NatsKVStats = "nats_kvstore_stats"
+
 	NatsPublishTotalCount     = "nats_publish_total_count"
 	NatsPublishSuccessCount   = "nats_publish_success_count"
 	NatsSubscribeTotalCount   = "nats_subscribe_total_count"
@@ -49,6 +51,14 @@ var (
 			},
 		),
 	}
+	natsKVStats = meter.MustHistogram(
+		NatsKVStats,
+		gmetric.MetricOption{
+			Help:    "Response time of NATS KV operations in milliseconds.",
+			Unit:    "ms",
+			Buckets: []float64{.05, .075, .1, .125, .15, .2, .3, .5, .75, 1, 2, 3, 4, 5, 7.5, 10},
+		},
+	)
 	provider gmetric.Provider
 )
 
@@ -79,4 +89,16 @@ func IncrementCounter(ctx context.Context, name, label, value string) {
 			},
 		})
 	}
+}
+
+func RecordHistogram(ctx context.Context, t float64, labels ...string) {
+	attrs := []gmetric.Attribute{}
+	if labels != nil {
+		for i := 0; i < len(labels)-1; i += 2 {
+			attrs = append(attrs, gmetric.NewAttribute(labels[i], labels[i+1]))
+		}
+	}
+	natsKVStats.Record(t, gmetric.Option{
+		Attributes: attrs,
+	})
 }
