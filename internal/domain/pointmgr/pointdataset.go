@@ -22,6 +22,7 @@ func (p *PointDataSetMgr) HandleTopic1(ctx context.Context, msg *pubsub.Message)
 	time.Sleep(10 * time.Millisecond)
 	return nil
 }
+
 func (p *PointDataSetMgr) HandleTopic2(ctx context.Context, msg *pubsub.Message) error {
 	time.Sleep(20 * time.Millisecond)
 	return nil

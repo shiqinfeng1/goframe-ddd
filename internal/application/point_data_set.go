@@ -7,10 +7,11 @@ import (
 )
 
 func (h *Application) HandleTopic1(ctx context.Context, msg *pubsub.Message) error {
-	h.pointDataSet.HandleTopic1(ctx, msg)
-	return nil
+	err := h.pointDataSet.HandleTopic1(ctx, msg)
+	return err
 }
+
 func (h *Application) HandleTopic2(ctx context.Context, msg *pubsub.Message) error {
-	h.pointDataSet.HandleTopic2(ctx, msg)
-	return nil
+	err := h.pointDataSet.HandleTopic2(ctx, msg)
+	return err
 }
