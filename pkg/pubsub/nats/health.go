@@ -15,9 +15,9 @@ const (
 )
 
 // Health checks the health of the NATS connection.
-func (c *Client) Health(ctx context.Context) health.Health {
+func (c *Client) Health(ctx context.Context) *health.Health {
 	if c.connManager == nil {
-		return health.Health{
+		return &health.Health{
 			Status: health.StatusDown,
 		}
 	}

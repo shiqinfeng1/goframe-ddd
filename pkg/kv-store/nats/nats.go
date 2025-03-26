@@ -8,31 +8,22 @@ import (
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/metrics"
 )
 
-var (
-	errStatusDown  = errors.New("status down")
-	errKeyNotFound = errors.New("key not found")
-)
+//go:generate mockgen -destination=mock_jetstream.go -package=nats github.com/nats-io/nats.go/jetstream  KeyValue,JetStream,KeyValueEntry
 
 type Configs struct {
 	Server string
 	Bucket string
 }
 
-type jetStream struct {
-	nats.JetStreamContext
-}
-
-func (j jetStream) AccountInfo() (*nats.AccountInfo, error) {
-	return j.JetStreamContext.AccountInfo()
-}
-
 type Client struct {
 	conn    *nats.Conn
-	js      JetStream
-	kv      nats.KeyValue
+	js      jetstream.JetStream
+	kv      jetstream.KeyValue
+	obj     jetstream.ObjectStore
 	configs *Configs
 }
 
@@ -50,39 +41,45 @@ func (c *Client) Connect(ctx context.Context) {
 		g.Log().Errorf(ctx, "error while connecting to NATS: %v", err)
 		return
 	}
-
 	c.conn = nc
 	g.Log().Debug(ctx, "connection to NATS successful")
 
-	js, err := nc.JetStream()
+	js, err := jetstream.New(nc)
 	if err != nil {
 		g.Log().Errorf(ctx, "error while initializing JetStream: %v", err)
 		return
 	}
-
-	c.js = jetStream{js}
-
+	c.js = js
 	g.Log().Debug(ctx, "jetStream initialized successfully")
 
-	kv, err := js.CreateKeyValue(&nats.KeyValueConfig{
+	kv, err := js.CreateKeyValue(ctx, jetstream.KeyValueConfig{
 		Bucket: c.configs.Bucket,
 	})
 	if err != nil {
 		g.Log().Errorf(ctx, "error while creating/accessing KV bucket: %v", err)
 		return
 	}
-
 	c.kv = kv
 	g.Log().Infof(ctx, "successfully connected to NATS-KV Store at %s:%s ", c.configs.Server, c.configs.Bucket)
+
+	obj, err := js.CreateObjectStore(ctx, jetstream.ObjectStoreConfig{
+		Bucket: c.configs.Bucket,
+	})
+	if err != nil {
+		g.Log().Errorf(ctx, "error while creating/accessing object bucket: %v", err)
+		return
+	}
+	c.obj = obj
+	g.Log().Infof(ctx, "successfully connected to NATS-object Store at %s:%s ", c.configs.Server, c.configs.Bucket)
 }
 
 func (c *Client) Get(ctx context.Context, key string) (string, error) {
 	defer c.sendOperationStats(ctx, time.Now(), "GET", "get", key)
 
-	entry, err := c.kv.Get(key)
+	entry, err := c.kv.Get(ctx, key)
 	if err != nil {
 		if errors.Is(err, nats.ErrKeyNotFound) {
-			return "", fmt.Errorf("%w: %s", errKeyNotFound, key)
+			return "", fmt.Errorf("%w: %s", nats.ErrKeyNotFound, key)
 		}
 
 		return "", fmt.Errorf("failed to get key: %w", err)
@@ -94,68 +91,24 @@ func (c *Client) Get(ctx context.Context, key string) (string, error) {
 func (c *Client) Set(ctx context.Context, key, value string) error {
 	defer c.sendOperationStats(ctx, time.Now(), "SET", "set", key, value)
 
-	_, err := c.kv.Put(key, []byte(value))
+	_, err := c.kv.Put(ctx, key, []byte(value))
 	if err != nil {
 		return fmt.Errorf("failed to set key-value pair: %w", err)
 	}
-
 	return nil
 }
 
 func (c *Client) Delete(ctx context.Context, key string) error {
 	defer c.sendOperationStats(ctx, time.Now(), "DELETE", "delete", key)
 
-	err := c.kv.Delete(key)
+	err := c.kv.Delete(ctx, key)
 	if err != nil {
 		if errors.Is(err, nats.ErrKeyNotFound) {
-			return fmt.Errorf("%w: %s", errKeyNotFound, key)
+			return fmt.Errorf("%w: %s", nats.ErrKeyNotFound, key)
 		}
-
 		return fmt.Errorf("failed to delete key: %w", err)
 	}
-
 	return nil
-}
-
-type Health struct {
-	Status  string         `json:"status,omitempty"`
-	Details map[string]any `json:"details,omitempty"`
-}
-
-func (c *Client) HealthCheck(ctx context.Context) (any, error) {
-	start := time.Now()
-
-	h := &Health{
-		Details: make(map[string]any),
-	}
-
-	h.Details["url"] = c.configs.Server
-	h.Details["bucket"] = c.configs.Bucket
-
-	_, err := c.js.AccountInfo()
-	if err != nil {
-		h.Status = "DOWN"
-
-		g.Log().Debug(ctx, &Log{
-			Type:     "HEALTH CHECK",
-			Key:      "health",
-			Value:    fmt.Sprintf("Connection failed for bucket '%s' at '%s'", c.configs.Bucket, c.configs.Server),
-			Duration: time.Since(start).Microseconds(),
-		})
-
-		return h, errStatusDown
-	}
-
-	h.Status = "UP"
-
-	g.Log().Debug(ctx, &Log{
-		Type:     "HEALTH CHECK",
-		Key:      "health",
-		Value:    fmt.Sprintf("Checking connection status for bucket '%s' at '%s'", c.configs.Bucket, c.configs.Server),
-		Duration: time.Since(start).Microseconds(),
-	})
-
-	return h, nil
 }
 
 func (c *Client) sendOperationStats(ctx context.Context, start time.Time, methodType, method string, kv ...string) {

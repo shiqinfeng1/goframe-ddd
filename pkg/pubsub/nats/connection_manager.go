@@ -118,16 +118,16 @@ func (cm *ConnectionManager) validateJetStream(_ context.Context, subject string
 }
 
 // 返回nats客户端和服务端之间连接的健康状态
-func (cm *ConnectionManager) Health() health.Health {
+func (cm *ConnectionManager) Health() *health.Health {
 	if cm.conn == nil {
-		return health.Health{
+		return &health.Health{
 			Status: health.StatusDown,
 		}
 	}
 
 	status := cm.conn.Status()
 	if status == nats.CONNECTED {
-		return health.Health{
+		return &health.Health{
 			Status: health.StatusUp,
 			Details: map[string]any{
 				"server": cm.config.Server,
@@ -135,7 +135,7 @@ func (cm *ConnectionManager) Health() health.Health {
 		}
 	}
 
-	return health.Health{
+	return &health.Health{
 		Status: health.StatusDown,
 		Details: map[string]any{
 			"server": cm.config.Server,

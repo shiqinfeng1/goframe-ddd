@@ -9,7 +9,7 @@ import (
 	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
 )
 
-//go:generate mockgen -destination=mock_client.go -package=nats -source=./interfaces.go Client,Subscription,ConnIntf,ConnectionManagerIntf,SubscriptionManagerIntf,StreamManagerIntf
+//go:generate mockgen -destination=mock_client.go -package=nats -source=./interfaces.go ConnIntf,ConnectionManagerIntf,SubscriptionManagerIntf,StreamManagerIntf
 
 // ConnIntf represents the main Client connection.
 type ConnIntf interface {
@@ -46,7 +46,7 @@ type ConnectionManagerIntf interface {
 	Publish(ctx context.Context, subject string, message []byte) error
 	jetStream() (jetstream.JetStream, error)
 	isConnected() bool
-	Health() health.Health
+	Health() *health.Health
 }
 
 // SubscriptionManagerIntf represents the main Subscription Manager.

@@ -28,7 +28,7 @@ func defineHealthTestCases() []healthTestCase {
 		{
 			name: "HealthyConnection",
 			setupMocks: func(mockConnManager *MockConnectionManagerIntf, mockJS *MockJetStream) {
-				mockConnManager.EXPECT().Health().Return(health.Health{
+				mockConnManager.EXPECT().Health().Return(&health.Health{
 					Status: health.StatusUp,
 					Details: map[string]any{
 						"host":              NATSServer,
@@ -50,7 +50,7 @@ func defineHealthTestCases() []healthTestCase {
 		{
 			name: "DisconnectedStatus",
 			setupMocks: func(mockConnManager *MockConnectionManagerIntf, _ *MockJetStream) {
-				mockConnManager.EXPECT().Health().Return(health.Health{
+				mockConnManager.EXPECT().Health().Return(&health.Health{
 					Status: health.StatusDown,
 					Details: map[string]any{
 						"host":              NATSServer,
@@ -71,7 +71,7 @@ func defineHealthTestCases() []healthTestCase {
 		{
 			name: "JetStreamError",
 			setupMocks: func(mockConnManager *MockConnectionManagerIntf, mockJS *MockJetStream) {
-				mockConnManager.EXPECT().Health().Return(health.Health{
+				mockConnManager.EXPECT().Health().Return(&health.Health{
 					Status: health.StatusUp,
 					Details: map[string]any{
 						"host":              NATSServer,
