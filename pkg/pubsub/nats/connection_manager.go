@@ -54,7 +54,7 @@ func newConnectionManager(
 // Connect establishes a connection to NATS and sets up JetStream.
 // 异步重试连接
 func (cm *ConnectionManager) Connect(ctx context.Context) error {
-	go cm.retryConnect(ctx)
+	cm.retryConnect(ctx)
 	return nil
 }
 

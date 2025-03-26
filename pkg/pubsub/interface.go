@@ -14,8 +14,8 @@ type Client interface {
 	Publisher
 	Subscriber
 	Connect(ctx context.Context) error
-	CreateTopic(ctx context.Context, name string) error
-	DeleteTopic(ctx context.Context, name string) error
+	CreateTopic(ctx context.Context, subjects []string) error
+	DeleteTopic(ctx context.Context, topicName string) error
 
 	Close(ctx context.Context) error
 }

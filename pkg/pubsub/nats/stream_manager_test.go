@@ -33,11 +33,11 @@ func TestStreamManager_CreateStream(t *testing.T) {
 
 	ctx := context.Background()
 	cfg := StreamConfig{
-		Stream:   "test-stream",
+		Name:     "test-stream",
 		Subjects: []string{"test.subject"},
 	}
 
-	mockJS.EXPECT().CreateStream(ctx, gomock.Any()).Return(nil, nil)
+	mockJS.EXPECT().CreateOrUpdateStream(ctx, gomock.Any()).Return(nil, nil)
 
 	err := sm.CreateStream(ctx, cfg)
 	require.NoError(t, err)
@@ -53,12 +53,12 @@ func TestStreamManager_CreateStream_Error(t *testing.T) {
 
 	ctx := context.Background()
 	cfg := StreamConfig{
-		Stream:   "test-stream",
+		Name:     "test-stream",
 		Subjects: []string{"test.subject"},
 	}
 
 	expectedErr := errCreateStream
-	mockJS.EXPECT().CreateStream(ctx, gomock.Any()).Return(nil, expectedErr)
+	mockJS.EXPECT().CreateOrUpdateStream(ctx, gomock.Any()).Return(nil, expectedErr)
 
 	err := sm.CreateStream(ctx, cfg)
 	require.Error(t, err)

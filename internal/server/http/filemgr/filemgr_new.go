@@ -17,6 +17,6 @@ type ControllerV1 struct {
 func NewV1() filemgr.IFilemgrV1 {
 	ctx := gctx.New()
 	return &ControllerV1{
-		app: application.New(ctx),
+		app: application.App(ctx),
 	}
 }

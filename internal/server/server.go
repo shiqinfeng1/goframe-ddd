@@ -51,8 +51,7 @@ func NewGrpcServer() *grpcx.GrpcServer {
 	return s
 }
 
-func NewSubscriptions() *pubsub.SubscriptionManager {
-	subMgr := pubsub.NewSubscriptionManager()
-	subMgr.RegisterSubscription("test.*", nil)
+func NewSubscriptions() *pubsub.ControllerV1 {
+	subMgr := pubsub.NewV1()
 	return subMgr
 }

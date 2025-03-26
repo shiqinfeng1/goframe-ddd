@@ -74,7 +74,6 @@ func (c *Client) Connect(ctx context.Context) error {
 
 	c.streamManager = newStreamManager(js)
 	c.subManager = newSubscriptionManager(batchSize)
-	c.logSuccessfulConnection(ctx)
 
 	return nil
 }
@@ -87,10 +86,6 @@ func (c *Client) validateAndPrepare(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-func (c *Client) logSuccessfulConnection(ctx context.Context) {
-	g.Log().Debugf(ctx, "connected to NATS server '%s'", c.Config.Server)
 }
 
 // Publish publishes a message to a topic.
@@ -136,7 +131,7 @@ func (c *Client) SubscribeWithHandler(ctx context.Context, subject string, handl
 		return err
 	}
 
-	consumerName := generateConsumerName(c.Config.Consumer, subject)
+	consumerName := generateConsumerName(c.Config.ConsumerName, subject)
 
 	cons, err := c.createOrUpdateConsumer(ctx, js, subject, consumerName)
 	if err != nil {
@@ -165,7 +160,7 @@ func (c *Client) cancelExistingSubscription(subject string) {
 func (c *Client) createOrUpdateConsumer(
 	ctx context.Context, js jetstream.JetStream, subject, consumerName string,
 ) (jetstream.Consumer, error) {
-	cons, err := js.CreateOrUpdateConsumer(ctx, c.Config.Stream.Stream, jetstream.ConsumerConfig{
+	cons, err := js.CreateOrUpdateConsumer(ctx, c.Config.Stream.Name, jetstream.ConsumerConfig{
 		Durable:       consumerName,
 		AckPolicy:     jetstream.AckExplicitPolicy,
 		FilterSubject: subject,
@@ -249,10 +244,10 @@ func (c *Client) Close(ctx context.Context) error {
 }
 
 // CreateTopic creates a new topic (stream) in NATS jStream.
-func (c *Client) CreateTopic(ctx context.Context, name string) error {
+func (c *Client) CreateTopic(ctx context.Context, subjs []string) error {
 	return c.streamManager.CreateStream(ctx, StreamConfig{
-		Stream:   name,
-		Subjects: []string{name},
+		Name:     c.Config.Stream.Name,
+		Subjects: subjs,
 	})
 }
 

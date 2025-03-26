@@ -2,6 +2,7 @@ package nats
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -29,9 +30,9 @@ func TestSubscriptionManager_Subscribe(t *testing.T) {
 
 	sm := newSubscriptionManager(1)
 	cfg := &Config{
-		Consumer: "test-consumer",
+		ConsumerName: "test-consumer",
 		Stream: StreamConfig{
-			Stream:     "test-stream",
+			Name:       "test-stream",
 			MaxDeliver: 3,
 		},
 		MaxWait: time.Second,
@@ -42,7 +43,7 @@ func TestSubscriptionManager_Subscribe(t *testing.T) {
 
 	topic := "test.topic"
 
-	mockJS.EXPECT().CreateOrUpdateConsumer(gomock.Any(), cfg.Stream.Stream, gomock.Any()).Return(mockConsumer, nil)
+	mockJS.EXPECT().CreateOrUpdateConsumer(gomock.Any(), cfg.Stream.Name, gomock.Any()).Return(mockConsumer, nil)
 	mockConsumer.EXPECT().Fetch(gomock.Any(), gomock.Any()).Return(createMockMessageBatch(ctrl), nil).AnyTimes()
 
 	msg, err := sm.Subscribe(ctx, topic, mockJS, cfg)
@@ -59,9 +60,9 @@ func TestSubscriptionManager_Subscribe_Error(t *testing.T) {
 
 	sm := newSubscriptionManager(1)
 	cfg := &Config{
-		Consumer: "test-consumer",
+		ConsumerName: "test-consumer",
 		Stream: StreamConfig{
-			Stream: "test-stream",
+			Name: "test-stream",
 		},
 	}
 
@@ -69,18 +70,18 @@ func TestSubscriptionManager_Subscribe_Error(t *testing.T) {
 	topic := "test.topic"
 
 	expectedErr := errConsumerCreationError
-	mockJS.EXPECT().CreateOrUpdateConsumer(gomock.Any(), cfg.Stream.Stream, gomock.Any()).Return(nil, expectedErr)
+	mockJS.EXPECT().CreateOrUpdateConsumer(gomock.Any(), cfg.Stream.Name, gomock.Any()).Return(nil, expectedErr)
 
 	msg, err := sm.Subscribe(ctx, topic, mockJS, cfg)
 	require.Error(t, err)
 	assert.Nil(t, msg)
-	assert.Equal(t, expectedErr, err)
+	assert.Equal(t, expectedErr, errors.Unwrap(err))
 }
 
 func TestSubscriptionManager_validateSubscribePrerequisites(t *testing.T) {
 	sm := newSubscriptionManager(1)
 	mockJS := NewMockJetStream(gomock.NewController(t))
-	cfg := &Config{Consumer: "test-consumer"}
+	cfg := &Config{ConsumerName: "test-consumer"}
 
 	err := sm.validateSubscribePrerequisites(mockJS, cfg)
 	require.NoError(t, err)
@@ -115,9 +116,9 @@ func TestSubscriptionManager_createOrUpdateConsumer(t *testing.T) {
 
 	sm := newSubscriptionManager(1)
 	cfg := &Config{
-		Consumer: "test-consumer",
+		ConsumerName: "test-consumer",
 		Stream: StreamConfig{
-			Stream:     "test-stream",
+			Name:       "test-stream",
 			MaxDeliver: 3,
 		},
 	}
@@ -125,7 +126,7 @@ func TestSubscriptionManager_createOrUpdateConsumer(t *testing.T) {
 	ctx := context.Background()
 	topic := "test.topic"
 
-	mockJS.EXPECT().CreateOrUpdateConsumer(ctx, cfg.Stream.Stream, gomock.Any()).Return(mockConsumer, nil)
+	mockJS.EXPECT().CreateOrUpdateConsumer(ctx, cfg.Stream.Name, gomock.Any()).Return(mockConsumer, nil)
 
 	consumer, err := sm.createOrUpdateConsumer(ctx, mockJS, topic, cfg)
 	require.NoError(t, err)

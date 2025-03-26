@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/shiqinfeng1/goframe-ddd/internal/domain/filemgr"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
 )
 
 // 文件传输服务：文件读写，分块，发送，接收，任务队列
@@ -18,4 +19,8 @@ type FileTransferService interface {
 	GetMaxAndRunning(ctx context.Context) (running int, maxtasks int)
 	GetNotCompletedTasks(ctx context.Context) ([]*filemgr.FileTransferTask, map[string][]*filemgr.SendFile, error)
 	GetCompletedTasks(ctx context.Context) ([]*filemgr.FileTransferTask, map[string][]*filemgr.SendFile, error)
+}
+type PointDataSetService interface {
+	HandleTopic1(ctx context.Context, msg *pubsub.Message) error
+	HandleTopic2(ctx context.Context, msg *pubsub.Message) error
 }

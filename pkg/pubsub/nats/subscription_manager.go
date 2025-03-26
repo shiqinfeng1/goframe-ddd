@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/metrics"
@@ -59,7 +60,7 @@ func (sm *SubscriptionManager) Subscribe(
 		consumer, err := sm.createOrUpdateConsumer(ctx, js, topic, cfg)
 		if err != nil {
 			sm.subMutex.Unlock()
-			return nil, err
+			return nil, gerror.Wrap(err, "get consumer fail")
 		}
 		// 注册订阅者
 		subCtx, cancel := context.WithCancel(ctx)
@@ -87,7 +88,7 @@ func (*SubscriptionManager) validateSubscribePrerequisites(js jetstream.JetStrea
 		return errJetStreamNotConfigured
 	}
 
-	if cfg.Consumer == "" {
+	if cfg.ConsumerName == "" {
 		return errConsumerNotProvided
 	}
 
@@ -112,8 +113,8 @@ func (sm *SubscriptionManager) getOrCreateBuffer(topic string) chan *pubsub.Mess
 func (*SubscriptionManager) createOrUpdateConsumer(
 	ctx context.Context, js jetstream.JetStream, topic string, cfg *Config,
 ) (jetstream.Consumer, error) {
-	consumerName := generateConsumerName(cfg.Consumer, topic)
-	cons, err := js.CreateOrUpdateConsumer(ctx, cfg.Stream.Stream, jetstream.ConsumerConfig{
+	consumerName := generateConsumerName(cfg.ConsumerName, topic)
+	cons, err := js.CreateOrUpdateConsumer(ctx, cfg.Stream.Name, jetstream.ConsumerConfig{
 		Durable:       consumerName,
 		AckPolicy:     jetstream.AckExplicitPolicy,
 		FilterSubject: topic,

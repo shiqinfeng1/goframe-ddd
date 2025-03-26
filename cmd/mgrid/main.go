@@ -41,7 +41,7 @@ func main() {
 		defer wg.Done()
 		g.Log().Infof(subCtx, "start nats subscrib ...")
 		if err := subMgr.Run(subCtx); err != nil {
-			g.Log().Fatal(subCtx, "subscription error : %v", err)
+			g.Log().Fatalf(subCtx, "subscription error : %v", err)
 		}
 		g.Log().Infof(subCtx, "exit nats subscrib ok")
 	}()

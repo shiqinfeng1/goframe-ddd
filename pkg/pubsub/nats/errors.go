@@ -7,6 +7,7 @@ var (
 	errServerNotProvided     = errors.New("client server address not provided")
 	errSubjectsNotProvided   = errors.New("subjects not provided")
 	errConsumerNotProvided   = errors.New("consumer name not provided")
+	errStreamNotProvided     = errors.New("stream name not provided")
 	errConsumerCreationError = errors.New("consumer creation error")
 	// errFailedToDeleteStream    = errors.New("failed to delete stream")
 	// errPublishError            = errors.New("publish error")

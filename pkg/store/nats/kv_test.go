@@ -17,7 +17,7 @@ var (
 	errConnectionFailed = errors.New("connection failed")
 )
 
-func Test_ClientSet(t *testing.T) {
+func Test_ClientSetValue(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -36,11 +36,11 @@ func Test_ClientSet(t *testing.T) {
 		configs: configs,
 	}
 
-	err := cl.Set(context.Background(), "test_key", "test_value")
+	err := cl.SetValue(context.Background(), "test_key", "test_value")
 	require.NoError(t, err)
 }
 
-func Test_ClientSetError(t *testing.T) {
+func Test_ClientSetValueError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -60,12 +60,12 @@ func Test_ClientSetError(t *testing.T) {
 		configs: configs,
 	}
 
-	err := cl.Set(context.Background(), "test_key", "test_value")
+	err := cl.SetValue(context.Background(), "test_key", "test_value")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to set key-value pair")
 }
 
-func Test_ClientGet(t *testing.T) {
+func Test_ClientGetValue(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -87,12 +87,12 @@ func Test_ClientGet(t *testing.T) {
 		configs: configs,
 	}
 
-	val, err := cl.Get(context.Background(), "test_key")
+	val, err := cl.GetValue(context.Background(), "test_key")
 	require.NoError(t, err)
 	assert.Equal(t, "test_value", val)
 }
 
-func Test_ClientGetError(t *testing.T) {
+func Test_ClientGetValueError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -112,13 +112,13 @@ func Test_ClientGetError(t *testing.T) {
 		configs: configs,
 	}
 
-	val, err := cl.Get(t.Context(), "nonexistent_key")
+	val, err := cl.GetValue(t.Context(), "nonexistent_key")
 	require.Error(t, err)
 	assert.Empty(t, val)
 	assert.Contains(t, err.Error(), "key not found")
 }
 
-func Test_ClientDelete(t *testing.T) {
+func Test_ClientDeleteValue(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -138,11 +138,11 @@ func Test_ClientDelete(t *testing.T) {
 		configs: configs,
 	}
 
-	err := cl.Delete(context.Background(), "test_key")
+	err := cl.DeleteValue(context.Background(), "test_key")
 	require.NoError(t, err)
 }
 
-func Test_ClientDeleteError(t *testing.T) {
+func Test_ClientDeleteValueError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -162,7 +162,7 @@ func Test_ClientDeleteError(t *testing.T) {
 		configs: configs,
 	}
 
-	err := cl.Delete(context.Background(), "nonexistent_key")
+	err := cl.DeleteValue(context.Background(), "nonexistent_key")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "key not found")
 }

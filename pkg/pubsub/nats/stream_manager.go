@@ -22,18 +22,18 @@ func newStreamManager(js jetstream.JetStream) *StreamManager {
 }
 
 // CreateStream creates a new jStream stream.
-func (sm *StreamManager) CreateStream(ctx context.Context, cfg StreamConfig) error {
-	g.Log().Debugf(ctx, "creating stream %s", cfg.Stream)
+func (sm *StreamManager) CreateStream(ctx context.Context, sc StreamConfig) error {
+	g.Log().Debugf(ctx, "creating or updating stream %s", sc.Name)
 	// todo：根据需求需要更详细配置
 	jsCfg := jetstream.StreamConfig{
-		Name:     cfg.Stream,
-		Subjects: cfg.Subjects,
-		MaxBytes: cfg.MaxBytes,
+		Name:     sc.Name,
+		Subjects: sc.Subjects,
+		MaxBytes: sc.MaxBytes,
 	}
 
-	_, err := sm.js.CreateStream(ctx, jsCfg)
+	_, err := sm.js.CreateOrUpdateStream(ctx, jsCfg)
 	if err != nil {
-		return gerror.Wrap(err, "failed to create stream")
+		return gerror.Wrapf(err, "failed to create stream")
 	}
 
 	return nil
