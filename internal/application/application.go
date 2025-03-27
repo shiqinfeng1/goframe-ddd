@@ -23,12 +23,15 @@ var once sync.Once
 // New 一个DDD的应用层
 func App(ctx context.Context) *Application {
 	once.Do(func() {
-		// 实例化一个文件管理的数据仓库
-		repoFm := adapters.NewFilemgrRepo(migration.NewEntClient(ctx))
-		stm := stream.NewStream() // 实例化一个文件传输服务
-		maxTasks := g.Cfg().MustGet(ctx, "filemgr.maxTasks").Int()
-		ftSrv := filemgr.NewFileTransferService(maxTasks, stm, repoFm)
-		stm.Startup(ctx, ftSrv.StreamRecvHandler)
+		var ftSrv *filemgr.FileTransferMgr
+		if g.Cfg().MustGet(ctx, "filemgr.enable").Bool() {
+			// 实例化一个文件管理的数据仓库
+			repoFm := adapters.NewFilemgrRepo(migration.NewEntClient(ctx))
+			stm := stream.NewStream() // 实例化一个文件传输服务
+			maxTasks := g.Cfg().MustGet(ctx, "filemgr.maxTasks").Int()
+			ftSrv = filemgr.NewFileTransferService(maxTasks, stm, repoFm)
+			stm.Startup(ctx, ftSrv.StreamRecvHandler)
+		}
 
 		repoPm := adapters.NewPointmgrRepo(migration.NewEntClient(ctx))
 		pdsSrv := pointmgr.NewPointDataSetService(repoPm)
