@@ -1,10 +1,11 @@
 package application
 
 type PubSubBenchmarkInput struct {
-	NumPubs int
-	NumSubs int
-	NumMsgs int
-	MsgSize int
+	NumPubs  int
+	NumSubs  int
+	NumMsgs  int
+	MsgSize  int
+	Subjects []string
 }
 
 type File struct {

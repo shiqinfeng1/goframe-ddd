@@ -8,6 +8,7 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	grpc_filemgr "github.com/shiqinfeng1/goframe-ddd/internal/server/grpc/filemgr"
 	http_filemgr "github.com/shiqinfeng1/goframe-ddd/internal/server/http/filemgr"
+	"github.com/shiqinfeng1/goframe-ddd/internal/server/http/pointdata"
 	"github.com/shiqinfeng1/goframe-ddd/internal/server/pubsub"
 )
 
@@ -36,6 +37,7 @@ func NewHttpServer() *ghttp.Server {
 		group.Middleware(ghttp.MiddlewareHandlerResponse)
 		group.Bind(
 			http_filemgr.NewV1(),
+			pointdata.NewV1(),
 		)
 	})
 	// 设置openapi的api接口返回格式
