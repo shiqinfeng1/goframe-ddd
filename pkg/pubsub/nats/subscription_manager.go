@@ -136,8 +136,8 @@ func (sm *SubscriptionManager) consumeMessages(
 			g.Log().Infof(ctx, "%v ready to consume msg for %v", cfg.ConsumerName, topic)
 			msg, err := msgIter.Next()
 			if err != nil {
-				if !errors.Is(err, jetstream.ErrNoMessages) {
-					g.Log().Warningf(ctx, "consumer %v error fetching messages for topic %s: %v", cfg.ConsumerName, topic, err)
+				if !errors.Is(err, jetstream.ErrNoHeartbeat) {
+					g.Log().Warningf(ctx, "consumer %v fetching messages for topic %s: %v", cfg.ConsumerName, topic, err)
 				} else {
 					g.Log().Errorf(ctx, "consumer %v fetching messages for topic %s fail: %v", cfg.ConsumerName, topic, err)
 				}

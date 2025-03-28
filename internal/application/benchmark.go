@@ -34,7 +34,7 @@ func (h *Application) PubSubBenchmark(ctx context.Context, in *PubSubBenchmarkIn
 	// 先运行订阅者，一个订阅者使用一个连接
 	startwg.Add(in.NumSubs * numTopics)
 	for i := range numTopics {
-		for range in.NumSubs {
+		for j := range in.NumSubs {
 			if in.Typ == "pubsub" {
 				nc, err := nats.Connect(g.Cfg().MustGet(ctx, "nats.serverAddr").String(), opts...)
 				if err != nil {
@@ -52,7 +52,7 @@ func (h *Application) PubSubBenchmark(ctx context.Context, in *PubSubBenchmarkIn
 						Subjects: in.Subjects,
 					},
 					MaxWait:      5 * time.Second,
-					ConsumerName: g.Cfg().MustGet(ctx, "nats.consumerName").String(),
+					ConsumerName: g.Cfg().MustGet(ctx, "nats.consumerName").String() + fmt.Sprintf("_%v", j),
 				})
 				if err := client.Connect(ctx); err != nil {
 					g.Log().Fatalf(ctx, "Can't connect: %v", err)
@@ -61,6 +61,7 @@ func (h *Application) PubSubBenchmark(ctx context.Context, in *PubSubBenchmarkIn
 				if err := client.CreateTopic(ctx); err != nil {
 					g.Log().Fatal(ctx, err)
 				}
+				g.Log().Infof(ctx, "create topic %v with subject %v ok", client.Config.Stream.Name, client.Config.Stream.Subjects)
 				defer client.Close(ctx)
 				go runStreamSubscriber(ctx, client, in.Subjects[i], &startwg, &donewg, in.NumMsgs, in.MsgSize)
 			}
@@ -197,7 +198,7 @@ func runStreamSubscriber(ctx context.Context, client *pkgnats.Client, subj strin
 		if received >= numMsgs {
 			ch <- time.Now()
 		}
-		// g.Log().Debugf(ctx, "fetch msg-subj:%v", msg.Subject())
+		// g.Log().Debugf(ctx, "recv msg-subj:%v", msg.Subject())
 		return nil
 	})
 	conn, err := client.Conn()

@@ -202,7 +202,6 @@ func (c *Client) fetchAndProcessMessages(ctx context.Context, cons jetstream.Con
 
 		return err
 	}
-
 	return c.processFetchedMessages(ctx, msgs, handler, subject)
 }
 
@@ -211,6 +210,9 @@ func (c *Client) processFetchedMessages(ctx context.Context, msgs jetstream.Mess
 	for {
 		msg, err := msgs.Next()
 		if err != nil {
+			if errors.Is(err, nats.ErrNoHeartbeat) {
+				continue
+			}
 			g.Log().Warningf(ctx, "Error processing message subject %v: %v", subject, err)
 			return nil
 		}
