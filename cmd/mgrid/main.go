@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"os"
 	"sync"
 
@@ -17,7 +16,7 @@ func main() {
 	wg := sync.WaitGroup{}
 	httpSrv := server.NewHttpServer()
 	grpcSrv := server.NewGrpcServer()
-	subMgr := server.NewSubscriptions()
+	pubsubMgr := server.NewSubscriptions()
 
 	wg.Add(1)
 	go func() {
@@ -36,14 +35,13 @@ func main() {
 	}()
 
 	wg.Add(1)
-	subCtx, cancel := context.WithCancel(ctx)
 	go func() {
 		defer wg.Done()
-		g.Log().Infof(subCtx, "start nats subscrib ...")
-		if err := subMgr.Run(subCtx); err != nil {
-			g.Log().Fatalf(subCtx, "subscription error : %v", err)
+		g.Log().Infof(ctx, "start nats subscrib ...")
+		if err := pubsubMgr.Run(ctx); err != nil {
+			g.Log().Fatalf(ctx, "subscription error : %v", err)
 		}
-		g.Log().Infof(subCtx, "exit nats subscrib ok")
+		g.Log().Infof(ctx, "exit nats subscrib ok")
 	}()
 
 	// grpc服务需要手动关闭
@@ -51,8 +49,7 @@ func main() {
 	signalHandler := func(sig os.Signal) {
 		g.Log().Infof(ctx, "signal received: %v, gracefully shutting down grpc server", sig.String())
 		grpcSrv.Stop()
-		subMgr.Stop(subCtx)
-		cancel()
+		pubsubMgr.Stop(ctx)
 	}
 	// 监听系统中断信号
 	gproc.AddSigHandlerShutdown(

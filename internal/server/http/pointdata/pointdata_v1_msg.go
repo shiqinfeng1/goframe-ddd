@@ -22,6 +22,7 @@ func (c *ControllerV1) PubSubBenchmark(ctx context.Context, req *v1.PubSubBenchm
 		NumMsgs:  req.NumMsgs,
 		MsgSize:  req.MsgSize,
 		Subjects: req.Subjects,
+		Typ:      req.Typ,
 	}
 	if req.MsgSize == 0 {
 		in.MsgSize = DefaultMessageSize

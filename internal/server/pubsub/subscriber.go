@@ -14,25 +14,25 @@ import (
 )
 
 // 消息处理函数
-type SubscribeFunc func(ctx context.Context, msg *pubsub.Message) error
 
 type ControllerV1 struct {
-	subscriptions map[string]SubscribeFunc
+	subscriptions map[string]pubsub.SubscribeFunc
 	group         errgroup.Group
-	subClient     pubsub.Client
+	natsClient    pubsub.Client
 	app           *application.Application
 }
 
 func NewV1() *ControllerV1 {
 	ctx := gctx.New()
 	c := &ControllerV1{
-		subscriptions: make(map[string]SubscribeFunc),
+		subscriptions: make(map[string]pubsub.SubscribeFunc),
 		group:         errgroup.Group{},
-		subClient: nats.New(&nats.Config{
+		natsClient: nats.New(&nats.Config{
 			Server: g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
 			Stream: nats.StreamConfig{
 				Name:     g.Cfg().MustGet(ctx, "nats.streamName").String(),
 				Subjects: g.Cfg().MustGet(ctx, "nats.subjects").Strings(),
+				MaxBytes: g.Cfg().MustGet(ctx, "nats.maxBytes").Int64() * 1024 * 1024 * 1024, //
 			},
 			MaxWait:      5 * time.Second,
 			ConsumerName: g.Cfg().MustGet(ctx, "nats.consumerName").String(),
@@ -49,7 +49,7 @@ func NewV1() *ControllerV1 {
 }
 
 func (s *ControllerV1) Stop(ctx context.Context) {
-	s.subClient.Close(ctx)
+	s.natsClient.Close(ctx)
 }
 func (s *ControllerV1) Topics() (topics []string) {
 	for topic := range s.Subscriptions() {
@@ -60,94 +60,41 @@ func (s *ControllerV1) Topics() (topics []string) {
 
 // 运行nats订阅客户端
 func (s *ControllerV1) Run(ctx context.Context) error {
-	if err := s.subClient.Connect(ctx); err != nil {
+	if err := s.natsClient.Connect(ctx); err != nil {
 		return gerror.Wrapf(err, "run subscription manager fail")
 	}
 
-	if err := s.subClient.CreateTopic(ctx, s.Topics()); err != nil {
+	if err := s.natsClient.CreateTopic(ctx); err != nil {
 		g.Log().Fatal(ctx, err)
 	}
-	// Start subscribers concurrently using go-routines
+	// 使用协程并发订阅消息主题
 	for topic, handler := range s.Subscriptions() {
 		s.group.Go(func() error {
-			return s.StartSubscriber(ctx, topic, handler)
+			g.Log().Debugf(ctx, "start subscribe topic %v ...", topic)
+			err := s.StartSubscriber(ctx, topic, handler)
+			g.Log().Debugf(ctx, "exit subscribe topic %v %v", topic, err)
+			return err
 		})
 	}
-
+	// 阻塞等待协程退出：订阅连接断开后协程退出
 	return s.group.Wait()
 }
 
+// startSubscriber continuously subscribes to a topic and handles messages using the provided handler.
+func (s *ControllerV1) StartSubscriber(ctx context.Context, topic string, handler pubsub.SubscribeFunc) error {
+	err := s.natsClient.Subscribe(ctx, topic, handler)
+	if err != nil {
+		return gerror.Wrapf(err, "subscribe topic %v fail", topic)
+	}
+	return nil
+}
+
 // 注册topic的处理函数
-func (s *ControllerV1) RegisterSubscription(ctx context.Context, topic string, handler SubscribeFunc) {
+func (s *ControllerV1) RegisterSubscription(ctx context.Context, topic string, handler pubsub.SubscribeFunc) {
 	s.subscriptions[topic] = handler
 }
 
 // 返回所有注册函数
-func (s *ControllerV1) Subscriptions() map[string]SubscribeFunc {
+func (s *ControllerV1) Subscriptions() map[string]pubsub.SubscribeFunc {
 	return s.subscriptions
-}
-
-// startSubscriber continuously subscribes to a topic and handles messages using the provided handler.
-func (s *ControllerV1) StartSubscriber(ctx context.Context, topic string, handler SubscribeFunc) error {
-	for {
-		select {
-		case <-ctx.Done():
-			g.Log().Infof(ctx, "shutting down subscriber for topic %s", topic)
-			return nil
-		default:
-			err := s.handleSubscription(ctx, topic, handler)
-			if err != nil {
-				g.Log().Errorf(ctx, "error in subscription: %v", err)
-			}
-		}
-	}
-}
-
-func (s *ControllerV1) handleSubscription(ctx context.Context, topic string, handler SubscribeFunc) error {
-	msg, err := s.subClient.Subscribe(ctx, topic)
-	if err != nil {
-		return gerror.Wrapf(err, "error while reading from topic %v", topic)
-	}
-
-	if msg == nil {
-		return nil
-	}
-
-	err = func() error {
-		ctx := gctx.New()
-		defer func() {
-			panicRecovery(ctx, recover())
-		}()
-
-		return handler(ctx, msg)
-	}()
-	if err != nil {
-		g.Log().Errorf(ctx, "error in handler for topic '%s': %v", topic, err)
-		return nil
-	}
-
-	if msg.Committer != nil {
-		// commit the message if the subscription function does not return error
-		msg.Commit(ctx)
-	}
-
-	return nil
-}
-
-func panicRecovery(ctx context.Context, re any) {
-	if re == nil {
-		return
-	}
-
-	var e string
-	switch t := re.(type) {
-	case string:
-		e = t
-	case error:
-		e = t.Error()
-	default:
-		e = "Unknown panic type"
-	}
-
-	g.Log().Error(ctx, e)
 }

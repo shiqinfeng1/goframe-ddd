@@ -6,7 +6,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/health"
-	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
+	pubsub "github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
 )
 
 //go:generate mockgen -destination=mock_client.go -package=nats -source=./interfaces.go ConnIntf,ConnectionManagerIntf,SubscriptionManagerIntf,StreamManagerIntf
@@ -15,8 +15,7 @@ import (
 type ConnIntf interface {
 	Status() nats.Status
 	Close()
-	NATSConn() *nats.Conn
-	JetStream() (jetstream.JetStream, error)
+	NewJetStream() (jetstream.JetStream, error)
 }
 
 // Connector represents the main Client connection.
@@ -29,22 +28,12 @@ type JetStreamCreator interface {
 	New(conn ConnIntf) (jetstream.JetStream, error)
 }
 
-// JetStreamClient represents the main Client jStream Client.
-type JetStreamClient interface {
-	Publish(ctx context.Context, subject string, message []byte) error
-	Subscribe(ctx context.Context, subject string, handler messageHandler) error
-	Close(ctx context.Context) error
-	DeleteStream(ctx context.Context, name string) error
-	CreateStream(ctx context.Context, cfg StreamConfig) error
-	CreateOrUpdateStream(ctx context.Context, cfg jetstream.StreamConfig) (jetstream.Stream, error)
-}
-
 // ConnectionManagerIntf represents the main Client connection.
 type ConnectionManagerIntf interface {
 	Connect(ctx context.Context) error
 	Close(ctx context.Context)
 	Publish(ctx context.Context, subject string, message []byte) error
-	jetStream() (jetstream.JetStream, error)
+	getJetStream() (jetstream.JetStream, error)
 	isConnected() bool
 	Health() *health.Health
 }
@@ -55,7 +44,9 @@ type SubscriptionManagerIntf interface {
 		ctx context.Context,
 		topic string,
 		js jetstream.JetStream,
-		cfg *Config) (*pubsub.Message, error)
+		cfg *Config,
+		handler pubsub.SubscribeFunc,
+	) error
 	Close()
 }
 
@@ -63,5 +54,4 @@ type SubscriptionManagerIntf interface {
 type StreamManagerIntf interface {
 	CreateStream(ctx context.Context, cfg StreamConfig) error
 	DeleteStream(ctx context.Context, name string) error
-	CreateOrUpdateStream(ctx context.Context, cfg *jetstream.StreamConfig) (jetstream.Stream, error)
 }

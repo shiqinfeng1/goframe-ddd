@@ -21,7 +21,7 @@ type ConnectionManager struct {
 	jetStreamCreator JetStreamCreator
 }
 
-func (cm *ConnectionManager) jetStream() (jetstream.JetStream, error) {
+func (cm *ConnectionManager) getJetStream() (jetstream.JetStream, error) {
 	if cm.jStream == nil {
 		return nil, errJetStreamNotConfigured
 	}
@@ -57,9 +57,11 @@ func (cm *ConnectionManager) Connect(ctx context.Context) error {
 	cm.retryConnect(ctx)
 	return nil
 }
-
 func (cm *ConnectionManager) retryConnect(ctx context.Context) {
-	opts := []nats.Option{nats.Name("Sieyuan NATS JetStreamClient")}
+	opts := []nats.Option{
+		nats.Name("Sieyuan NATS JetStreamClient"),
+		nats.NoEcho(),
+	}
 
 	for {
 		connIntf, err := cm.natsConnector.Connect(cm.config.Server, opts...)
@@ -68,7 +70,7 @@ func (cm *ConnectionManager) retryConnect(ctx context.Context) {
 			time.Sleep(defaultRetryTimeout) // 等待10s后再连
 			continue
 		}
-		// 连接成功后，创建jetstream实例
+		// 连接成功后，创建jetstream
 		js, err := cm.jetStreamCreator.New(connIntf)
 		if err != nil {
 			connIntf.Close()

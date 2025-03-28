@@ -21,7 +21,6 @@ func (c *natsCommitter) Commit(ctx context.Context) {
 		if err := c.msg.Nak(); err != nil {
 			g.Log().Errorf(ctx, "Error naking message:%v", err)
 		}
-
 		return
 	}
 }

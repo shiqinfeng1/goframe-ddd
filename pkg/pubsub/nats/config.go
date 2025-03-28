@@ -4,8 +4,6 @@ import (
 	"time"
 )
 
-const batchSize = 128
-
 // Config defines the Client configuration.
 type Config struct {
 	Server       string // 服务地址

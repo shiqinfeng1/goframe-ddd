@@ -23,7 +23,7 @@ func (w *natsConnWrapper) NATSConn() *nats.Conn {
 	return w.conn
 }
 
-func (w *natsConnWrapper) JetStream() (jetstream.JetStream, error) {
+func (w *natsConnWrapper) NewJetStream() (jetstream.JetStream, error) {
 	return jetstream.New(w.conn)
 }
 
@@ -34,12 +34,11 @@ func (*defaultConnector) Connect(serverURL string, opts ...nats.Option) (ConnInt
 	if err != nil {
 		return nil, err
 	}
-
 	return &natsConnWrapper{nc}, nil
 }
 
 type defaultJetStreamCreator struct{}
 
 func (*defaultJetStreamCreator) New(conn ConnIntf) (jetstream.JetStream, error) {
-	return conn.JetStream()
+	return conn.NewJetStream()
 }

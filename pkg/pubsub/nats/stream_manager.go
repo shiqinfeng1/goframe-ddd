@@ -23,18 +23,20 @@ func newStreamManager(js jetstream.JetStream) *StreamManager {
 
 // CreateStream creates a new jStream stream.
 func (sm *StreamManager) CreateStream(ctx context.Context, sc StreamConfig) error {
-	g.Log().Debugf(ctx, "creating or updating stream %s", sc.Name)
 	// todo：根据需求需要更详细配置
 	jsCfg := jetstream.StreamConfig{
-		Name:     sc.Name,
-		Subjects: sc.Subjects,
-		MaxBytes: sc.MaxBytes,
+		Name:      sc.Name,
+		Subjects:  sc.Subjects,
+		MaxBytes:  sc.MaxBytes,
+		Storage:   jetstream.FileStorage,    // 默认文件存储
+		Retention: jetstream.InterestPolicy, // 如果有多个消费者订阅了相同的主题，每个消费者都可能接收到相同的消息
 	}
 
 	_, err := sm.js.CreateOrUpdateStream(ctx, jsCfg)
 	if err != nil {
 		return gerror.Wrapf(err, "failed to create stream")
 	}
+	g.Log().Debugf(ctx, "creating or updating stream %s ok", sc.Name)
 
 	return nil
 }
@@ -53,17 +55,6 @@ func (sm *StreamManager) DeleteStream(ctx context.Context, name string) error {
 	}
 	g.Log().Debugf(ctx, "successfully deleted stream %s", name)
 	return nil
-}
-
-// CreateOrUpdateStream creates or updates a jStream stream.
-func (sm *StreamManager) CreateOrUpdateStream(ctx context.Context, cfg *jetstream.StreamConfig) (jetstream.Stream, error) {
-	g.Log().Debugf(ctx, "creating or updating stream %s", cfg.Name)
-
-	stream, err := sm.js.CreateOrUpdateStream(ctx, *cfg)
-	if err != nil {
-		return nil, gerror.Wrap(err, "failed to create or update stream")
-	}
-	return stream, nil
 }
 
 // GetStream gets a jStream stream.

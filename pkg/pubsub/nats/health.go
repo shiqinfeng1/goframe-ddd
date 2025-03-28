@@ -25,7 +25,7 @@ func (c *Client) Health(ctx context.Context) *health.Health {
 	health := c.connManager.Health()
 	health.Details["backend"] = natsBackend
 
-	js, err := c.connManager.jetStream()
+	js, err := c.connManager.getJetStream()
 	if err != nil {
 		health.Details["jetstream_enabled"] = false
 		health.Details["jetstream_status"] = jetStreamStatusError + ": " + err.Error()

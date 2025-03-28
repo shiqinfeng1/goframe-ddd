@@ -9,6 +9,7 @@ type PubSubBenchmarkReq struct {
 	NumMsgs  int      `p:"num_msgs" dc:"发布的消息个数. 默认值:100000"`
 	MsgSize  int      `p:"msg_size" dc:"每个消息的尺寸. 默认值:128"`
 	Subjects []string `p:"subjects" dc:"主题. 可以配置多个. 默认值: benchmark-test"`
+	Typ      string   `p:"typ" v:"required|in:pubsub,jetstream" dc:"测试类型. 默认值: pubsub"`
 }
 type PubSubBenchmarkRes struct {
 	g.Meta `status:"200"`

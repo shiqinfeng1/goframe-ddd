@@ -14,99 +14,38 @@ import (
 )
 
 const (
-	consumeMessageDelay = 100 * time.Millisecond
+	ConsumeMessageDelay = 100 * time.Millisecond
 )
 
 // 订阅器管理
 type SubscriptionManager struct {
 	subscriptions map[string]*subscription
 	subMutex      sync.Mutex
-	topicBuffers  map[string]chan *pubsub.Message
-	bufferMutex   sync.RWMutex
-	bufferSize    int // 存放消息的缓存大小
 }
 
 type subscription struct {
-	cancel context.CancelFunc
+	cancel      context.CancelFunc
+	msgIterStop func()
 }
 
-func newSubscriptionManager(bufferSize int) *SubscriptionManager {
+func newSubscriptionManager() *SubscriptionManager {
 	return &SubscriptionManager{
 		subscriptions: make(map[string]*subscription),
-		topicBuffers:  make(map[string]chan *pubsub.Message),
-		bufferSize:    bufferSize,
 	}
 }
 
-// 订阅指定的topic的消息
-func (sm *SubscriptionManager) Subscribe(
-	ctx context.Context,
-	topic string,
-	js jetstream.JetStream,
-	cfg *Config,
-) (*pubsub.Message, error) {
-
-	metrics.IncrementCounter(ctx, metrics.NatsSubscribeTotalCount, "topic", topic)
-
-	if err := sm.validateSubscribePrerequisites(js, cfg); err != nil {
-		return nil, err
-	}
-
-	sm.subMutex.Lock()
-
-	_, exists := sm.subscriptions[topic]
-	if !exists {
-		// 获取consumer
-		consumer, err := sm.createOrUpdateConsumer(ctx, js, topic, cfg)
-		if err != nil {
-			sm.subMutex.Unlock()
-			return nil, gerror.Wrap(err, "get consumer fail")
-		}
-		// 注册订阅者
-		subCtx, cancel := context.WithCancel(ctx)
-		sm.subscriptions[topic] = &subscription{cancel: cancel}
-		// 获取主题对应的消息队列缓存
-		buffer := sm.getOrCreateBuffer(topic)
-		go sm.consumeMessages(subCtx, consumer, topic, buffer, cfg)
-	}
-
-	sm.subMutex.Unlock()
-
-	buffer := sm.getOrCreateBuffer(topic)
-
-	select {
-	case msg := <-buffer:
-		metrics.IncrementCounter(ctx, metrics.NatsSubscribeSuccessCount, "topic", topic)
-		return msg, nil
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	}
-}
-
-func (*SubscriptionManager) validateSubscribePrerequisites(js jetstream.JetStream, cfg *Config) error {
+func (*SubscriptionManager) validateSubscribePrerequisites(ctx context.Context, js jetstream.JetStream, cfg *Config) error {
 	if js == nil {
 		return errJetStreamNotConfigured
 	}
-
 	if cfg.ConsumerName == "" {
 		return errConsumerNotProvided
 	}
-
-	return nil
-}
-
-func (sm *SubscriptionManager) getOrCreateBuffer(topic string) chan *pubsub.Message {
-	sm.bufferMutex.Lock()
-	defer sm.bufferMutex.Unlock()
-
-	if buffer, exists := sm.topicBuffers[topic]; exists {
-		return buffer
+	_, err := js.Stream(ctx, cfg.Stream.Name)
+	if err != nil {
+		return errGetStream
 	}
-
-	buffer := make(chan *pubsub.Message, sm.bufferSize)
-	sm.topicBuffers[topic] = buffer
-
-	return buffer
+	return nil
 }
 
 // 创建或更新一个消费者
@@ -119,117 +58,134 @@ func (*SubscriptionManager) createOrUpdateConsumer(
 		AckPolicy:     jetstream.AckExplicitPolicy,
 		FilterSubject: topic,
 		MaxDeliver:    cfg.Stream.MaxDeliver,
-		DeliverPolicy: jetstream.DeliverNewPolicy,
+		DeliverPolicy: jetstream.DeliverAllPolicy,
 		AckWait:       30 * time.Second,
 	})
+	if err != nil {
+		return nil, gerror.Wrap(err, "create consumer fail")
+	}
+	g.Log().Infof(ctx, "create or updateing cunsumer <%v> for stream <%v> ok", consumerName, cfg.Stream.Name)
+	return cons, nil
+}
 
-	return cons, err
+// 订阅指定的topic的消息
+func (sm *SubscriptionManager) Subscribe(
+	ctx context.Context,
+	topic string,
+	js jetstream.JetStream,
+	cfg *Config,
+	handler pubsub.SubscribeFunc,
+) error {
+	metrics.IncrementCounter(ctx, metrics.NatsSubscribeTotalCount, "topic", topic)
+
+	if err := sm.validateSubscribePrerequisites(ctx, js, cfg); err != nil {
+		return err
+	}
+
+	sm.subMutex.Lock()
+
+	_, exists := sm.subscriptions[topic]
+	if exists {
+		sm.subMutex.Unlock()
+		return gerror.Newf("consumer %v is already subscribed topic %v", cfg.ConsumerName, topic)
+	}
+	// 获取consumer
+	consumer, err := sm.createOrUpdateConsumer(ctx, js, topic, cfg)
+	if err != nil {
+		sm.subMutex.Unlock()
+		return err
+	}
+	// 获取消息迭代器
+	iter, err := consumer.Messages(jetstream.PullMaxMessages(1))
+	if err != nil {
+		sm.subMutex.Unlock()
+		return gerror.Wrap(err, "get consumer msg iter fail")
+	}
+	// 注册订阅者
+	subCtx, cancel := context.WithCancel(ctx)
+	sm.subscriptions[topic] = &subscription{
+		cancel:      cancel,
+		msgIterStop: iter.Stop,
+	}
+	sm.subMutex.Unlock()
+	// 获取主题对应的消息队列缓存
+	sm.consumeMessages(subCtx, iter, topic, cfg, handler)
+	return nil
+}
+
+func panicRecovery(ctx context.Context, re any) {
+	if re == nil {
+		return
+	}
+	g.Log().Error(ctx, re)
 }
 
 func (sm *SubscriptionManager) consumeMessages(
 	ctx context.Context,
-	cons jetstream.Consumer,
+	msgIter jetstream.MessagesContext,
 	topic string,
-	buffer chan *pubsub.Message,
 	cfg *Config,
+	handler pubsub.SubscribeFunc,
 ) {
-	// TODO: propagate errors to caller
 	for {
 		select {
 		case <-ctx.Done():
+			g.Log().Infof(ctx, "consumer %v subscription cancelled fot topic %v", cfg.ConsumerName, topic)
 			return
 		default:
-			if err := sm.fetchAndProcessMessages(ctx, cons, topic, buffer, cfg); err != nil {
-				g.Log().Errorf(ctx, "Error fetching messages for topic %s: %v", topic, err)
+			g.Log().Infof(ctx, "%v ready to consume msg for %v", cfg.ConsumerName, topic)
+			msg, err := msgIter.Next()
+			if err != nil {
+				if !errors.Is(err, jetstream.ErrNoMessages) {
+					g.Log().Warningf(ctx, "consumer %v error fetching messages for topic %s: %v", cfg.ConsumerName, topic, err)
+				} else {
+					g.Log().Errorf(ctx, "consumer %v fetching messages for topic %s fail: %v", cfg.ConsumerName, topic, err)
+				}
+				time.Sleep(ConsumeMessageDelay)
+				continue
 			}
+			pubsubmsg := sm.createPubSubMessage(msg, topic)
+			err = func() error {
+				defer func() {
+					panicRecovery(ctx, recover())
+				}()
+
+				if err := handler(ctx, pubsubmsg); err != nil {
+					time.Sleep(ConsumeMessageDelay)
+					return err
+				}
+				return nil
+			}()
+			if err != nil {
+				g.Log().Errorf(ctx, "consumer %v error in handler for topic '%s': %v", cfg.ConsumerName, topic, err)
+				continue
+			}
+			// 处理完成
+			if pubsubmsg.Committer != nil {
+				pubsubmsg.Commit(ctx)
+			}
+			continue
 		}
 	}
 }
-
-func (sm *SubscriptionManager) fetchAndProcessMessages(
-	ctx context.Context,
-	cons jetstream.Consumer,
-	topic string,
-	buffer chan *pubsub.Message,
-	cfg *Config,
-) error {
-	msgs, err := cons.Fetch(1, jetstream.FetchMaxWait(cfg.MaxWait))
-	if err != nil {
-		return sm.handleFetchError(ctx, err, topic)
-	}
-	return sm.processFetchedMessages(ctx, msgs, topic, buffer)
-}
-
-func (*SubscriptionManager) handleFetchError(ctx context.Context, err error, topic string) error {
-	if !errors.Is(err, context.DeadlineExceeded) {
-		g.Log().Warningf(ctx, "error fetching messages for topic %s: %v", topic, err)
-	} else {
-		g.Log().Errorf(ctx, "fetching messages for topic %s fail: %v", topic, err)
-	}
-	time.Sleep(consumeMessageDelay)
-	return nil
-}
-
-func (sm *SubscriptionManager) processFetchedMessages(
-	ctx context.Context,
-	msgs jetstream.MessageBatch,
-	topic string,
-	buffer chan *pubsub.Message,
-) error {
-	for msg := range msgs.Messages() {
-		pubsubMsg := sm.createPubSubMessage(msg, topic)
-		if !sm.sendToBuffer(pubsubMsg, buffer) {
-			g.Log().Warningf(ctx, "Message buffer is full for message %s. Consider increasing buffer size or processing messages faster.", pubsubMsg)
-		}
-	}
-	return sm.checkBatchError(ctx, msgs, topic)
-}
-
-func (*SubscriptionManager) createPubSubMessage(msg jetstream.Msg, topic string) *pubsub.Message {
+func (sm *SubscriptionManager) createPubSubMessage(msg jetstream.Msg, topic string) *pubsub.Message {
 	pubsubMsg := pubsub.NewMessage(context.Background()) // Pass a context if needed
 	pubsubMsg.Topic = topic
 	pubsubMsg.Value = msg.Data()
 	pubsubMsg.MetaData = msg.Headers()
 	pubsubMsg.Committer = &natsCommitter{msg: msg}
-
 	return pubsubMsg
-}
-
-// 如果队列满了， 返回false
-func (*SubscriptionManager) sendToBuffer(msg *pubsub.Message, buffer chan *pubsub.Message) bool {
-	select {
-	case buffer <- msg:
-		return true
-	default:
-		return false
-	}
-}
-
-func (*SubscriptionManager) checkBatchError(ctx context.Context, msgs jetstream.MessageBatch, topic string) error {
-	if err := msgs.Error(); err != nil {
-		g.Log().Errorf(ctx, "Error in message batch for topic %s: %v", topic, err)
-		return err
-	}
-
-	return nil
 }
 
 // 变比订阅器管理
 func (sm *SubscriptionManager) Close() {
 	sm.subMutex.Lock()
+	defer sm.subMutex.Unlock()
+
 	for _, sub := range sm.subscriptions {
+		sub.msgIterStop()
 		sub.cancel()
 	}
 
 	sm.subscriptions = make(map[string]*subscription)
-	sm.subMutex.Unlock()
-
-	sm.bufferMutex.Lock()
-	for _, buffer := range sm.topicBuffers {
-		close(buffer)
-	}
-
-	sm.topicBuffers = make(map[string]chan *pubsub.Message)
-
-	sm.bufferMutex.Unlock()
 }

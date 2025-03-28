@@ -118,51 +118,6 @@ func TestStreamManager_DeleteStream_Error(t *testing.T) {
 	assert.Equal(t, expectedErr, errors.Unwrap(err))
 }
 
-func TestStreamManager_CreateOrUpdateStream(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockJS := NewMockJetStream(ctrl)
-
-	sm := newStreamManager(mockJS)
-
-	ctx := context.Background()
-	cfg := &jetstream.StreamConfig{
-		Name:     "test-stream",
-		Subjects: []string{"test.subject"},
-	}
-
-	mockStream := NewMockStream(ctrl)
-	mockJS.EXPECT().CreateOrUpdateStream(ctx, *cfg).Return(mockStream, nil)
-
-	stream, err := sm.CreateOrUpdateStream(ctx, cfg)
-	require.NoError(t, err)
-	assert.Equal(t, mockStream, stream)
-}
-
-func TestStreamManager_CreateOrUpdateStream_Error(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockJS := NewMockJetStream(ctrl)
-
-	sm := newStreamManager(mockJS)
-
-	ctx := context.Background()
-	cfg := &jetstream.StreamConfig{
-		Name:     "test-stream",
-		Subjects: []string{"test.subject"},
-	}
-
-	expectedErr := errCreateOrUpdateStream
-	mockJS.EXPECT().CreateOrUpdateStream(ctx, *cfg).Return(nil, expectedErr)
-
-	stream, err := sm.CreateOrUpdateStream(ctx, cfg)
-	require.Error(t, err)
-	assert.Nil(t, stream)
-	assert.Equal(t, expectedErr, errors.Unwrap(err))
-}
-
 func TestStreamManager_GetStream(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

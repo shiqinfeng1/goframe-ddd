@@ -15,6 +15,7 @@ services:
     networks:
       - mgrid_network
     ports:
+      - "4222:4222" 
       - "31080:31080" 
       - "31081:31081" 
       - "31082:31082" 

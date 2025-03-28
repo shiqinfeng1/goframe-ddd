@@ -146,7 +146,7 @@ func TestConnectionManager_JetStream(t *testing.T) {
 		jStream: mockJS,
 	}
 
-	js, err := cm.jetStream()
+	js, err := cm.getJetStream()
 	require.NoError(t, err)
 	assert.Equal(t, mockJS, js)
 }
@@ -156,7 +156,7 @@ func TestConnectionManager_JetStream_Nil(t *testing.T) {
 		jStream: nil,
 	}
 
-	js, err := cm.jetStream()
+	js, err := cm.getJetStream()
 	require.Error(t, err)
 	assert.Nil(t, js)
 	assert.EqualError(t, err, "jStream is not configured")

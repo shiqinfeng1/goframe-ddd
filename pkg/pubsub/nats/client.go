@@ -8,15 +8,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/health"
-	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
+	pubsub "github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
 )
 
 const defaultRetryTimeout = 10 * time.Second
-
-var errClientNotConnected = errors.New("nats client not connected")
 
 // Client represents a Client for NATS jStream operations.
 type Client struct {
@@ -39,11 +39,22 @@ func New(cfg *Config) *Client {
 	}
 
 	client := &Client{
-		Config:     cfg,
-		subManager: newSubscriptionManager(batchSize),
+		Config:        cfg,
+		subManager:    newSubscriptionManager(),
+		subscriptions: make(map[string]context.CancelFunc),
 	}
 
 	return client
+}
+func (c *Client) Conn() (*nats.Conn, error) {
+	if c.connManager == nil || c.connManager.Health().Status == health.StatusDown {
+		return nil, gerror.New("NATS connection not established")
+	}
+	js, err := c.connManager.getJetStream()
+	if err != nil {
+		return nil, err
+	}
+	return js.Conn(), nil
 }
 
 // Connect establishes a connection to NATS and sets up jStream.
@@ -52,8 +63,6 @@ func (c *Client) Connect(ctx context.Context) error {
 		g.Log().Warning(ctx, "NATS connection already established")
 		return nil
 	}
-
-	g.Log().Debugf(ctx, "connecting to NATS server at %v", c.Config.Server)
 
 	if err := c.validateAndPrepare(ctx); err != nil {
 		return err
@@ -67,13 +76,13 @@ func (c *Client) Connect(ctx context.Context) error {
 
 	c.connManager = connManager
 
-	js, err := c.connManager.jetStream()
+	js, err := c.connManager.getJetStream()
 	if err != nil {
 		return err
 	}
 
 	c.streamManager = newStreamManager(js)
-	c.subManager = newSubscriptionManager(batchSize)
+	c.subManager = newSubscriptionManager()
 
 	return nil
 }
@@ -94,24 +103,23 @@ func (c *Client) Publish(ctx context.Context, subject string, message []byte) er
 }
 
 // Subscribe subscribes to a topic and returns a single message.
-func (c *Client) Subscribe(ctx context.Context, topic string) (*pubsub.Message, error) {
-	for {
-		if !c.connManager.isConnected() {
-			time.Sleep(defaultRetryTimeout)
-			return nil, errClientNotConnected
-		}
-
-		js, err := c.connManager.jetStream()
-		if err == nil {
-			return c.subManager.Subscribe(ctx, topic, js, c.Config)
-		}
-
-		g.Log().Debugf(ctx, "Waiting for NATS connection to be established for topic %s", topic)
-
+func (c *Client) Subscribe(ctx context.Context, topic string, handler pubsub.SubscribeFunc) error {
+	if !c.connManager.isConnected() {
 		time.Sleep(defaultRetryTimeout)
+		return errClientNotConnected
 	}
+
+	js, err := c.connManager.getJetStream()
+	if err != nil {
+		return err
+	}
+	if err := c.subManager.Subscribe(ctx, topic, js, c.Config, handler); err != nil {
+		return err
+	}
+	return nil
 }
 
+// 根据消费主题自动生成一个消费者的名字，带有通配符的主题，需要替换通配符
 func generateConsumerName(consumer, subject string) string {
 	subject = strings.ReplaceAll(subject, ".", "_")
 	subject = strings.ReplaceAll(subject, "*", "token")
@@ -126,7 +134,7 @@ func (c *Client) SubscribeWithHandler(ctx context.Context, subject string, handl
 	// Cancel any existing subscription for this subject
 	c.cancelExistingSubscription(subject)
 
-	js, err := c.connManager.jetStream()
+	js, err := c.connManager.getJetStream()
 	if err != nil {
 		return err
 	}
@@ -157,18 +165,19 @@ func (c *Client) cancelExistingSubscription(subject string) {
 	}
 }
 
+// client 直接创建一个stream的comsumer
 func (c *Client) createOrUpdateConsumer(
 	ctx context.Context, js jetstream.JetStream, subject, consumerName string,
 ) (jetstream.Consumer, error) {
 	cons, err := js.CreateOrUpdateConsumer(ctx, c.Config.Stream.Name, jetstream.ConsumerConfig{
 		Durable:       consumerName,
-		AckPolicy:     jetstream.AckExplicitPolicy,
+		AckPolicy:     jetstream.AckNonePolicy, //AckExplicitPolicy,
 		FilterSubject: subject,
 		MaxDeliver:    c.Config.Stream.MaxDeliver,
 		DeliverPolicy: jetstream.DeliverNewPolicy,
 	})
 	if err != nil {
-		g.Log().Errorf(ctx, "failed to create or update consumer: %v", err)
+		g.Log().Errorf(ctx, "failed to create or update consumer for stream %v: %v", c.Config.Stream.Name, err)
 		return nil, err
 	}
 
@@ -183,8 +192,9 @@ func (c *Client) processMessages(ctx context.Context, cons jetstream.Consumer, s
 	}
 }
 
+// 直接获取消息
 func (c *Client) fetchAndProcessMessages(ctx context.Context, cons jetstream.Consumer, subject string, handler messageHandler) error {
-	msgs, err := cons.Fetch(1, jetstream.FetchMaxWait(c.Config.MaxWait))
+	msgs, err := cons.Messages(jetstream.PullMaxMessages(1))
 	if err != nil {
 		if !errors.Is(err, context.DeadlineExceeded) {
 			g.Log().Errorf(ctx, "Error fetching messages for subject %s: %v", subject, err)
@@ -196,79 +206,60 @@ func (c *Client) fetchAndProcessMessages(ctx context.Context, cons jetstream.Con
 	return c.processFetchedMessages(ctx, msgs, handler, subject)
 }
 
-func (c *Client) processFetchedMessages(ctx context.Context, msgs jetstream.MessageBatch, handler messageHandler, subject string) error {
-	for msg := range msgs.Messages() {
+func (c *Client) processFetchedMessages(ctx context.Context, msgs jetstream.MessagesContext, handler messageHandler, subject string) error {
+	g.Log().Infof(ctx, "ready to consume msg for %v", subject)
+	for {
+		msg, err := msgs.Next()
+		if err != nil {
+			g.Log().Warningf(ctx, "Error processing message subject %v: %v", subject, err)
+			return nil
+		}
 		if err := c.handleMessage(ctx, msg, handler); err != nil {
-			g.Log().Errorf(ctx, "Error processing message: %v", err)
+			return err
 		}
 	}
-
-	if err := msgs.Error(); err != nil {
-		g.Log().Errorf(ctx, "Error in message batch for subject %s: %v", subject, err)
-		return err
-	}
-
-	return nil
 }
 
 func (c *Client) handleMessage(ctx context.Context, msg jetstream.Msg, handler messageHandler) error {
 	err := handler(ctx, msg)
-	if err == nil {
-		if ackErr := msg.Ack(); ackErr != nil {
-			g.Log().Errorf(ctx, "Error sending ACK for message: %v", ackErr)
-			return ackErr
+	if err != nil {
+		g.Log().Errorf(ctx, "Error handling message: %v", err)
+		if nakErr := msg.Nak(); nakErr != nil {
+			g.Log().Debugf(ctx, "Error sending NAK for message: %v", nakErr)
+			return nakErr
 		}
-
-		return nil
+		return err
 	}
 
-	g.Log().Errorf(ctx, "Error handling message: %v", err)
-
-	if nakErr := msg.Nak(); nakErr != nil {
-		g.Log().Debugf(ctx, "Error sending NAK for message: %v", nakErr)
-
-		return nakErr
+	if ackErr := msg.Ack(); ackErr != nil {
+		g.Log().Errorf(ctx, "Error sending ACK for message: %v", ackErr)
+		return ackErr
 	}
-
-	return err
+	return nil
 }
 
 // Close closes the Client.
 func (c *Client) Close(ctx context.Context) error {
-	c.subManager.Close()
+	if c.subManager != nil {
+		c.subManager.Close()
+		c.subManager = nil
+	}
 	if c.connManager != nil {
 		c.connManager.Close(ctx)
+		c.connManager = nil
 	}
-
+	g.Log().Infof(ctx, "nats client close ok")
 	return nil
 }
 
 // CreateTopic creates a new topic (stream) in NATS jStream.
-func (c *Client) CreateTopic(ctx context.Context, subjs []string) error {
-	return c.streamManager.CreateStream(ctx, StreamConfig{
-		Name:     c.Config.Stream.Name,
-		Subjects: subjs,
-	})
+func (c *Client) CreateTopic(ctx context.Context) error {
+	return c.streamManager.CreateStream(ctx, c.Config.Stream)
 }
 
 // DeleteTopic deletes a topic (stream) in NATS jStream.
 func (c *Client) DeleteTopic(ctx context.Context, name string) error {
 	return c.streamManager.DeleteStream(ctx, name)
-}
-
-// CreateStream creates a new stream in NATS jStream.
-func (c *Client) CreateStream(ctx context.Context, cfg StreamConfig) error {
-	return c.streamManager.CreateStream(ctx, cfg)
-}
-
-// DeleteStream deletes a stream in NATS jStream.
-func (c *Client) DeleteStream(ctx context.Context, name string) error {
-	return c.streamManager.DeleteStream(ctx, name)
-}
-
-// CreateOrUpdateStream creates or updates a stream in NATS jStream.
-func (c *Client) CreateOrUpdateStream(ctx context.Context, cfg *jetstream.StreamConfig) (jetstream.Stream, error) {
-	return c.streamManager.CreateOrUpdateStream(ctx, cfg)
 }
 
 // GetJetStreamStatus returns the status of the jStream connection.

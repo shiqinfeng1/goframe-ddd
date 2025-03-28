@@ -10,6 +10,8 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/bench"
+	"github.com/nats-io/nats.go/jetstream"
+	pkgnats "github.com/shiqinfeng1/goframe-ddd/pkg/pubsub/nats"
 )
 
 var benchmark *bench.Benchmark
@@ -33,13 +35,35 @@ func (h *Application) PubSubBenchmark(ctx context.Context, in *PubSubBenchmarkIn
 	startwg.Add(in.NumSubs * numTopics)
 	for i := range numTopics {
 		for range in.NumSubs {
-			nc, err := nats.Connect(g.Cfg().MustGet(ctx, "nats.serverAddr").String(), opts...)
-			if err != nil {
-				g.Log().Fatalf(ctx, "Can't connect: %v", err)
-			}
-			defer nc.Close()
+			if in.Typ == "pubsub" {
+				nc, err := nats.Connect(g.Cfg().MustGet(ctx, "nats.serverAddr").String(), opts...)
+				if err != nil {
+					g.Log().Fatalf(ctx, "Can't connect: %v", err)
+				}
+				defer nc.Close()
 
-			go runSubscriber(nc, in.Subjects[i], &startwg, &donewg, in.NumMsgs, in.MsgSize)
+				go runSubscriber(nc, in.Subjects[i], &startwg, &donewg, in.NumMsgs, in.MsgSize)
+			}
+			if in.Typ == "jetstream" {
+				client := pkgnats.New(&pkgnats.Config{
+					Server: g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
+					Stream: pkgnats.StreamConfig{
+						Name:     g.Cfg().MustGet(ctx, "nats.streamName").String(),
+						Subjects: in.Subjects,
+					},
+					MaxWait:      5 * time.Second,
+					ConsumerName: g.Cfg().MustGet(ctx, "nats.consumerName").String(),
+				})
+				if err := client.Connect(ctx); err != nil {
+					g.Log().Fatalf(ctx, "Can't connect: %v", err)
+				}
+
+				if err := client.CreateTopic(ctx); err != nil {
+					g.Log().Fatal(ctx, err)
+				}
+				defer client.Close(ctx)
+				go runStreamSubscriber(ctx, client, in.Subjects[i], &startwg, &donewg, in.NumMsgs, in.MsgSize)
+			}
 		}
 	}
 
@@ -50,13 +74,35 @@ func (h *Application) PubSubBenchmark(ctx context.Context, in *PubSubBenchmarkIn
 	pubCounts := bench.MsgsPerClient(in.NumMsgs, in.NumPubs)
 	for j := range numTopics {
 		for i := range in.NumPubs {
-			nc, err := nats.Connect(g.Cfg().MustGet(ctx, "nats.serverAddr").String(), opts...)
-			if err != nil {
-				g.Log().Fatalf(ctx, "Can't connect: %v\n", err)
-			}
-			defer nc.Close()
+			if in.Typ == "pubsub" {
+				nc, err := nats.Connect(g.Cfg().MustGet(ctx, "nats.serverAddr").String(), opts...)
+				if err != nil {
+					g.Log().Fatalf(ctx, "Can't connect: %v\n", err)
+				}
+				defer nc.Close()
 
-			go runPublisher(nc, in.Subjects[j], &startwg, &donewg, pubCounts[i], in.MsgSize)
+				go runPublisher(nc, in.Subjects[j], &startwg, &donewg, pubCounts[i], in.MsgSize)
+			}
+			if in.Typ == "jetstream" {
+				client := pkgnats.New(&pkgnats.Config{
+					Server: g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
+					Stream: pkgnats.StreamConfig{
+						Name:     g.Cfg().MustGet(ctx, "nats.streamName").String(),
+						Subjects: in.Subjects,
+					},
+					MaxWait:      5 * time.Second,
+					ConsumerName: g.Cfg().MustGet(ctx, "nats.consumerName").String(),
+				})
+				defer client.Close(ctx)
+				if err := client.Connect(ctx); err != nil {
+					g.Log().Fatalf(ctx, "Can't connect: %v", err)
+				}
+
+				if err := client.CreateTopic(ctx); err != nil {
+					g.Log().Fatal(ctx, err)
+				}
+				go runStreamPublisher(ctx, client, in.Subjects[j], &startwg, &donewg, pubCounts[i], in.MsgSize)
+			}
 		}
 	}
 
@@ -70,7 +116,7 @@ func (h *Application) PubSubBenchmark(ctx context.Context, in *PubSubBenchmarkIn
 	g.Log().Infof(ctx, "\n-----------%v\n-----------", benchmark.Report())
 
 	csv := benchmark.CSV()
-	csvFile := fmt.Sprintf("pubsub_topics%v_pubs%v_subs%v_msgs%v_size%v_%v.csv", numTopics, in.NumPubs, in.NumSubs, in.NumMsgs, in.MsgSize, time.Now().Format("20060102_150405"))
+	csvFile := fmt.Sprintf("%v_topics%v_pubs%v_subs%v_msgs%v_size%v_%v.csv", in.Typ, numTopics, in.NumPubs, in.NumSubs, in.NumMsgs, in.MsgSize, time.Now().Format("20060102_150405"))
 	os.WriteFile(csvFile, []byte(csv), 0o644)
 	g.Log().Infof(ctx, "Saved metric data in csv file %s", csvFile)
 
@@ -95,9 +141,30 @@ func runPublisher(nc *nats.Conn, subj string, startwg, donewg *sync.WaitGroup, n
 
 	donewg.Done()
 }
+func runStreamPublisher(ctx context.Context, client *pkgnats.Client, subj string, startwg, donewg *sync.WaitGroup, numMsgs int, msgSize int) {
+	startwg.Done()
 
+	var msg []byte
+	if msgSize > 0 {
+		msg = make([]byte, msgSize)
+	}
+
+	start := time.Now()
+
+	for range numMsgs {
+		client.Publish(ctx, subj, msg)
+		// g.Log().Debugf(ctx, "pub msg-subj:%v", subj)
+	}
+	conn, err := client.Conn()
+	if err != nil {
+		g.Log().Fatal(ctx, err)
+	}
+	conn.Flush()
+	benchmark.AddPubSample(bench.NewSample(numMsgs, msgSize, start, time.Now(), conn))
+
+	donewg.Done()
+}
 func runSubscriber(nc *nats.Conn, subj string, startwg, donewg *sync.WaitGroup, numMsgs int, msgSize int) {
-
 	received := 0
 	ch := make(chan time.Time, 2)
 	sub, _ := nc.Subscribe(subj, func(msg *nats.Msg) {
@@ -116,6 +183,31 @@ func runSubscriber(nc *nats.Conn, subj string, startwg, donewg *sync.WaitGroup, 
 	start := <-ch
 	end := <-ch
 	benchmark.AddSubSample(bench.NewSample(numMsgs, msgSize, start, end, nc))
-	nc.Close()
+	donewg.Done()
+}
+
+func runStreamSubscriber(ctx context.Context, client *pkgnats.Client, subj string, startwg, donewg *sync.WaitGroup, numMsgs int, msgSize int) {
+	received := 0
+	ch := make(chan time.Time, 2)
+	client.SubscribeWithHandler(ctx, subj, func(ctx context.Context, msg jetstream.Msg) error {
+		received++
+		if received == 1 {
+			ch <- time.Now()
+		}
+		if received >= numMsgs {
+			ch <- time.Now()
+		}
+		// g.Log().Debugf(ctx, "fetch msg-subj:%v", msg.Subject())
+		return nil
+	})
+	conn, err := client.Conn()
+	if err != nil {
+		g.Log().Fatal(ctx, err)
+	}
+	conn.Flush()
+	startwg.Done()
+	start := <-ch
+	end := <-ch
+	benchmark.AddSubSample(bench.NewSample(numMsgs, msgSize, start, end, conn))
 	donewg.Done()
 }

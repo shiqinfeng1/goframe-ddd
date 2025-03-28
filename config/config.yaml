@@ -134,4 +134,5 @@ nats:
   serverAddr: "nats://localhost:4222"
   consumerName: "consumer-goMgrid"
   streamName: "stream-mgrid"
+  maxBytes: 2  # 单位 GB
   subjects: ["test.subj1.*","test.subj2.>"]

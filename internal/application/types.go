@@ -6,6 +6,7 @@ type PubSubBenchmarkInput struct {
 	NumMsgs  int
 	MsgSize  int
 	Subjects []string
+	Typ      string
 }
 
 type File struct {
