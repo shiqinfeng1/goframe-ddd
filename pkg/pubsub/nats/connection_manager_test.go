@@ -47,11 +47,10 @@ func TestConnectionManager_Connect(t *testing.T) {
 	// We don't need to expect NATSConn() call anymore, as we're passing mockConn directly to New()
 	mockJSCreator.EXPECT().New(mockConn).Return(mockJS, nil)
 
-	err := cm.Connect(t.Context())
+	cm.Connect(t.Context())
 
 	time.Sleep(100 * time.Millisecond)
 
-	require.NoError(t, err)
 	assert.Equal(t, mockConn, cm.conn)
 	assert.Equal(t, mockJS, cm.jStream)
 }
@@ -240,7 +239,7 @@ func TestConnectionManager_RetryConnect_Success(t *testing.T) {
 
 	mockJSCreator.EXPECT().New(mockConn).Return(mockJS, nil)
 
-	cm.retryConnect(t.Context())
+	cm.Connect(t.Context())
 	time.Sleep(100 * time.Millisecond) // Wait for goroutine to execute.
 
 	assert.Equal(t, mockConn, cm.conn)
@@ -262,7 +261,7 @@ func TestConnectionManager_RetryConnect_ConnectionFailure(t *testing.T) {
 	mockNATSConnector.EXPECT().Connect(gomock.Any(), gomock.Any()).
 		Return(nil, errConnectionError).AnyTimes()
 
-	go cm.retryConnect(t.Context())
+	go cm.Connect(t.Context())
 	time.Sleep(500 * time.Millisecond) // Wait for goroutine to execute
 
 	assert.Nil(t, cm.conn)
@@ -290,7 +289,7 @@ func TestConnectionManager_RetryConnect_JetStreamCreationFailure(t *testing.T) {
 	mockJSCreator.EXPECT().New(mockConn).
 		Return(nil, errJetStreamNotConfigured).AnyTimes()
 
-	go cm.retryConnect(t.Context())
+	go cm.Connect(t.Context())
 	time.Sleep(500 * time.Millisecond)
 
 	assert.Nil(t, cm.conn)

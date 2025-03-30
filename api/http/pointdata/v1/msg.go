@@ -1,9 +1,12 @@
 package v1
 
-import "github.com/gogf/gf/v2/frame/g"
+import (
+	"github.com/gogf/gf/v2/frame/g"
+	"github.com/shiqinfeng1/goframe-ddd/internal/application"
+)
 
 type PubSubBenchmarkReq struct {
-	g.Meta   `path:"/pubsub/benchmark" tags:"消息队列测试" method:"post" summary:"消息发布基准测试"`
+	g.Meta   `path:"/pubsub/benchmark" tags:"消息队列管理" method:"post" summary:"消息发布订阅基准测试"`
 	NumPubs  int      `p:"num_pubs" dc:"并发的发布者数量. 默认值:1"`
 	NumSubs  int      `p:"num_subs" dc:"并发的订阅者数量. 默认值:1"`
 	NumMsgs  int      `p:"num_msgs" dc:"发布的消息个数. 默认值:100000"`
@@ -13,4 +16,13 @@ type PubSubBenchmarkReq struct {
 }
 type PubSubBenchmarkRes struct {
 	g.Meta `status:"200"`
+}
+
+type GetStreamInfoReq struct {
+	g.Meta `path:"/pubsub/streamInfo" tags:"消息队列管理" method:"post" summary:"查询消息流信息和状态"`
+}
+type GetStreamInfoRes struct {
+	g.Meta        `status:"200"`
+	StreamInfo    *application.StreamInfo     `json:"stream_info" dc:"流信息"`
+	ConsumerInfos []*application.ConsumerInfo `json:"consumer_infos" dc:"流对应的消费者信息"`
 }

@@ -69,10 +69,7 @@ func (c *Client) Connect(ctx context.Context) error {
 	}
 
 	connManager := newConnectionManager(c.Config, c.natsConnector, c.jetStreamCreator)
-	if err := connManager.Connect(ctx); err != nil {
-		g.Log().Errorf(ctx, "failed to connect to NATS server at %v: %v", c.Config.Server, err)
-		return err
-	}
+	connManager.Connect(ctx)
 
 	c.connManager = connManager
 
@@ -171,7 +168,7 @@ func (c *Client) createOrUpdateConsumer(
 ) (jetstream.Consumer, error) {
 	cons, err := js.CreateOrUpdateConsumer(ctx, c.Config.Stream.Name, jetstream.ConsumerConfig{
 		Durable:       consumerName,
-		AckPolicy:     jetstream.AckNonePolicy, //AckExplicitPolicy,
+		AckPolicy:     jetstream.AckExplicitPolicy, //AckExplicitPolicy,
 		FilterSubject: subject,
 		MaxDeliver:    c.Config.Stream.MaxDeliver,
 		DeliverPolicy: jetstream.DeliverNewPolicy,
@@ -184,22 +181,12 @@ func (c *Client) createOrUpdateConsumer(
 	return cons, nil
 }
 
-func (c *Client) processMessages(ctx context.Context, cons jetstream.Consumer, subject string, handler messageHandler) {
-	for ctx.Err() == nil {
-		if err := c.fetchAndProcessMessages(ctx, cons, subject, handler); err != nil {
-			g.Log().Errorf(ctx, "Error in message processing loop for subject %s: %v", subject, err)
-		}
-	}
-}
-
-// 直接获取消息
-func (c *Client) fetchAndProcessMessages(ctx context.Context, cons jetstream.Consumer, subject string, handler messageHandler) error {
+func (c *Client) processMessages(ctx context.Context, cons jetstream.Consumer, subject string, handler messageHandler) error {
 	msgs, err := cons.Messages(jetstream.PullMaxMessages(1))
 	if err != nil {
 		if !errors.Is(err, context.DeadlineExceeded) {
 			g.Log().Errorf(ctx, "Error fetching messages for subject %s: %v", subject, err)
 		}
-
 		return err
 	}
 	return c.processFetchedMessages(ctx, msgs, handler, subject)

@@ -30,7 +30,7 @@ type JetStreamCreator interface {
 
 // ConnectionManagerIntf represents the main Client connection.
 type ConnectionManagerIntf interface {
-	Connect(ctx context.Context) error
+	Connect(ctx context.Context)
 	Close(ctx context.Context)
 	Publish(ctx context.Context, subject string, message []byte) error
 	getJetStream() (jetstream.JetStream, error)

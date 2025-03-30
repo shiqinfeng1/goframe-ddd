@@ -53,11 +53,7 @@ func newConnectionManager(
 
 // Connect establishes a connection to NATS and sets up JetStream.
 // 异步重试连接
-func (cm *ConnectionManager) Connect(ctx context.Context) error {
-	cm.retryConnect(ctx)
-	return nil
-}
-func (cm *ConnectionManager) retryConnect(ctx context.Context) {
+func (cm *ConnectionManager) Connect(ctx context.Context) {
 	opts := []nats.Option{
 		nats.Name("Sieyuan NATS JetStreamClient"),
 		nats.NoEcho(),

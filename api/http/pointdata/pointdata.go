@@ -12,4 +12,5 @@ import (
 
 type IPointdataV1 interface {
 	PubSubBenchmark(ctx context.Context, req *v1.PubSubBenchmarkReq) (res *v1.PubSubBenchmarkRes, err error)
+	GetStreamInfo(ctx context.Context, req *v1.GetStreamInfoReq) (res *v1.GetStreamInfoRes, err error)
 }

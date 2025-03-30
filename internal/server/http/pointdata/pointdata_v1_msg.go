@@ -42,3 +42,36 @@ func (c *ControllerV1) PubSubBenchmark(ctx context.Context, req *v1.PubSubBenchm
 	err = c.app.PubSubBenchmark(ctx, in)
 	return
 }
+func (c *ControllerV1) GetStreamInfo(ctx context.Context, req *v1.GetStreamInfoReq) (res *v1.GetStreamInfoRes, err error) {
+	in := &application.PubSubStreamInfoInput{}
+	streams, err := c.app.PubSubStreamInfo(ctx, in)
+	if err != nil {
+		return &v1.GetStreamInfoRes{}, err
+	}
+	si := &application.StreamInfo{
+		Subjects:  streams.StreamInfo.Config.Subjects,
+		Retention: streams.StreamInfo.Config.Retention.String(),
+		State:     streams.StreamInfo.State,
+	}
+	var cis []*application.ConsumerInfo
+	for _, ci := range streams.ConsumerInfos {
+		cis = append(cis, &application.ConsumerInfo{
+			Name:           ci.Name,
+			Durable:        ci.Config.Durable,
+			Description:    ci.Config.Description,
+			DeliverPolicy:  ci.Config.DeliverPolicy.String(),
+			AckPolicy:      ci.Config.AckPolicy.String(),
+			FilterSubject:  ci.Config.FilterSubject,
+			FilterSubjects: ci.Config.FilterSubjects,
+			NumAckPending:  ci.NumAckPending,
+			NumRedelivered: ci.NumRedelivered,
+			NumWaiting:     ci.NumWaiting,
+			NumPending:     ci.NumPending,
+		})
+	}
+	res = &v1.GetStreamInfoRes{
+		StreamInfo:    si,
+		ConsumerInfos: cis,
+	}
+	return res, nil
+}

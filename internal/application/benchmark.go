@@ -7,12 +7,50 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/bench"
 	"github.com/nats-io/nats.go/jetstream"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/errors"
 	pkgnats "github.com/shiqinfeng1/goframe-ddd/pkg/pubsub/nats"
 )
+
+func (h *Application) PubSubStreamInfo(ctx context.Context, in *PubSubStreamInfoInput) (*PubSubStreamInfoOutput, error) {
+
+	// 连接到 NATS 服务器
+	opts := []nats.Option{nats.Name("NATS query")}
+	nc, err := nats.Connect(g.Cfg().MustGet(ctx, "nats.serverAddr").String(), opts...)
+	if err != nil {
+		return nil, errors.ErrNatsConnectFail(err.Error())
+	}
+	defer nc.Close()
+
+	// 创建 JetStream 上下文
+	js, err := jetstream.New(nc)
+	if err != nil {
+		return nil, errors.ErrNatsStreamFail(err.Error())
+	}
+
+	// 获取 Stream 信息
+	streamName := g.Cfg().MustGet(ctx, "nats.streamName").String()
+	stream, err := js.Stream(ctx, streamName)
+	if err != nil {
+		return nil, errors.ErrNatsStreamFail(err.Error())
+	}
+	si, err := stream.Info(ctx)
+	if err != nil {
+		return nil, errors.ErrNatsStreamFail(err.Error())
+	}
+	var cis []*jetstream.ConsumerInfo
+	for consumer := range stream.ListConsumers(ctx).Info() {
+		cis = append(cis, consumer)
+	}
+	return &PubSubStreamInfoOutput{
+		StreamInfo:    si,
+		ConsumerInfos: cis,
+	}, nil
+}
 
 var benchmark *bench.Benchmark
 
@@ -38,7 +76,7 @@ func (h *Application) PubSubBenchmark(ctx context.Context, in *PubSubBenchmarkIn
 			if in.Typ == "pubsub" {
 				nc, err := nats.Connect(g.Cfg().MustGet(ctx, "nats.serverAddr").String(), opts...)
 				if err != nil {
-					g.Log().Fatalf(ctx, "Can't connect: %v", err)
+					return gerror.Wrap(err, "nats connect fail")
 				}
 				defer nc.Close()
 
@@ -55,11 +93,11 @@ func (h *Application) PubSubBenchmark(ctx context.Context, in *PubSubBenchmarkIn
 					ConsumerName: g.Cfg().MustGet(ctx, "nats.consumerName").String() + fmt.Sprintf("_%v", j),
 				})
 				if err := client.Connect(ctx); err != nil {
-					g.Log().Fatalf(ctx, "Can't connect: %v", err)
+					return gerror.Wrap(err, "nats connect fail")
 				}
 
 				if err := client.CreateTopic(ctx); err != nil {
-					g.Log().Fatal(ctx, err)
+					return gerror.Wrap(err, "nats create topic fail")
 				}
 				g.Log().Infof(ctx, "create topic %v with subject %v ok", client.Config.Stream.Name, client.Config.Stream.Subjects)
 				defer client.Close(ctx)
@@ -78,7 +116,7 @@ func (h *Application) PubSubBenchmark(ctx context.Context, in *PubSubBenchmarkIn
 			if in.Typ == "pubsub" {
 				nc, err := nats.Connect(g.Cfg().MustGet(ctx, "nats.serverAddr").String(), opts...)
 				if err != nil {
-					g.Log().Fatalf(ctx, "Can't connect: %v\n", err)
+					return gerror.Wrap(err, "nats connect fail")
 				}
 				defer nc.Close()
 
@@ -96,11 +134,11 @@ func (h *Application) PubSubBenchmark(ctx context.Context, in *PubSubBenchmarkIn
 				})
 				defer client.Close(ctx)
 				if err := client.Connect(ctx); err != nil {
-					g.Log().Fatalf(ctx, "Can't connect: %v", err)
+					return gerror.Wrap(err, "nats connect fail")
 				}
 
 				if err := client.CreateTopic(ctx); err != nil {
-					g.Log().Fatal(ctx, err)
+					return gerror.Wrap(err, "nats create topic fail")
 				}
 				go runStreamPublisher(ctx, client, in.Subjects[j], &startwg, &donewg, pubCounts[i], in.MsgSize)
 			}

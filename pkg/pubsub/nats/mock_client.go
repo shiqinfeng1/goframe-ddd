@@ -205,11 +205,9 @@ func (mr *MockConnectionManagerIntfMockRecorder) Close(ctx any) *gomock.Call {
 }
 
 // Connect mocks base method.
-func (m *MockConnectionManagerIntf) Connect(ctx context.Context) error {
+func (m *MockConnectionManagerIntf) Connect(ctx context.Context) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Connect", ctx)
-	ret0, _ := ret[0].(error)
-	return ret0
+	m.ctrl.Call(m, "Connect", ctx)
 }
 
 // Connect indicates an expected call of Connect.

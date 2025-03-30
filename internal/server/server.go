@@ -13,9 +13,10 @@ import (
 )
 
 func NewHttpServer() *ghttp.Server {
+	ctx := gctx.New()
 	// 启动http服务
 	s := g.Server()
-	if g.Cfg().MustGet(gctx.New(), "pprof").Bool() {
+	if g.Cfg().MustGet(ctx, "pprof").Bool() {
 		s.EnablePProf()
 	}
 	// 设置cors
@@ -35,9 +36,14 @@ func NewHttpServer() *ghttp.Server {
 	// 业务api接口注册
 	s.Group("/mgrid", func(group *ghttp.RouterGroup) {
 		group.Middleware(ghttp.MiddlewareHandlerResponse)
-		group.Bind(
-			http_filemgr.NewV1(),
+		handle := []any{
 			pointdata.NewV1(),
+		}
+		if g.Cfg().MustGet(ctx, "filemgr.enable").Bool() {
+			handle = append(handle, http_filemgr.NewV1())
+		}
+		group.Bind(
+			handle...,
 		)
 	})
 	// 设置openapi的api接口返回格式
