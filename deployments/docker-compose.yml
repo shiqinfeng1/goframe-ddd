@@ -16,6 +16,7 @@ services:
       - mgrid_network
     ports:
       - "4222:4222" 
+      - "8222:8222" 
       - "31080:31080" 
       - "31081:31081" 
       - "31082:31082" 
@@ -46,7 +47,14 @@ services:
       nofile:
         soft: 100000   #进程默认可以打开的最大文件描述符数量
         hard: 200000   #进程可以通过系统调用临时提高软限制，但不能超过硬限制
-
+  nats-box:
+    image: natsio/nats-box:latest
+    container_name: nats-box
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    networks:
+      - mgrid_network
 # 定义自定义网络
 networks:
   mgrid_network:
