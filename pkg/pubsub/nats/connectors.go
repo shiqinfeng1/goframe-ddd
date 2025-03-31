@@ -19,7 +19,7 @@ func (w *natsConnWrapper) Close() {
 	w.conn.Close()
 }
 
-func (w *natsConnWrapper) NATSConn() *nats.Conn {
+func (w *natsConnWrapper) Conn() *nats.Conn {
 	return w.conn
 }
 

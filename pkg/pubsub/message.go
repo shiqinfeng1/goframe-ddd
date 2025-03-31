@@ -1,7 +1,6 @@
 package pubsub
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/gogf/gf/v2/util/gconv"
@@ -15,7 +14,7 @@ type Message struct {
 	Committer
 }
 
-func NewMessage(ctx context.Context) *Message {
+func NewMessage() *Message {
 	return &Message{}
 }
 

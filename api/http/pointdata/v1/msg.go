@@ -19,10 +19,18 @@ type PubSubBenchmarkRes struct {
 }
 
 type GetStreamInfoReq struct {
-	g.Meta `path:"/pubsub/streamInfo" tags:"消息队列管理" method:"post" summary:"查询消息流信息和状态"`
+	g.Meta `path:"/pubsub/stream/getInfo" tags:"消息队列管理" method:"post" summary:"查询消息流信息和状态"`
 }
 type GetStreamInfoRes struct {
 	g.Meta        `status:"200"`
 	StreamInfo    *application.StreamInfo     `json:"stream_info" dc:"流信息"`
 	ConsumerInfos []*application.ConsumerInfo `json:"consumer_infos" dc:"流对应的消费者信息"`
+}
+
+type DeleteStreamReq struct {
+	g.Meta     `path:"/pubsub/stream/delete" tags:"消息队列管理" method:"post" summary:"删除消息流"`
+	StreamName string `p:"stream_name" dc:"消息流名称"`
+}
+type DeleteStreamRes struct {
+	g.Meta `status:"200"`
 }

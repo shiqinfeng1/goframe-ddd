@@ -29,11 +29,11 @@ func NewV1() *ControllerV1 {
 		group:         errgroup.Group{},
 		natsClient: nats.New(&nats.Config{
 			Server: g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
-			Stream: nats.StreamConfig{
-				Name:     g.Cfg().MustGet(ctx, "nats.streamName").String(),
-				Subjects: g.Cfg().MustGet(ctx, "nats.subjects").Strings(),
-				MaxBytes: g.Cfg().MustGet(ctx, "nats.maxBytes").Int64() * 1024 * 1024 * 1024, //
-			},
+			// Stream: nats.StreamConfig{
+			// 	Name:     g.Cfg().MustGet(ctx, "nats.streamName").String(),
+			// 	Subjects: g.Cfg().MustGet(ctx, "nats.subjects").Strings(),
+			// 	MaxBytes: g.Cfg().MustGet(ctx, "nats.maxBytes").Int64() * 1024 * 1024 * 1024, //
+			// },
 			MaxWait:      5 * time.Second,
 			ConsumerName: g.Cfg().MustGet(ctx, "nats.consumerName").String(),
 		}),
@@ -64,9 +64,6 @@ func (s *ControllerV1) Run(ctx context.Context) error {
 		return gerror.Wrapf(err, "run subscription manager fail")
 	}
 
-	if err := s.natsClient.CreateTopic(ctx); err != nil {
-		g.Log().Fatal(ctx, err)
-	}
 	// 使用协程并发订阅消息主题
 	for topic, handler := range s.Subscriptions() {
 		s.group.Go(func() error {
@@ -77,7 +74,9 @@ func (s *ControllerV1) Run(ctx context.Context) error {
 		})
 	}
 	// 阻塞等待协程退出：订阅连接断开后协程退出
-	return s.group.Wait()
+	err := s.group.Wait()
+	g.Log().Debugf(ctx, "all subscribe exited:%v", err)
+	return err
 }
 
 // startSubscriber continuously subscribes to a topic and handles messages using the provided handler.

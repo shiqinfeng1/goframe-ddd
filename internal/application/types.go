@@ -23,6 +23,9 @@ type StreamInfo struct {
 	State     jetstream.StreamState `json:"state"  dc:"流状态信息"`
 }
 
+type DeleteStreamInput struct {
+	Name string
+}
 type PubSubStreamInfoInput struct {
 }
 

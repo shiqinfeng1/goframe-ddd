@@ -21,7 +21,7 @@ type ConnectionManager struct {
 	jetStreamCreator JetStreamCreator
 }
 
-func (cm *ConnectionManager) getJetStream() (jetstream.JetStream, error) {
+func (cm *ConnectionManager) GetJetStream() (jetstream.JetStream, error) {
 	if cm.jStream == nil {
 		return nil, errJetStreamNotConfigured
 	}
@@ -88,8 +88,26 @@ func (cm *ConnectionManager) Close(_ context.Context) {
 	}
 }
 
+func (cm *ConnectionManager) Subscribe(ctx context.Context, subject string, handler func(msg *nats.Msg)) error {
+	metrics.IncrementCounter(ctx, metrics.NatsPublishTotalCount, "subject", subject)
+	subs, err := cm.conn.Conn().Subscribe(subject, handler)
+	if err != nil {
+		return err
+	}
+	subs.Unsubscribe()
+	metrics.IncrementCounter(ctx, metrics.NatsPublishSuccessCount, "subject", subject)
+	return nil
+}
 func (cm *ConnectionManager) Publish(ctx context.Context, subject string, message []byte) error {
 	metrics.IncrementCounter(ctx, metrics.NatsPublishTotalCount, "subject", subject)
+	if err := cm.conn.Conn().Publish(subject, message); err != nil {
+		return err
+	}
+	metrics.IncrementCounter(ctx, metrics.NatsPublishSuccessCount, "subject", subject)
+	return nil
+}
+func (cm *ConnectionManager) JsPublish(ctx context.Context, subject string, message []byte) error {
+	metrics.IncrementCounter(ctx, metrics.NatsJsPublishTotalCount, "subject", subject)
 
 	if err := cm.validateJetStream(ctx, subject); err != nil {
 		return err
@@ -101,7 +119,7 @@ func (cm *ConnectionManager) Publish(ctx context.Context, subject string, messag
 		return err
 	}
 
-	metrics.IncrementCounter(ctx, metrics.NatsPublishSuccessCount, "subject", subject)
+	metrics.IncrementCounter(ctx, metrics.NatsJsPublishSuccessCount, "subject", subject)
 
 	return nil
 }

@@ -2,10 +2,6 @@ package nats
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"strings"
-	"sync"
 	"time"
 
 	"github.com/gogf/gf/v2/errors/gerror"
@@ -21,16 +17,12 @@ const defaultRetryTimeout = 10 * time.Second
 // Client represents a Client for NATS jStream operations.
 type Client struct {
 	connManager      ConnectionManagerIntf
+	jsManager        JsSubscriptionManagerIntf
 	subManager       SubscriptionManagerIntf
-	subscriptions    map[string]context.CancelFunc
-	subMutex         sync.Mutex
-	streamManager    StreamManagerIntf
 	Config           *Config
 	natsConnector    Connector
 	jetStreamCreator JetStreamCreator
 }
-
-type messageHandler func(context.Context, jetstream.Msg) error
 
 // New creates a new Client.
 func New(cfg *Config) *Client {
@@ -39,22 +31,10 @@ func New(cfg *Config) *Client {
 	}
 
 	client := &Client{
-		Config:        cfg,
-		subManager:    newSubscriptionManager(),
-		subscriptions: make(map[string]context.CancelFunc),
+		Config: cfg,
 	}
 
 	return client
-}
-func (c *Client) Conn() (*nats.Conn, error) {
-	if c.connManager == nil || c.connManager.Health().Status == health.StatusDown {
-		return nil, gerror.New("NATS connection not established")
-	}
-	js, err := c.connManager.getJetStream()
-	if err != nil {
-		return nil, err
-	}
-	return js.Conn(), nil
 }
 
 // Connect establishes a connection to NATS and sets up jStream.
@@ -64,165 +44,68 @@ func (c *Client) Connect(ctx context.Context) error {
 		return nil
 	}
 
-	if err := c.validateAndPrepare(ctx); err != nil {
-		return err
+	if c.Config.Server == "" {
+		return errServerNotProvided
+	}
+	if c.Config.ConsumerName == "" {
+		return errConsumerNotProvided
 	}
 
-	connManager := newConnectionManager(c.Config, c.natsConnector, c.jetStreamCreator)
-	connManager.Connect(ctx)
+	c.connManager = newConnectionManager(c.Config, c.natsConnector, c.jetStreamCreator)
+	c.jsManager = NewJsSubscriberManager()
+	c.subManager = NewSubscriberManager()
 
-	c.connManager = connManager
-
-	js, err := c.connManager.getJetStream()
-	if err != nil {
-		return err
-	}
-
-	c.streamManager = newStreamManager(js)
-	c.subManager = newSubscriptionManager()
+	c.connManager.Connect(ctx)
 
 	return nil
 }
 
-func (c *Client) validateAndPrepare(ctx context.Context) error {
-	if err := validateConfigs(c.Config); err != nil {
-		g.Log().Errorf(ctx, "could not initialize NATS jStream: %v", err)
-
-		return err
+func (c *Client) JetStream() (jetstream.JetStream, error) {
+	if c.connManager == nil || c.connManager.Health().Status == health.StatusDown {
+		return nil, gerror.New("NATS connection not established")
 	}
-
-	return nil
+	js, err := c.connManager.GetJetStream()
+	if err != nil {
+		return nil, err
+	}
+	return js, nil
+}
+func (c *Client) Conn() (*nats.Conn, error) {
+	js, err := c.JetStream()
+	if err != nil {
+		return nil, err
+	}
+	return js.Conn(), nil
 }
 
 // Publish publishes a message to a topic.
 func (c *Client) Publish(ctx context.Context, subject string, message []byte) error {
 	return c.connManager.Publish(ctx, subject, message)
 }
+func (c *Client) JsPublish(ctx context.Context, subject string, message []byte) error {
+	return c.connManager.JsPublish(ctx, subject, message)
+}
 
 // Subscribe subscribes to a topic and returns a single message.
-func (c *Client) Subscribe(ctx context.Context, topic string, handler pubsub.SubscribeFunc) error {
+func (c *Client) JsSubscribe(ctx context.Context, streamName, consumerName, topicName string, handler pubsub.SubscribeFunc) error {
 	if !c.connManager.isConnected() {
 		time.Sleep(defaultRetryTimeout)
 		return errClientNotConnected
 	}
 
-	js, err := c.connManager.getJetStream()
-	if err != nil {
-		return err
-	}
-	if err := c.subManager.Subscribe(ctx, topic, js, c.Config, handler); err != nil {
+	if err := c.jsManager.Subscribe(ctx, streamName, consumerName, topicName, handler); err != nil {
 		return err
 	}
 	return nil
 }
+func (c *Client) Subscribe(ctx context.Context, topicName string, handler pubsub.SubscribeFunc) error {
+	if !c.connManager.isConnected() {
+		time.Sleep(defaultRetryTimeout)
+		return errClientNotConnected
+	}
 
-// 根据消费主题自动生成一个消费者的名字，带有通配符的主题，需要替换通配符
-func generateConsumerName(consumer, subject string) string {
-	subject = strings.ReplaceAll(subject, ".", "_")
-	subject = strings.ReplaceAll(subject, "*", "token")
-	subject = strings.ReplaceAll(subject, ">", "tokens")
-	return fmt.Sprintf("%s_%s", consumer, subject)
-}
-
-func (c *Client) SubscribeWithHandler(ctx context.Context, subject string, handler messageHandler) error {
-	c.subMutex.Lock()
-	defer c.subMutex.Unlock()
-
-	// Cancel any existing subscription for this subject
-	c.cancelExistingSubscription(subject)
-
-	js, err := c.connManager.getJetStream()
-	if err != nil {
+	if err := c.subManager.Subscribe(ctx, topicName, handler); err != nil {
 		return err
-	}
-
-	consumerName := generateConsumerName(c.Config.ConsumerName, subject)
-
-	cons, err := c.createOrUpdateConsumer(ctx, js, subject, consumerName)
-	if err != nil {
-		return err
-	}
-
-	// Create a new context for this subscription
-	subCtx, cancel := context.WithCancel(ctx)
-	c.subscriptions[subject] = cancel
-
-	go func() {
-		defer cancel() // Ensure the cancellation is handled properly
-		c.processMessages(subCtx, cons, subject, handler)
-	}()
-
-	return nil
-}
-
-func (c *Client) cancelExistingSubscription(subject string) {
-	if cancel, exists := c.subscriptions[subject]; exists {
-		cancel()
-		delete(c.subscriptions, subject)
-	}
-}
-
-// client 直接创建一个stream的comsumer
-func (c *Client) createOrUpdateConsumer(
-	ctx context.Context, js jetstream.JetStream, subject, consumerName string,
-) (jetstream.Consumer, error) {
-	cons, err := js.CreateOrUpdateConsumer(ctx, c.Config.Stream.Name, jetstream.ConsumerConfig{
-		Durable:       consumerName,
-		AckPolicy:     jetstream.AckExplicitPolicy, //AckExplicitPolicy,
-		FilterSubject: subject,
-		MaxDeliver:    c.Config.Stream.MaxDeliver,
-		DeliverPolicy: jetstream.DeliverNewPolicy,
-	})
-	if err != nil {
-		g.Log().Errorf(ctx, "failed to create or update consumer for stream %v: %v", c.Config.Stream.Name, err)
-		return nil, err
-	}
-
-	return cons, nil
-}
-
-func (c *Client) processMessages(ctx context.Context, cons jetstream.Consumer, subject string, handler messageHandler) error {
-	msgs, err := cons.Messages(jetstream.PullMaxMessages(1))
-	if err != nil {
-		if !errors.Is(err, context.DeadlineExceeded) {
-			g.Log().Errorf(ctx, "Error fetching messages for subject %s: %v", subject, err)
-		}
-		return err
-	}
-	return c.processFetchedMessages(ctx, msgs, handler, subject)
-}
-
-func (c *Client) processFetchedMessages(ctx context.Context, msgs jetstream.MessagesContext, handler messageHandler, subject string) error {
-	g.Log().Infof(ctx, "ready to consume msg for %v", subject)
-	for {
-		msg, err := msgs.Next()
-		if err != nil {
-			if errors.Is(err, nats.ErrNoHeartbeat) {
-				continue
-			}
-			g.Log().Warningf(ctx, "Error processing message subject %v: %v", subject, err)
-			return nil
-		}
-		if err := c.handleMessage(ctx, msg, handler); err != nil {
-			return err
-		}
-	}
-}
-
-func (c *Client) handleMessage(ctx context.Context, msg jetstream.Msg, handler messageHandler) error {
-	err := handler(ctx, msg)
-	if err != nil {
-		g.Log().Errorf(ctx, "Error handling message: %v", err)
-		if nakErr := msg.Nak(); nakErr != nil {
-			g.Log().Debugf(ctx, "Error sending NAK for message: %v", nakErr)
-			return nakErr
-		}
-		return err
-	}
-
-	if ackErr := msg.Ack(); ackErr != nil {
-		g.Log().Errorf(ctx, "Error sending ACK for message: %v", ackErr)
-		return ackErr
 	}
 	return nil
 }
@@ -230,7 +113,7 @@ func (c *Client) handleMessage(ctx context.Context, msg jetstream.Msg, handler m
 // Close closes the Client.
 func (c *Client) Close(ctx context.Context) error {
 	if c.subManager != nil {
-		c.subManager.Close()
+		c.subManager.Close(ctx)
 		c.subManager = nil
 	}
 	if c.connManager != nil {
@@ -239,24 +122,4 @@ func (c *Client) Close(ctx context.Context) error {
 	}
 	g.Log().Infof(ctx, "nats client close ok")
 	return nil
-}
-
-// CreateTopic creates a new topic (stream) in NATS jStream.
-func (c *Client) CreateTopic(ctx context.Context) error {
-	return c.streamManager.CreateStream(ctx, c.Config.Stream)
-}
-
-// DeleteTopic deletes a topic (stream) in NATS jStream.
-func (c *Client) DeleteTopic(ctx context.Context, name string) error {
-	return c.streamManager.DeleteStream(ctx, name)
-}
-
-// GetJetStreamStatus returns the status of the jStream connection.
-func getJetStreamStatus(ctx context.Context, js jetstream.JetStream) (string, error) {
-	_, err := js.AccountInfo(ctx)
-	if err != nil {
-		return jetStreamStatusError, err
-	}
-
-	return jetStreamStatusOK, nil
 }

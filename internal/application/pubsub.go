@@ -16,6 +16,16 @@ import (
 	pkgnats "github.com/shiqinfeng1/goframe-ddd/pkg/pubsub/nats"
 )
 
+func (h *Application) DeleteStream(ctx context.Context, in *DeleteStreamInput) error {
+	// 连接到 NATS 服务器
+	opts := []nats.Option{nats.Name("NATS mgr")}
+	nc, err := nats.Connect(g.Cfg().MustGet(ctx, "nats.serverAddr").String(), opts...)
+	if err != nil {
+		return errors.ErrNatsConnectFail(err.Error())
+	}
+	defer nc.Close()
+	return nil
+}
 func (h *Application) PubSubStreamInfo(ctx context.Context, in *PubSubStreamInfoInput) (*PubSubStreamInfoOutput, error) {
 
 	// 连接到 NATS 服务器
@@ -69,6 +79,28 @@ func (h *Application) PubSubBenchmark(ctx context.Context, in *PubSubBenchmarkIn
 
 	donewg.Add((in.NumPubs + in.NumSubs) * numTopics)
 
+	client := pkgnats.New(&pkgnats.Config{
+		Server:       g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
+		MaxWait:      5 * time.Second,
+		ConsumerName: g.Cfg().MustGet(ctx, "nats.consumerName").String() + fmt.Sprintf("_%v", j),
+	})
+	if err := client.Connect(ctx); err != nil {
+		return gerror.Wrap(err, "nats connect fail")
+	}
+	defer client.Close(ctx)
+	js, err := client.JetStream()
+	if err != nil {
+		return err
+	}
+	streamMgr := pkgnats.NewStreamManager(js)
+	if err := streamMgr.CreateStream(ctx,
+		g.Cfg().MustGet(ctx, "nats.streamName").String(),
+		in.Subjects); err != nil {
+		return gerror.Wrap(err, "nats create topic fail")
+	}
+	g.Log().Infof(ctx, "create topic %v with subject %v ok",
+		g.Cfg().MustGet(ctx, "nats.streamName").String(), in.Subjects)
+
 	// 先运行订阅者，一个订阅者使用一个连接
 	startwg.Add(in.NumSubs * numTopics)
 	for i := range numTopics {
@@ -83,24 +115,7 @@ func (h *Application) PubSubBenchmark(ctx context.Context, in *PubSubBenchmarkIn
 				go runSubscriber(nc, in.Subjects[i], &startwg, &donewg, in.NumMsgs, in.MsgSize)
 			}
 			if in.Typ == "jetstream" {
-				client := pkgnats.New(&pkgnats.Config{
-					Server: g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
-					Stream: pkgnats.StreamConfig{
-						Name:     g.Cfg().MustGet(ctx, "nats.streamName").String(),
-						Subjects: in.Subjects,
-					},
-					MaxWait:      5 * time.Second,
-					ConsumerName: g.Cfg().MustGet(ctx, "nats.consumerName").String() + fmt.Sprintf("_%v", j),
-				})
-				if err := client.Connect(ctx); err != nil {
-					return gerror.Wrap(err, "nats connect fail")
-				}
 
-				if err := client.CreateTopic(ctx); err != nil {
-					return gerror.Wrap(err, "nats create topic fail")
-				}
-				g.Log().Infof(ctx, "create topic %v with subject %v ok", client.Config.Stream.Name, client.Config.Stream.Subjects)
-				defer client.Close(ctx)
 				go runStreamSubscriber(ctx, client, in.Subjects[i], &startwg, &donewg, in.NumMsgs, in.MsgSize)
 			}
 		}
@@ -124,11 +139,7 @@ func (h *Application) PubSubBenchmark(ctx context.Context, in *PubSubBenchmarkIn
 			}
 			if in.Typ == "jetstream" {
 				client := pkgnats.New(&pkgnats.Config{
-					Server: g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
-					Stream: pkgnats.StreamConfig{
-						Name:     g.Cfg().MustGet(ctx, "nats.streamName").String(),
-						Subjects: in.Subjects,
-					},
+					Server:       g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
 					MaxWait:      5 * time.Second,
 					ConsumerName: g.Cfg().MustGet(ctx, "nats.consumerName").String(),
 				})
@@ -137,9 +148,6 @@ func (h *Application) PubSubBenchmark(ctx context.Context, in *PubSubBenchmarkIn
 					return gerror.Wrap(err, "nats connect fail")
 				}
 
-				if err := client.CreateTopic(ctx); err != nil {
-					return gerror.Wrap(err, "nats create topic fail")
-				}
 				go runStreamPublisher(ctx, client, in.Subjects[j], &startwg, &donewg, pubCounts[i], in.MsgSize)
 			}
 		}

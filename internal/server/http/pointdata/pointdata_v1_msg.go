@@ -75,3 +75,7 @@ func (c *ControllerV1) GetStreamInfo(ctx context.Context, req *v1.GetStreamInfoR
 	}
 	return res, nil
 }
+func (c *ControllerV1) DeleteStream(ctx context.Context, req *v1.DeleteStreamReq) (res *v1.DeleteStreamRes, err error) {
+	err = c.app.DeleteStream(ctx, &application.DeleteStreamInput{Name: req.StreamName})
+	return
+}

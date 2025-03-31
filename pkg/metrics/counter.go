@@ -13,11 +13,15 @@ import (
 var (
 	NatsKVStats = "nats_kvstore_stats"
 
-	NatsPublishTotalCount     = "nats_publish_total_count"
-	NatsPublishSuccessCount   = "nats_publish_success_count"
-	NatsSubscribeTotalCount   = "nats_subscribe_total_count"
-	NatsSubscribeSuccessCount = "nats_subscribe_success_count"
-	meter                     = gmetric.GetGlobalProvider().Meter(gmetric.MeterOption{
+	NatsPublishTotalCount       = "nats_publish_total_count"
+	NatsPublishSuccessCount     = "nats_publish_success_count"
+	NatsJsPublishTotalCount     = "nats_jspublish_total_count"
+	NatsJsPublishSuccessCount   = "nats_jspublish_success_count"
+	NatsSubscribeTotalCount     = "nats_subscribe_total_count"
+	NatsSubscribeSuccessCount   = "nats_subscribe_success_count"
+	NatsJsSubscribeTotalCount   = "nats_jssubscribe_total_count"
+	NatsJsSubscribeSuccessCount = "nats_jssubscribe_success_count"
+	meter                       = gmetric.GetGlobalProvider().Meter(gmetric.MeterOption{
 		Instrument:        "mgrid_pubsub",
 		InstrumentVersion: "v1.0",
 	})
@@ -36,6 +40,20 @@ var (
 				Unit: "count",
 			},
 		),
+		NatsJsPublishTotalCount: meter.MustCounter(
+			NatsJsPublishTotalCount,
+			gmetric.MetricOption{
+				Help: "Publish total counts to nats",
+				Unit: "count",
+			},
+		),
+		NatsJsPublishSuccessCount: meter.MustCounter(
+			NatsJsPublishSuccessCount,
+			gmetric.MetricOption{
+				Help: "Publish success counts to nats",
+				Unit: "count",
+			},
+		),
 		NatsSubscribeTotalCount: meter.MustCounter(
 			NatsSubscribeTotalCount,
 			gmetric.MetricOption{
@@ -45,6 +63,20 @@ var (
 		),
 		NatsSubscribeSuccessCount: meter.MustCounter(
 			NatsSubscribeSuccessCount,
+			gmetric.MetricOption{
+				Help: "Subscribe success counts to nats",
+				Unit: "count",
+			},
+		),
+		NatsJsSubscribeTotalCount: meter.MustCounter(
+			NatsJsSubscribeTotalCount,
+			gmetric.MetricOption{
+				Help: "Subscribe total counts to nats",
+				Unit: "count",
+			},
+		),
+		NatsJsSubscribeSuccessCount: meter.MustCounter(
+			NatsJsSubscribeSuccessCount,
 			gmetric.MetricOption{
 				Help: "Subscribe success counts to nats",
 				Unit: "count",
