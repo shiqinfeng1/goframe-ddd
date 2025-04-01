@@ -9,7 +9,7 @@ import (
 	pubsub "github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
 )
 
-//go:generate mockgen -destination=mock_client.go -package=nats -source=./interfaces.go ConnIntf,ConnectionManagerIntf,SubscriptionManagerIntf
+//go:generate mockgen -destination=mock_client.go -package=nats -source=./interfaces.go ConnIntf,ConnMgr,SubMgr
 
 // ConnIntf represents the main Client connection.
 type ConnIntf interface {
@@ -29,9 +29,9 @@ type JetStreamCreator interface {
 	New(conn ConnIntf) (jetstream.JetStream, error)
 }
 
-// ConnectionManagerIntf represents the main Client connection.
-type ConnectionManagerIntf interface {
-	Connect(ctx context.Context)
+// ConnMgr represents the main Client connection.
+type ConnMgr interface {
+	Connect(ctx context.Context, opts ...nats.Option)
 	Close(ctx context.Context)
 	Publish(ctx context.Context, subject string, message []byte) error
 	JsPublish(ctx context.Context, subject string, message []byte) error
@@ -40,15 +40,15 @@ type ConnectionManagerIntf interface {
 	Health() *health.Health
 }
 
-// SubscriptionManagerIntf represents the main Subscription Manager.
-type JsSubscriptionManagerIntf interface {
-	NewSubscriber(stream streamIntf, streamName, consumerName, topicName string, consumeType SubType) *jsSubscriber
-	DeleteSubscriber(ctx context.Context, streamName, consumerName, topicName string) error
-	Subscribe(ctx context.Context, streamName, consumerName, topicName string, handler pubsub.SubscribeFunc) error
+// SubMgr represents the main Subscription Manager.
+type JsSubMgr interface {
+	NewSubscriber(ctx context.Context, stream streamIntf, identity []string, consumeType SubType) error
+	DeleteSubscriber(ctx context.Context, identity []string) error
+	Subscribe(ctx context.Context, identity []string, handler pubsub.SubscribeFunc) error
 	Close(ctx context.Context) error
 }
-type SubscriptionManagerIntf interface {
-	NewSubscriber(conn *nats.Conn, topicName string, consumeType SubType) *subscriber
+type SubMgr interface {
+	NewSubscriber(ctx context.Context, conn *nats.Conn, topicName string, consumeType SubType) error
 	DeleteSubscriber(ctx context.Context, topicName string) error
 	Subscribe(ctx context.Context, topicName string, handler pubsub.SubscribeFunc) error
 	Close(ctx context.Context) error

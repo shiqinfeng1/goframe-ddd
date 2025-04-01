@@ -46,7 +46,7 @@ var (
 
 type streamIntf interface {
 	createConsumer(ctx context.Context, streamName, consumerName, topicName string) (jetstream.Consumer, error)
-	deleteConsumer(ctx context.Context, streamName, consumerName string) error
+	deleteConsumer(ctx context.Context, streamName, consumerName, topicName string) error
 }
 
 type closer struct {
@@ -58,45 +58,49 @@ type jsSubscriber struct {
 	streamName, consumerName, topicName string
 	stream                              streamIntf
 	close                               closer
-	exitNotify                          chan string
+	exitNotify                          chan []string
 }
 
 // 订阅器管理
 type JsSubscriberManager struct {
 	subscriptions map[string]*jsSubscriber
 	subMutex      sync.Mutex
-	exitNotify    chan string
+	exitNotify    chan []string
 }
 
-func NewJsSubscriberManager() *JsSubscriberManager {
+func NewJsSubMgr() *JsSubscriberManager {
 	sm := &JsSubscriberManager{
 		subscriptions: make(map[string]*jsSubscriber),
-		exitNotify:    make(chan string),
+		exitNotify:    make(chan []string),
 	}
 	// 当订阅失败，或stream被删除后，需要删除相关资源
 	go func() {
-		for {
-			select {
-			case key, ok := <-sm.exitNotify:
-				if ok {
-					sm.deleteSubscriber(gctx.New(), key)
-				}
+		for key := range sm.exitNotify {
+			if len(key) != 0 {
+				sm.deleteSubscriber(gctx.New(), key)
 			}
 		}
 	}()
 	return sm
 }
 
-func (sm *JsSubscriberManager) NewSubscriber(stream streamIntf, streamName, consumerName, topicName string, consumeType SubType) *jsSubscriber {
+func (sm *JsSubscriberManager) NewSubscriber(ctx context.Context, stream streamIntf, identity []string, consumeType SubType) error {
 	sub := &jsSubscriber{
-		stream:      stream,
-		consumeType: consumeType,
-		exitNotify:  sm.exitNotify,
+		stream:       stream,
+		streamName:   identity[0],
+		consumerName: identity[1],
+		topicName:    identity[2],
+		consumeType:  consumeType,
+		exitNotify:   sm.exitNotify,
 	}
 	sm.subMutex.Lock()
 	defer sm.subMutex.Unlock()
-	sm.subscriptions[streamName+consumerName+topicName] = sub
-	return sub
+	if old, exist := sm.subscriptions[strings.Join(identity, "")]; exist {
+		return old.deleteConsumer(ctx)
+	}
+	sm.subscriptions[strings.Join(identity, "")] = sub
+	g.Log().Infof(ctx, "create subscriber ok. streamName: '%v' consumerName: '%v' topicName: '%v'", identity[0], identity[1], identity[2])
+	return nil
 }
 
 func (sm *JsSubscriberManager) Close(ctx context.Context) error {
@@ -111,48 +115,49 @@ func (sm *JsSubscriberManager) Close(ctx context.Context) error {
 	sm.subscriptions = make(map[string]*jsSubscriber)
 	return nil
 }
-func (sm *JsSubscriberManager) deleteSubscriber(ctx context.Context, key string) error {
+func (sm *JsSubscriberManager) deleteSubscriber(ctx context.Context, identity []string) error {
 	sm.subMutex.Lock()
 	defer sm.subMutex.Unlock()
 
-	if sub, exist := sm.subscriptions[key]; exist {
+	if sub, exist := sm.subscriptions[strings.Join(identity, "")]; exist {
 		if err := sub.deleteConsumer(ctx); err != nil {
 			return err
 		}
 		sm.subscriptions = nil
 	}
+	g.Log().Infof(ctx, "delete subscriber ok. streamName:%v consumerName:%v topicName%v", identity[0], identity[1], identity[2])
 	return nil
 }
-func (sm *JsSubscriberManager) DeleteSubscriber(ctx context.Context, streamName, consumerName, topicName string) error {
-	return sm.deleteSubscriber(ctx, streamName+consumerName+topicName)
+func (sm *JsSubscriberManager) DeleteSubscriber(ctx context.Context, identity []string) error {
+	return sm.deleteSubscriber(ctx, identity)
 }
-func (sm *JsSubscriberManager) Subscribe(ctx context.Context, streamName, consumerName, topicName string, handler pubsub.SubscribeFunc) error {
+func (sm *JsSubscriberManager) Subscribe(ctx context.Context, identity []string, handler pubsub.SubscribeFunc) error {
 	sm.subMutex.Lock()
 	defer sm.subMutex.Unlock()
 
-	if sub, exist := sm.subscriptions[streamName+consumerName+topicName]; exist {
+	if sub, exist := sm.subscriptions[strings.Join(identity, "")]; exist {
 		if err := sub.Subscribe(ctx, handler); err != nil {
 			return err
 		}
 	}
+	g.Log().Infof(ctx, "delete subscriver ok. streamName:%v consumerName:%v topicName%v", identity[0], identity[1], identity[2])
+
 	return nil
 }
 
 // 创建一个消费者
-func (s *jsSubscriber) createConsumer(ctx context.Context, streamName, consumerName, topicName string) (jetstream.Consumer, error) {
-	consumerName2 := generateConsumerName(consumerName, topicName)
-	cons, err := s.stream.createConsumer(ctx, streamName, consumerName2, topicName)
+func (s *jsSubscriber) createConsumer(ctx context.Context) (jetstream.Consumer, error) {
+	cons, err := s.stream.createConsumer(ctx, s.streamName, s.consumerName, s.topicName)
 	if err != nil {
 		return nil, gerror.Wrap(err, "createConsumer consumer fail")
 	}
-	g.Log().Infof(ctx, "createConsumer cunsumer <%v> for topic <%v> ok", consumerName2, topicName)
+	g.Log().Infof(ctx, "create jetstream cunsumer '%v' for topic '%v' of stream '%v' ok", s.consumerName, s.topicName, s.streamName)
 	return cons, nil
 }
 
 // 删除一个消费者
 func (s *jsSubscriber) deleteConsumer(ctx context.Context) error {
-	consumerName2 := generateConsumerName(s.consumerName, s.topicName)
-	err := s.stream.deleteConsumer(ctx, s.streamName, consumerName2)
+	err := s.stream.deleteConsumer(ctx, s.streamName, s.consumerName, s.topicName)
 	if err != nil {
 		return gerror.Wrap(err, "deleteConsumer consumer fail")
 	}
@@ -164,7 +169,7 @@ func (s *jsSubscriber) deleteConsumer(ctx context.Context) error {
 			s.close.cancel()
 		}
 	}
-	g.Log().Infof(ctx, "deleteConsumer cunsumer <%v> for topic <%v> ok", s.consumerName, s.topicName)
+	g.Log().Infof(ctx, "delete cunsumer <%v> for topic <%v> of stream <%v> ok", s.consumerName, s.topicName, s.streamName)
 	return nil
 }
 func (s *jsSubscriber) Subscribe(ctx context.Context, handler pubsub.SubscribeFunc) error {
@@ -183,7 +188,7 @@ func (s *jsSubscriber) subscribeByNext(
 	metrics.IncrementCounter(ctx, metrics.NatsSubscribeTotalCount, "topic", s.topicName)
 
 	// 获取consumer
-	consumer, err := s.createConsumer(ctx, s.streamName, s.consumerName, s.topicName)
+	consumer, err := s.createConsumer(ctx)
 	if err != nil {
 		return err
 	}
@@ -199,22 +204,23 @@ func (s *jsSubscriber) subscribeByNext(
 		stop:   iter.Stop,
 	}
 	defer func() {
-		s.exitNotify <- s.streamName + s.consumerName + s.topicName
+		s.exitNotify <- []string{s.streamName, s.consumerName, s.topicName}
 	}()
+	g.Log().Infof(ctx, "consumer '%v' ready to consume msg for '%v' of '%v'", s.consumerName, s.topicName, s.streamName)
 	// 获取主题对应的消息队列缓存
 	for {
 		select {
 		case <-subCtx.Done():
-			g.Log().Infof(subCtx, "stream %v consumer %v closer cancelled fot topic %v", s.streamName, s.consumerName, s.topicName)
+			g.Log().Infof(subCtx, "stream '%v' consumer '%v' closer cancelled fot topic '%v'", s.streamName, s.consumerName, s.topicName)
 			return nil
 		default:
-			g.Log().Infof(ctx, "%v ready to consume msg for %v of %v", s.consumerName, s.topicName, s.streamName)
 			msg, err := iter.Next()
+			g.Log().Warningf(ctx, "js consume:%s", msg.Data())
 			if err != nil {
 				if !errors.Is(err, jetstream.ErrNoHeartbeat) {
-					g.Log().Warningf(ctx, "consumer %v fetching messages for topic %s of %v: %v", s.consumerName, s.topicName, s.streamName, err)
+					g.Log().Warningf(ctx, "consumer '%v' fetching messages for topic '%s' of '%v': %v", s.consumerName, s.topicName, s.streamName, err)
 				} else {
-					g.Log().Errorf(ctx, "consumer %v fetching messages for topic %s of %v fail: %v", s.consumerName, s.topicName, s.streamName, err)
+					g.Log().Errorf(ctx, "consumer '%v' fetching messages for topic '%s' of '%v' fail: %v", s.consumerName, s.topicName, s.streamName, err)
 					return nil
 				}
 				time.Sleep(ConsumeMessageDelay)
@@ -232,7 +238,7 @@ func (s *jsSubscriber) subscribeByNext(
 				return nil
 			}()
 			if err != nil {
-				g.Log().Errorf(ctx, "consumer %v error in handler for topic '%s': %v", s.consumerName, s.topicName, err)
+				g.Log().Errorf(ctx, "consumer '%v' error in handler for topic '%s': %v", s.consumerName, s.topicName, err)
 				continue
 			}
 			// 处理完成

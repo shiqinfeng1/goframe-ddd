@@ -13,13 +13,7 @@ type Publisher interface {
 
 type Subscriber interface {
 	Subscribe(ctx context.Context, topic string, handler SubscribeFunc) error
-}
-
-type Client interface {
-	Publisher
-	Subscriber
-	Connect(ctx context.Context) error
-	Close(ctx context.Context) error
+	JsSubscribe(ctx context.Context, topic string, handler SubscribeFunc) error
 }
 
 type Committer interface {

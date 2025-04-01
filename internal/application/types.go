@@ -26,21 +26,21 @@ type StreamInfo struct {
 type DeleteStreamInput struct {
 	Name string
 }
-type PubSubStreamInfoInput struct {
+type JetStreamInfoInput struct {
+	Name string
 }
 
-type PubSubStreamInfoOutput struct {
+type JetStreamInfoOutput struct {
 	StreamInfo    *jetstream.StreamInfo
 	ConsumerInfos []*jetstream.ConsumerInfo
 }
 
 type PubSubBenchmarkInput struct {
-	NumPubs  int
-	NumSubs  int
-	NumMsgs  int
-	MsgSize  int
-	Subjects []string
-	Typ      string
+	MsgSize      int
+	Subjects     []string
+	JsSubjects   []string
+	StreamName   string
+	ConsumerName string
 }
 
 type File struct {

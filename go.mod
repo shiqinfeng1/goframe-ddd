@@ -8,7 +8,6 @@ require (
 	github.com/gogf/gf/contrib/rpc/grpcx/v2 v2.8.3
 	github.com/gogf/gf/v2 v2.9.0
 	github.com/mattn/go-sqlite3 v1.14.16
-	github.com/nats-io/nats-server/v2 v2.11.0
 	github.com/nats-io/nats.go v1.39.1
 	github.com/rs/xid v1.6.0
 	github.com/stretchr/testify v1.10.0
@@ -45,7 +44,6 @@ require (
 	github.com/go-openapi/inflect v0.19.0 // indirect
 	github.com/gogf/gf/contrib/registry/file/v2 v2.8.3 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/google/go-tpm v0.9.3 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/grokify/html-strip-tags-go v0.1.0 // indirect
@@ -57,10 +55,8 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
-	github.com/minio/highwayhash v1.0.3 // indirect
 	github.com/mitchellh/go-wordwrap v0.0.0-20150314170334-ad45545899c7 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/nats-io/jwt/v2 v2.7.3 // indirect
 	github.com/nats-io/nkeys v0.4.10 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect

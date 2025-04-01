@@ -66,30 +66,29 @@ func (sm *StreamManager) CreateStream(ctx context.Context, name string, subjects
 	if err != nil {
 		return gerror.Wrapf(err, "failed to create stream")
 	}
-	g.Log().Debugf(ctx, "creating stream %s ok of subkects:%+v", name, subjects)
+	g.Log().Debugf(ctx, "creating stream '%s' ok of subjects: '%+v'", name, subjects)
 
 	return nil
 }
 
 // DeleteStream deletes a jStream stream.
 func (sm *StreamManager) DeleteStream(ctx context.Context, name string) error {
-	g.Log().Debugf(ctx, "deleting stream %s", name)
+	g.Log().Debugf(ctx, "deleting stream '%s'", name)
 
 	err := sm.js.DeleteStream(ctx, name)
 	if err != nil {
 		if errors.Is(err, jetstream.ErrStreamNotFound) {
-			g.Log().Debugf(ctx, "stream %s not found, considering delete successful", name)
+			g.Log().Debugf(ctx, "stream '%s' not found, considering delete successful", name)
 			return nil // If the stream doesn't exist, we consider it a success
 		}
-		return gerror.Wrapf(err, "failed to delete stream %s", name)
+		return gerror.Wrapf(err, "failed to delete stream '%s'", name)
 	}
-	g.Log().Debugf(ctx, "successfully deleted stream %s", name)
+	g.Log().Debugf(ctx, "successfully deleted stream '%s'", name)
 	return nil
 }
 
 // GetStream gets a jStream stream.
 func (sm *StreamManager) GetStream(ctx context.Context, name string) (jetstream.Stream, error) {
-	g.Log().Debugf(ctx, "getting stream %s", name)
 
 	stream, err := sm.js.Stream(ctx, name)
 	if err != nil {
@@ -98,6 +97,9 @@ func (sm *StreamManager) GetStream(ctx context.Context, name string) (jetstream.
 		}
 		return nil, gerror.Wrapf(err, "failed to get stream %s", name)
 	}
+	info, _ := stream.Info(ctx)
+	g.Log().Debugf(ctx, "getting stream info ok: %v", info)
+
 	return stream, nil
 }
 
@@ -113,7 +115,7 @@ func (sm *StreamManager) GetJetStreamStatus(ctx context.Context) (string, error)
 
 func (sm *StreamManager) createConsumer(ctx context.Context, streamName, consumerName, subject string) (jetstream.Consumer, error) {
 	cons, err := sm.js.CreateConsumer(ctx, streamName, jetstream.ConsumerConfig{
-		Durable:       consumerName,
+		Durable:       generateConsumerName(consumerName, subject),
 		AckPolicy:     jetstream.AckExplicitPolicy, //AckExplicitPolicy,
 		FilterSubject: subject,
 		DeliverPolicy: jetstream.DeliverNewPolicy,
@@ -125,8 +127,8 @@ func (sm *StreamManager) createConsumer(ctx context.Context, streamName, consume
 	return cons, nil
 
 }
-func (sm *StreamManager) deleteConsumer(ctx context.Context, streamName, consumerName string) error {
-	err := sm.js.DeleteConsumer(ctx, streamName, consumerName)
+func (sm *StreamManager) deleteConsumer(ctx context.Context, streamName, consumerName, subject string) error {
+	err := sm.js.DeleteConsumer(ctx, streamName, generateConsumerName(consumerName, subject))
 	if err != nil {
 		return gerror.Wrapf(err, "failed to delete consumer for stream %v", streamName)
 	}

@@ -16,7 +16,7 @@ import (
 type ConnectionManager struct {
 	conn             ConnIntf
 	jStream          jetstream.JetStream
-	config           *Config
+	serverAddr       string // 服务地址
 	natsConnector    Connector
 	jetStreamCreator JetStreamCreator
 }
@@ -29,9 +29,9 @@ func (cm *ConnectionManager) GetJetStream() (jetstream.JetStream, error) {
 	return cm.jStream, nil
 }
 
-// newConnectionManager creates a new ConnectionManager.
-func newConnectionManager(
-	cfg *Config,
+// newConnMgr creates a new ConnectionManager.
+func newConnMgr(
+	serverAddr string,
 	natsConnector Connector,
 	jetStreamCreator JetStreamCreator,
 ) *ConnectionManager {
@@ -45,25 +45,20 @@ func newConnectionManager(
 	}
 
 	return &ConnectionManager{
-		config:           cfg,
 		natsConnector:    natsConnector,
 		jetStreamCreator: jetStreamCreator,
+		serverAddr:       serverAddr,
 	}
 }
 
 // Connect establishes a connection to NATS and sets up JetStream.
 // 异步重试连接
-func (cm *ConnectionManager) Connect(ctx context.Context) {
-	opts := []nats.Option{
-		nats.Name("Sieyuan NATS JetStreamClient"),
-		nats.NoEcho(),
-	}
-
+func (cm *ConnectionManager) Connect(ctx context.Context, opts ...nats.Option) {
 	for {
-		connIntf, err := cm.natsConnector.Connect(cm.config.Server, opts...)
+		connIntf, err := cm.natsConnector.Connect(cm.serverAddr, opts...)
 		if err != nil {
-			g.Log().Errorf(ctx, "Failed to connect to NATS server at %v: %v", cm.config.Server, err)
-			time.Sleep(defaultRetryTimeout) // 等待10s后再连
+			g.Log().Warningf(ctx, "try to connect to NATS server at %v: %v", cm.serverAddr, err)
+			time.Sleep(defaultRetryTimeout)
 			continue
 		}
 		// 连接成功后，创建jetstream
@@ -77,7 +72,7 @@ func (cm *ConnectionManager) Connect(ctx context.Context) {
 
 		cm.conn = connIntf
 		cm.jStream = js
-		g.Log().Infof(ctx, "Successfully connected to NATS server at %v", cm.config.Server)
+		g.Log().Infof(ctx, "Successfully connected to NATS server at %v", cm.serverAddr)
 		return
 	}
 }
@@ -146,7 +141,7 @@ func (cm *ConnectionManager) Health() *health.Health {
 		return &health.Health{
 			Status: health.StatusUp,
 			Details: map[string]any{
-				"server": cm.config.Server,
+				"server": cm.serverAddr,
 			},
 		}
 	}
@@ -154,7 +149,7 @@ func (cm *ConnectionManager) Health() *health.Health {
 	return &health.Health{
 		Status: health.StatusDown,
 		Details: map[string]any{
-			"server": cm.config.Server,
+			"server": cm.serverAddr,
 		},
 	}
 }

@@ -132,7 +132,7 @@ pprof: true   # 开启性能分析
 
 nats:
   serverAddr: "nats://localhost:4222"
-  consumerName: "consumer-goMgrid"
-  streamName: "stream-mgrid"
-  maxBytes: 2  # 单位 GB
-  subjects: ["test.subj1.*","test.subj2.>"]
+  consumerName: "mgrid-consumer"
+  streamName: "mgrid-stream"
+  subjects: ["pubsub.station.1.IED.1~50.>"]
+  jsSubjects: ["jetstream.station.1.>"]

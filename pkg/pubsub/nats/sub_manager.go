@@ -5,20 +5,19 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/nats-io/nats.go"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/metrics"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
 )
 
-type subscription struct {
-	stop func() error
-}
 type subscriber struct {
 	consumeType SubType
 	topicName   string
 	conn        *nats.Conn
-	closer      subscription
+	sub         *nats.Subscription
+	cancel      chan struct{}
 }
 
 // 订阅器管理
@@ -27,22 +26,27 @@ type SubscriberManager struct {
 	subMutex      sync.Mutex
 }
 
-func NewSubscriberManager() *SubscriberManager {
+func NewSubMgr() *SubscriberManager {
 	sm := &SubscriberManager{
 		subscriptions: make(map[string]*subscriber),
 	}
 	return sm
 }
 
-func (sm *SubscriberManager) NewSubscriber(conn *nats.Conn, topicName string, consumeType SubType) *subscriber {
+func (sm *SubscriberManager) NewSubscriber(ctx context.Context, conn *nats.Conn, topicName string, consumeType SubType) error {
 	sub := &subscriber{
 		conn:        conn,
 		consumeType: consumeType,
+		cancel:      make(chan struct{}),
 	}
 	sm.subMutex.Lock()
 	defer sm.subMutex.Unlock()
+	if _, exist := sm.subscriptions[topicName]; exist {
+		return gerror.Newf("topic '%v' is already be subscribed", topicName)
+	}
 	sm.subscriptions[topicName] = sub
-	return sub
+	g.Log().Infof(ctx, "create subscriber ok. topicName: '%v'", topicName)
+	return nil
 }
 
 func (sm *SubscriberManager) Close(ctx context.Context) error {
@@ -70,9 +74,16 @@ func (sm *SubscriberManager) deleteSubscriber(ctx context.Context, key string) e
 	return nil
 }
 func (s *subscriber) unsubscribe(ctx context.Context) error {
-	if s.closer.stop != nil {
-		s.closer.stop()
+	if s.sub != nil {
+		if err := s.sub.Drain(); err != nil {
+			return err
+		}
+		if err := s.sub.Unsubscribe(); err != nil {
+			return err
+		}
+		return nil
 	}
+	close(s.cancel)
 	g.Log().Infof(ctx, "unsubscribe topic <%v> ok", s.topicName)
 	return nil
 }
@@ -104,9 +115,9 @@ func (s *subscriber) subscribeAsync(
 	ctx context.Context,
 	handler pubsub.SubscribeFunc,
 ) error {
-	metrics.IncrementCounter(ctx, metrics.NatsSubscribeTotalCount, "topic", s.topicName)
+	sub, err := s.conn.Subscribe(s.topicName, func(msg *nats.Msg) {
+		metrics.IncrementCounter(ctx, metrics.NatsSubscribeTotalCount, "topic", s.topicName)
 
-	subs, err := s.conn.Subscribe(s.topicName, func(msg *nats.Msg) {
 		pubsubmsg := s.createPubSubMessage(msg, s.topicName)
 		err := func() error {
 			defer func() {
@@ -129,7 +140,10 @@ func (s *subscriber) subscribeAsync(
 	if err != nil {
 		return err
 	}
-	s.closer = subscription{stop: subs.Unsubscribe}
+	sub.SetPendingLimits(-1, -1)
+	s.sub = sub
+	// 等待被取消
+	<-s.cancel
 	return nil
 }
 
