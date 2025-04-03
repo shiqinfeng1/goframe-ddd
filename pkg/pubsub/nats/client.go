@@ -21,21 +21,20 @@ type Client struct {
 	jsSubMgr         JsSubMgr         // jetstream的发布和消费
 	subMgr           SubMgr           // 普通订阅发布
 	serverAddr       string           // nats服务地址
+	name             string           // 客户端名称
 	natsConnector    Connector        // 方便单元测试封装mock接口
 	jetStreamCreator JetStreamCreator // 方便单元测试封装mock接口
 }
 
 // New 创建一个新的客户端
-func New(srvAddr string, natsOpts ...nats.Option) *Client {
+func New(srvAddr, name string, natsOpts ...nats.Option) *Client {
 	c := &Client{
 		serverAddr: srvAddr,
+		name:       name,
 	}
-	if len(natsOpts) == 0 {
-		c.natsOpts = []nats.Option{
-			nats.Name("Sieyuan NATS Client"),
-		}
-	}
-	c.natsOpts = append(c.natsOpts, nats.NoEcho())
+	c.natsOpts = append(c.natsOpts,
+		nats.Name(name),
+		nats.NoEcho())
 	return c
 }
 
@@ -63,7 +62,7 @@ func (c *Client) Connect(ctx context.Context, opts ...clientOpts) error {
 	}
 
 	c.connMgr = newConnMgr(c.serverAddr, c.natsConnector, c.jetStreamCreator)
-	c.connMgr.Connect(ctx)
+	c.connMgr.Connect(ctx, c.natsOpts...)
 
 	return nil
 }
@@ -94,14 +93,29 @@ func (c *Client) Flush() error {
 
 // Publish publishes a message to a topic.
 func (c *Client) Publish(ctx context.Context, subject string, message []byte) error {
+	if c == nil || c.connMgr == nil {
+		return nil
+	}
+	if !c.connMgr.isConnected() {
+		return errClientNotConnected
+	}
 	return c.connMgr.Publish(ctx, subject, message)
 }
 func (c *Client) JsPublish(ctx context.Context, subject string, message []byte) error {
+	if c == nil || c.connMgr == nil {
+		return nil
+	}
+	if !c.connMgr.isConnected() {
+		return errClientNotConnected
+	}
 	return c.connMgr.JsPublish(ctx, subject, message)
 }
 
 // 流订阅
-func (c *Client) JsSubscribe(ctx context.Context, stream streamIntf, identity []string, consumeType SubType, handler pubsub.SubscribeFunc) error {
+func (c *Client) JsSubscribe(ctx context.Context, stream streamIntf, identity []string, consumeType SubType, handler pubsub.JsSubscribeFunc) error {
+	if c == nil || c.connMgr == nil {
+		return nil
+	}
 	if !c.connMgr.isConnected() {
 		return errClientNotConnected
 	}
@@ -117,6 +131,9 @@ func (c *Client) JsSubscribe(ctx context.Context, stream streamIntf, identity []
 
 // 消息订阅
 func (c *Client) Subscribe(ctx context.Context, topicName string, handler pubsub.SubscribeFunc) error {
+	if c == nil || c.connMgr == nil {
+		return nil
+	}
 	if !c.connMgr.isConnected() {
 		return errClientNotConnected
 	}
@@ -147,6 +164,6 @@ func (c *Client) Close(ctx context.Context) error {
 		c.connMgr.Close(ctx)
 		c.connMgr = nil
 	}
-	g.Log().Infof(ctx, "nats client close ok")
+	g.Log().Infof(ctx, "nats client '%v' close ok", c.name)
 	return nil
 }

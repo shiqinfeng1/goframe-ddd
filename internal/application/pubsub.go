@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
@@ -9,20 +10,27 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/util/grand"
-	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/errors"
 	pkgnats "github.com/shiqinfeng1/goframe-ddd/pkg/pubsub/nats"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/utils"
 	"golang.org/x/time/rate"
 )
 
+func (h *Application) SendStreamForTest(ctx context.Context) error {
+	jssubjects := g.Cfg().MustGet(ctx, "nats.jsSubjects").Strings()
+	exjssubs := utils.ExpandSubjectRange(strings.TrimSuffix(jssubjects[0], ">") + "IED.1~50.point.1~2")
+	for _, j := range exjssubs {
+		go runStreamPublisherToRemote(j)
+	}
+	return nil
+}
 func (h *Application) DeleteStream(ctx context.Context, in *DeleteStreamInput) error {
 
 	client := pkgnats.New(
 		g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
-		nats.Name("Delete Stream Client"),
+		"Delete Stream Client",
 	)
-	defer client.Close(ctx)
 
 	if err := client.Connect(ctx); err != nil {
 		return errors.ErrNatsConnectFail(err)
@@ -42,8 +50,8 @@ func (h *Application) JetStreamInfo(ctx context.Context, in *JetStreamInfoInput)
 
 	client := pkgnats.New(
 		g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
-		nats.Name("Delete Stream Query"))
-	defer client.Close(ctx)
+		"Stream Query Client",
+	)
 
 	if err := client.Connect(ctx); err != nil {
 		return nil, errors.ErrNatsConnectFail(err)
@@ -82,24 +90,35 @@ func (h *Application) PubSubBenchmark(ctx context.Context, in *PubSubBenchmarkIn
 
 	// 再运行发布者，一个发布者一个连接
 	for j := range len(in.Subjects) {
-		go runPublisher(in.Subjects[j], in.MsgSize)
+		go runPublisher(in.Subjects[j])
 	}
 	for j := range len(in.JsSubjects) {
-		go runStreamPublisher(in.JsSubjects[j], in.MsgSize)
+		go runStreamPublisher(in.JsSubjects[j])
 	}
 	return nil
 }
 
-var pubOnce sync.Once
-var pubClient *pkgnats.Client
+var defaultDelay = 24 * time.Hour
+var limiter = rate.NewLimiter(rate.Limit(250000), 50)
+var jslimiter = rate.NewLimiter(rate.Limit(100), 100)
 
-func runPublisher(subj string, msgSize int) {
+var pubOnce sync.Once
+var jspubOnce sync.Once
+var pubClient *pkgnats.Client
+var jspubClient *pkgnats.Client
+
+var defaultMessageSize = 1 * 1024 * 1024
+var msg = []byte(grand.Letters(defaultMessageSize))
+var jsmsg = []byte(grand.Letters(defaultMessageSize))
+
+func runPublisher(subj string) {
 	ctx := gctx.New()
+	var cancel chan struct{}
 	// 创建一个发布客户端
 	pubOnce.Do(func() {
 		pubClient = pkgnats.New(
 			g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
-			nats.Name("NATS Benchmark"),
+			"Benchmark Publisher",
 		)
 		if err := pubClient.Connect(ctx,
 			pkgnats.WithJsManager(pkgnats.NewJsSubMgr()),
@@ -107,13 +126,11 @@ func runPublisher(subj string, msgSize int) {
 		); err != nil {
 			return
 		}
+		cancel = make(chan struct{})
+		time.AfterFunc(defaultDelay, func() {
+			close(cancel)
+		})
 	})
-	defer pubClient.Close(ctx)
-
-	var msg []byte
-	if msgSize > 0 {
-		msg = []byte(grand.Letters(msgSize))
-	}
 	defer func() {
 		conn, err := pubClient.Conn()
 		if err != nil {
@@ -121,51 +138,47 @@ func runPublisher(subj string, msgSize int) {
 			return
 		}
 		conn.Flush()
+		pubClient.Close(ctx)
 	}()
-	cancel := make(chan struct{})
-	oneDay := 24 * time.Hour
-	time.AfterFunc(oneDay, func() {
-		close(cancel)
-	})
-	// 限速每秒发送50个
-	limiter := rate.NewLimiter(rate.Limit(1), 1)
+
 	for {
 		select {
 		case <-cancel:
 			return
 		default:
-			limiter.Wait(ctx)
-			g.Log().Debugf(ctx, "pub msg:%s", msg)
-			pubClient.Publish(ctx, subj, msg)
+			limiter.WaitN(ctx, 50)
+			// g.Log().Debugf(ctx, "pub msg: subject='%v' %s...", subj, msg[:8])
+			for range 50 {
+				pubClient.Publish(ctx, subj, msg)
+			}
 		}
 	}
 }
 
-var jspubOnce sync.Once
-var jspubClient *pkgnats.Client
-
-func runStreamPublisher(subj string, msgSize int) {
+func runStreamPublisherToRemote(subj string) {
 	ctx := gctx.New()
+	var cancel chan struct{}
 
 	// 创建一个发布客户端
 	jspubOnce.Do(func() {
 		jspubClient = pkgnats.New(
-			g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
-			nats.Name("NATS Benchmark"),
+			"nats://10.17.14.35:4222",
+			"Benchmark JsPublisher",
 		)
 		if err := jspubClient.Connect(ctx,
 			pkgnats.WithJsManager(pkgnats.NewJsSubMgr()),
 			pkgnats.WithSubManager(pkgnats.NewSubMgr()),
 		); err != nil {
+			g.Log().Error(ctx, err)
 			return
 		}
-	})
-	defer jspubClient.Close(ctx)
 
-	var msg []byte
-	if msgSize > 0 {
-		msg = []byte(grand.Letters(msgSize))
-	}
+		cancel = make(chan struct{})
+		time.AfterFunc(defaultDelay, func() {
+			close(cancel)
+		})
+	})
+
 	defer func() {
 		conn, err := jspubClient.Conn()
 		if err != nil {
@@ -173,23 +186,61 @@ func runStreamPublisher(subj string, msgSize int) {
 			return
 		}
 		conn.Flush()
+		jspubClient.Close(ctx)
 	}()
 
-	cancel := make(chan struct{})
-	oneDay := 24 * time.Hour
-	time.AfterFunc(oneDay, func() {
-		close(cancel)
-	})
-	// 限速每秒发送1个
-	limiter := rate.NewLimiter(rate.Limit(1), 1)
 	for {
 		select {
 		case <-cancel:
 			return
 		default:
-			limiter.Wait(ctx)
-			g.Log().Debugf(ctx, "js pub msg:%s", msg)
-			jspubClient.JsPublish(ctx, subj, msg)
+			jslimiter.Wait(ctx)
+			// g.Log().Debugf(ctx, "js pub msg: subject='%v' (%v)%s...", subj, len(msg), msg[:8])
+			jspubClient.JsPublish(ctx, subj, jsmsg)
+		}
+	}
+}
+func runStreamPublisher(subj string) {
+	ctx := gctx.New()
+	var cancel chan struct{}
+
+	// 创建一个发布客户端
+	jspubOnce.Do(func() {
+		jspubClient = pkgnats.New(
+			g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
+			"Benchmark JsPublisher",
+		)
+		if err := jspubClient.Connect(ctx,
+			pkgnats.WithJsManager(pkgnats.NewJsSubMgr()),
+			pkgnats.WithSubManager(pkgnats.NewSubMgr()),
+		); err != nil {
+			return
+		}
+
+		cancel = make(chan struct{})
+		time.AfterFunc(defaultDelay, func() {
+			close(cancel)
+		})
+	})
+
+	defer func() {
+		conn, err := jspubClient.Conn()
+		if err != nil {
+			g.Log().Error(ctx, err)
+			return
+		}
+		conn.Flush()
+		jspubClient.Close(ctx)
+	}()
+
+	for {
+		select {
+		case <-cancel:
+			return
+		default:
+			jslimiter.Wait(ctx)
+			// g.Log().Debugf(ctx, "js pub msg: subject='%v' %s...", subj, msg[:8])
+			jspubClient.JsPublish(ctx, subj, jsmsg)
 		}
 	}
 }

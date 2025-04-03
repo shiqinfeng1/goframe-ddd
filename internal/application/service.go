@@ -3,8 +3,9 @@ package application
 import (
 	"context"
 
+	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/shiqinfeng1/goframe-ddd/internal/domain/filemgr"
-	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
 )
 
 // 文件传输服务：文件读写，分块，发送，接收，任务队列
@@ -21,6 +22,6 @@ type FileTransferService interface {
 	GetCompletedTasks(ctx context.Context) ([]*filemgr.FileTransferTask, map[string][]*filemgr.SendFile, error)
 }
 type PointDataSetService interface {
-	HandleTopic1(ctx context.Context, msg *pubsub.Message) error
-	HandleTopic2(ctx context.Context, msg *pubsub.Message) error
+	HandleTopic1(ctx context.Context, msg *nats.Msg) error
+	HandleTopic2(ctx context.Context, msg *jetstream.Msg) error
 }

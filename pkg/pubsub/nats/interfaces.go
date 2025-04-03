@@ -44,7 +44,7 @@ type ConnMgr interface {
 type JsSubMgr interface {
 	NewSubscriber(ctx context.Context, stream streamIntf, identity []string, consumeType SubType) error
 	DeleteSubscriber(ctx context.Context, identity []string) error
-	Subscribe(ctx context.Context, identity []string, handler pubsub.SubscribeFunc) error
+	Subscribe(ctx context.Context, identity []string, handler pubsub.JsSubscribeFunc) error
 	Close(ctx context.Context) error
 }
 type SubMgr interface {

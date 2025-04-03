@@ -55,24 +55,24 @@ func newConnMgr(
 // 异步重试连接
 func (cm *ConnectionManager) Connect(ctx context.Context, opts ...nats.Option) {
 	for {
-		connIntf, err := cm.natsConnector.Connect(cm.serverAddr, opts...)
+		conn, err := cm.natsConnector.Connect(cm.serverAddr, opts...)
 		if err != nil {
 			g.Log().Warningf(ctx, "try to connect to NATS server at %v: %v", cm.serverAddr, err)
 			time.Sleep(defaultRetryTimeout)
 			continue
 		}
 		// 连接成功后，创建jetstream
-		js, err := cm.jetStreamCreator.New(connIntf)
+		js, err := cm.jetStreamCreator.New(conn)
 		if err != nil {
-			connIntf.Close()
+			conn.Close()
 			g.Log().Debugf(ctx, "Failed to create jStream context: %v", err)
 			time.Sleep(defaultRetryTimeout)
 			continue
 		}
 
-		cm.conn = connIntf
+		cm.conn = conn
 		cm.jStream = js
-		g.Log().Infof(ctx, "Successfully connected to NATS server at %v", cm.serverAddr)
+		g.Log().Infof(ctx, "Successfully connected to NATS server at %v by '%v'", cm.serverAddr, conn.Conn().Opts.Name)
 		return
 	}
 }

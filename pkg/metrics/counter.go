@@ -114,13 +114,13 @@ func Shutdown(ctx context.Context) {
 }
 
 func IncrementCounter(ctx context.Context, name, label, value string) {
-	if c, ok := counter[name]; ok {
-		c.Inc(ctx, gmetric.Option{
-			Attributes: []gmetric.Attribute{
-				gmetric.NewAttribute(label, value),
-			},
-		})
-	}
+	// if c, ok := counter[name]; ok {
+	// 	c.Inc(ctx, gmetric.Option{
+	// 		Attributes: []gmetric.Attribute{
+	// 			gmetric.NewAttribute(label, value),
+	// 		},
+	// 	})
+	// }
 }
 
 func RecordHistogram(ctx context.Context, t float64, labels ...string) {

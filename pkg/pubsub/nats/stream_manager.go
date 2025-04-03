@@ -31,10 +31,11 @@ func (sm *StreamManager) CreateOrUpdateStream(ctx context.Context, name string, 
 	}
 	// todo：根据需求需要更详细配置
 	jsCfg := jetstream.StreamConfig{
-		Name:      name,
-		Subjects:  subjects,
-		Storage:   jetstream.FileStorage,    // 默认文件存储
-		Retention: jetstream.InterestPolicy, // 如果有多个消费者订阅了相同的主题，每个消费者都可能接收到相同的消息
+		Name:       name,
+		Subjects:   subjects,
+		Storage:    jetstream.FileStorage, // 默认文件存储
+		MaxMsgSize: 10 * 1024 * 1024,
+		Retention:  jetstream.InterestPolicy, // 如果有多个消费者订阅了相同的主题，每个消费者都可能接收到相同的消息
 	}
 
 	_, err := sm.js.CreateOrUpdateStream(ctx, jsCfg)
@@ -56,10 +57,11 @@ func (sm *StreamManager) CreateStream(ctx context.Context, name string, subjects
 	}
 	// todo：根据需求需要更详细配置
 	jsCfg := jetstream.StreamConfig{
-		Name:      name,
-		Subjects:  subjects,
-		Storage:   jetstream.FileStorage,    // 默认文件存储
-		Retention: jetstream.InterestPolicy, // 如果有多个消费者订阅了相同的主题，每个消费者都可能接收到相同的消息
+		Name:       name,
+		Subjects:   subjects,
+		Storage:    jetstream.FileStorage, // 默认文件存储
+		MaxMsgSize: 10 * 1024 * 1024,
+		Retention:  jetstream.InterestPolicy, // 如果有多个消费者订阅了相同的主题，每个消费者都可能接收到相同的消息
 	}
 
 	_, err := sm.js.CreateStream(ctx, jsCfg)
@@ -98,7 +100,7 @@ func (sm *StreamManager) GetStream(ctx context.Context, name string) (jetstream.
 		return nil, gerror.Wrapf(err, "failed to get stream %s", name)
 	}
 	info, _ := stream.Info(ctx)
-	g.Log().Debugf(ctx, "getting stream info ok: %v", info)
+	g.Log().Debugf(ctx, "getting stream info ok: %+v", info)
 
 	return stream, nil
 }

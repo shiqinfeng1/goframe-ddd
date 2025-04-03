@@ -38,6 +38,7 @@ func (sm *SubscriberManager) NewSubscriber(ctx context.Context, conn *nats.Conn,
 		conn:        conn,
 		consumeType: consumeType,
 		cancel:      make(chan struct{}),
+		topicName:   topicName,
 	}
 	sm.subMutex.Lock()
 	defer sm.subMutex.Unlock()
@@ -45,7 +46,7 @@ func (sm *SubscriberManager) NewSubscriber(ctx context.Context, conn *nats.Conn,
 		return gerror.Newf("topic '%v' is already be subscribed", topicName)
 	}
 	sm.subscriptions[topicName] = sub
-	g.Log().Infof(ctx, "create subscriber ok. topicName: '%v'", topicName)
+	g.Log().Infof(ctx, "create subscriber of topic '%v' ok", topicName)
 	return nil
 }
 
@@ -61,18 +62,7 @@ func (sm *SubscriberManager) Close(ctx context.Context) error {
 	sm.subscriptions = make(map[string]*subscriber)
 	return nil
 }
-func (sm *SubscriberManager) deleteSubscriber(ctx context.Context, key string) error {
-	sm.subMutex.Lock()
-	defer sm.subMutex.Unlock()
 
-	if sub, exist := sm.subscriptions[key]; exist {
-		if err := sub.unsubscribe(ctx); err != nil {
-			return err
-		}
-		sm.subscriptions = nil
-	}
-	return nil
-}
 func (s *subscriber) unsubscribe(ctx context.Context) error {
 	if s.sub != nil {
 		if err := s.sub.Drain(); err != nil {
@@ -84,20 +74,36 @@ func (s *subscriber) unsubscribe(ctx context.Context) error {
 		return nil
 	}
 	close(s.cancel)
-	g.Log().Infof(ctx, "unsubscribe topic <%v> ok", s.topicName)
+	g.Log().Infof(ctx, "unsubscribe topic '%v' ok", s.topicName)
 	return nil
 }
 func (sm *SubscriberManager) DeleteSubscriber(ctx context.Context, topicName string) error {
-	return sm.deleteSubscriber(ctx, topicName)
+	sm.subMutex.Lock()
+
+	sub, exist := sm.subscriptions[topicName]
+	if !exist {
+		sm.subMutex.Unlock()
+		return gerror.Newf("not found subscription of topic '%v'", topicName)
+	}
+	sm.subscriptions = nil
+	sm.subMutex.Unlock()
+	if err := sub.unsubscribe(ctx); err != nil {
+		return err
+	}
+
+	return nil
 }
 func (sm *SubscriberManager) Subscribe(ctx context.Context, topicName string, handler pubsub.SubscribeFunc) error {
 	sm.subMutex.Lock()
-	defer sm.subMutex.Unlock()
 
-	if sub, exist := sm.subscriptions[topicName]; exist {
-		if err := sub.Subscribe(ctx, handler); err != nil {
-			return err
-		}
+	sub, exist := sm.subscriptions[topicName]
+	if !exist {
+		sm.subMutex.Unlock()
+		return gerror.Newf("not found subscription of topic '%v'", topicName)
+	}
+	sm.subMutex.Unlock()
+	if err := sub.Subscribe(ctx, handler); err != nil {
+		return err
 	}
 	return nil
 }
@@ -118,12 +124,11 @@ func (s *subscriber) subscribeAsync(
 	sub, err := s.conn.Subscribe(s.topicName, func(msg *nats.Msg) {
 		metrics.IncrementCounter(ctx, metrics.NatsSubscribeTotalCount, "topic", s.topicName)
 
-		pubsubmsg := s.createPubSubMessage(msg, s.topicName)
 		err := func() error {
 			defer func() {
 				panicRecovery(ctx, recover())
 			}()
-			if err := handler(ctx, pubsubmsg); err != nil {
+			if err := handler(ctx, msg); err != nil {
 				time.Sleep(ConsumeMessageDelay)
 				return err
 			}
@@ -132,26 +137,25 @@ func (s *subscriber) subscribeAsync(
 		if err != nil {
 			g.Log().Errorf(ctx, "error in handler for topic '%s': %v", s.topicName, err)
 		}
-		// 处理完成
-		if pubsubmsg.Committer != nil {
-			pubsubmsg.Commit(ctx)
-		}
+
 	})
 	if err != nil {
 		return err
 	}
 	sub.SetPendingLimits(-1, -1)
 	s.sub = sub
+	g.Log().Infof(ctx, "ready to subscribe msg for '%v'", s.topicName)
 	// 等待被取消
 	<-s.cancel
+	g.Log().Infof(ctx, "subscribe of '%v' is canceled", s.topicName)
 	return nil
 }
 
-func (sm *subscriber) createPubSubMessage(msg *nats.Msg, topic string) *pubsub.Message {
-	pubsubMsg := pubsub.NewMessage() // Pass a context if needed
-	pubsubMsg.Topic = topic
-	pubsubMsg.Value = msg.Data
-	pubsubMsg.MetaData = msg.Header
-	pubsubMsg.Committer = &natsCommitter{msg: msg}
-	return pubsubMsg
-}
+// func (sm *subscriber) createPubSubMessage(msg *nats.Msg, topic string) *nats.Msg {
+// 	pubsubMsg := pubsub.NewMessage() // Pass a context if needed
+// 	pubsubMsg.Topic = topic
+// 	pubsubMsg.Value = msg.Data
+// 	pubsubMsg.MetaData = msg.Header
+// 	pubsubMsg.Subject = msg.Subject
+// 	return pubsubMsg
+// }

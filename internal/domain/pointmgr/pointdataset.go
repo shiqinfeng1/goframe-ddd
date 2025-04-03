@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/gogf/gf/v2/frame/g"
-	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
+	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 )
 
 type PointDataSetMgr struct {
@@ -19,14 +19,14 @@ func NewPointDataSetService(repo Repository) *PointDataSetMgr {
 	}
 }
 
-func (p *PointDataSetMgr) HandleTopic1(ctx context.Context, msg *pubsub.Message) error {
-	time.Sleep(5 * time.Millisecond)
-	g.Log().Debugf(ctx, "1 recv a msg: %v", msg)
+func (p *PointDataSetMgr) HandleTopic1(ctx context.Context, msg *nats.Msg) error {
+	time.Sleep(10 * time.Millisecond)
+	// g.Log().Debugf(ctx, "1 recv a msg: %v", msg)
 	return nil
 }
 
-func (p *PointDataSetMgr) HandleTopic2(ctx context.Context, msg *pubsub.Message) error {
+func (p *PointDataSetMgr) HandleTopic2(ctx context.Context, msg *jetstream.Msg) error {
 	time.Sleep(5 * time.Millisecond)
-	g.Log().Debugf(ctx, "2 recv a msg: %v", msg)
+	// g.Log().Debugf(ctx, "2 recv a msg: %v", msg)
 	return nil
 }

@@ -36,7 +36,6 @@ type JetStreamInfoOutput struct {
 }
 
 type PubSubBenchmarkInput struct {
-	MsgSize      int
 	Subjects     []string
 	JsSubjects   []string
 	StreamName   string

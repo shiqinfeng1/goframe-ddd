@@ -6,10 +6,15 @@ import (
 )
 
 type PubSubBenchmarkReq struct {
-	g.Meta  `path:"/pubsub/benchmark" tags:"消息队列管理" method:"post" summary:"消息发布订阅基准测试"`
-	MsgSize int `p:"msg_size" dc:"每个消息的尺寸. 默认值:128"`
+	g.Meta `path:"/pubsub/benchmark" tags:"消息队列管理" method:"post" summary:"消息发布订阅基准测试"`
 }
 type PubSubBenchmarkRes struct {
+	g.Meta `status:"200"`
+}
+type StreamSendReq struct {
+	g.Meta `path:"/pubsub/sendStream" tags:"消息队列管理" method:"post" summary:"发送消息流(测试接口)"`
+}
+type StreamSendRes struct {
 	g.Meta `status:"200"`
 }
 

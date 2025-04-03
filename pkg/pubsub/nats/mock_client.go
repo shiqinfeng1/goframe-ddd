@@ -373,7 +373,7 @@ func (mr *MockJsSubMgrMockRecorder) NewSubscriber(ctx, stream, identity, consume
 }
 
 // Subscribe mocks base method.
-func (m *MockJsSubMgr) Subscribe(ctx context.Context, identity []string, handler pubsub.SubscribeFunc) error {
+func (m *MockJsSubMgr) Subscribe(ctx context.Context, identity []string, handler pubsub.JsSubscribeFunc) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Subscribe", ctx, identity, handler)
 	ret0, _ := ret[0].(error)

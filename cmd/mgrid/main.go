@@ -17,7 +17,6 @@ func main() {
 	httpSrv := server.NewHttpServer()
 	grpcSrv := server.NewGrpcServer()
 	pubsubMgr := server.NewSubscriptions()
-
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -37,7 +36,7 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		g.Log().Infof(ctx, "start nats subscrib ...")
+		g.Log().Infof(ctx, "start nats subscribe ...")
 		if err := pubsubMgr.Run(ctx); err != nil {
 			g.Log().Fatalf(ctx, "subscription error : %v", err)
 		}

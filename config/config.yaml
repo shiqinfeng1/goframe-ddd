@@ -134,5 +134,5 @@ nats:
   serverAddr: "nats://localhost:4222"
   consumerName: "mgrid-consumer"
   streamName: "mgrid-stream"
-  subjects: ["pubsub.station.1.IED.1~50.>"]
+  subjects: ["pubsub.station.1.IED.1~50.point.1~100"]
   jsSubjects: ["jetstream.station.1.>"]

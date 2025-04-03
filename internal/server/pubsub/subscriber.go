@@ -17,7 +17,7 @@ import (
 
 type ControllerV1 struct {
 	subscriptions   map[string]pubsub.SubscribeFunc
-	jsSubscriptions map[string]pubsub.SubscribeFunc
+	jsSubscriptions map[string]pubsub.JsSubscribeFunc
 	group           errgroup.Group
 	natsClient      *pkgnats.Client
 	app             *application.Application
@@ -27,10 +27,11 @@ func NewV1() *ControllerV1 {
 	ctx := gctx.New()
 	c := &ControllerV1{
 		subscriptions:   make(map[string]pubsub.SubscribeFunc),
-		jsSubscriptions: make(map[string]pubsub.SubscribeFunc),
+		jsSubscriptions: make(map[string]pubsub.JsSubscribeFunc),
 		group:           errgroup.Group{},
 		natsClient: pkgnats.New(
 			g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
+			"Client For Subscriber",
 		),
 		app: application.App(ctx),
 	}
@@ -79,7 +80,6 @@ func (s *ControllerV1) Run(ctx context.Context) error {
 	// 使用协程并发订阅消息主题
 	for topic, handler := range s.Subscriptions() {
 		s.group.Go(func() error {
-			g.Log().Debugf(ctx, "start subscribe topic '%v' ...", topic)
 			err := s.natsClient.Subscribe(ctx, topic, handler)
 			if err != nil {
 				return gerror.Wrapf(err, "subscribe topic '%v' fail", topic)
@@ -122,16 +122,28 @@ func (s *ControllerV1) Run(ctx context.Context) error {
 
 // 注册topic的处理函数
 func (s *ControllerV1) RegisterSubscription(ctx context.Context, topic string, handler pubsub.SubscribeFunc) {
+	_, exist := s.subscriptions[topic]
+	if exist {
+		g.Log().Warningf(ctx, "subscriber of topic '%v' is already registered handler", topic)
+		return
+	}
 	s.subscriptions[topic] = handler
+	g.Log().Infof(ctx, "subscriber of topic '%v' register handler ok", topic)
 }
-func (s *ControllerV1) RegisterJsSubscription(ctx context.Context, topic string, handler pubsub.SubscribeFunc) {
+func (s *ControllerV1) RegisterJsSubscription(ctx context.Context, topic string, handler pubsub.JsSubscribeFunc) {
+	_, exist := s.jsSubscriptions[topic]
+	if exist {
+		g.Log().Warningf(ctx, "js consumer of topic '%v' is already registered handler", topic)
+		return
+	}
 	s.jsSubscriptions[topic] = handler
+	g.Log().Infof(ctx, "js consumer of topic '%v' register handler ok", topic)
 }
 
 // 返回所有注册函数
 func (s *ControllerV1) Subscriptions() map[string]pubsub.SubscribeFunc {
 	return s.subscriptions
 }
-func (s *ControllerV1) JsSubscriptions() map[string]pubsub.SubscribeFunc {
+func (s *ControllerV1) JsSubscriptions() map[string]pubsub.JsSubscribeFunc {
 	return s.jsSubscriptions
 }
