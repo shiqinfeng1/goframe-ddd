@@ -8,6 +8,7 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	grpc_filemgr "github.com/shiqinfeng1/goframe-ddd/internal/server/grpc/filemgr"
 	http_filemgr "github.com/shiqinfeng1/goframe-ddd/internal/server/http/filemgr"
+	"github.com/shiqinfeng1/goframe-ddd/internal/server/http/ops"
 	"github.com/shiqinfeng1/goframe-ddd/internal/server/http/pointdata"
 	"github.com/shiqinfeng1/goframe-ddd/internal/server/pubsub"
 )
@@ -38,6 +39,7 @@ func NewHttpServer() *ghttp.Server {
 		group.Middleware(ghttp.MiddlewareHandlerResponse)
 		handle := []any{
 			pointdata.NewV1(),
+			ops.NewV1(),
 		}
 		if g.Cfg().MustGet(ctx, "filemgr.enable").Bool() {
 			handle = append(handle, http_filemgr.NewV1())

@@ -94,3 +94,7 @@ type TaskListOutput struct {
 	MaxTasks int `json:"max_tasks" dc:"同时运行的最大发送任务数量"`
 	Tasks    []Task
 }
+
+type UpgradeAppInput struct {
+	AppName string
+}

@@ -20,7 +20,7 @@ type StreamSendRes struct {
 
 type GetStreamInfoReq struct {
 	g.Meta     `path:"/pubsub/stream/getInfo" tags:"消息队列管理" method:"post" summary:"查询消息流信息和状态"`
-	StreamName string `p:"stream_name" v:"required" dc:"消息流名称"`
+	StreamName string `p:"stream_name" v:"required#未指定消息流名称" dc:"消息流名称"`
 }
 type GetStreamInfoRes struct {
 	g.Meta        `status:"200"`

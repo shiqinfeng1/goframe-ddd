@@ -3,6 +3,11 @@ services:
     image: runtime-infrastructure:latest
     container_name: mgrid-runtime
     restart: unless-stopped
+    build: .
+    develop:
+      watch:
+        - action: rebuild
+          path: .
     volumes:
       - ./artifacts:/app
       - ./artifacts/supervisord.conf:/etc/supervisor/supervisord.conf
