@@ -84,7 +84,7 @@ func (s *ControllerV1) Run(ctx context.Context) error {
 			if err != nil {
 				return gerror.Wrapf(err, "subscribe topic '%v' fail", topic)
 			}
-			g.Log().Debugf(ctx, "exit subscribe topic '%v' %v", topic, err)
+			g.Log().Debugf(ctx, "exit subscribe for topic '%v' ok", topic)
 			return err
 		})
 	}
@@ -110,13 +110,13 @@ func (s *ControllerV1) Run(ctx context.Context) error {
 			if err != nil {
 				return gerror.Wrapf(err, "jsSubscribe topic '%v' fail", topic)
 			}
-			g.Log().Debugf(ctx, "exit jsSubscribe topic '%v': %v", topic, err)
-			return err
+			g.Log().Debugf(ctx, "exit jsSubscribe for topic '%v' ok", topic)
+			return nil
 		})
 	}
 	// 阻塞等待协程退出：订阅连接断开后协程退出
 	err := s.group.Wait()
-	g.Log().Debugf(ctx, "all subscribe exited: '%v'", err)
+	g.Log().Debugf(ctx, "all subscribe exited %v", err)
 	return err
 }
 

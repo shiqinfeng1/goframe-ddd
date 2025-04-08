@@ -71,7 +71,6 @@ func (s *subscriber) unsubscribe(ctx context.Context) error {
 		if err := s.sub.Unsubscribe(); err != nil {
 			return err
 		}
-		return nil
 	}
 	close(s.cancel)
 	g.Log().Infof(ctx, "unsubscribe topic '%v' ok", s.topicName)
@@ -87,6 +86,7 @@ func (sm *SubscriberManager) DeleteSubscriber(ctx context.Context, topicName str
 	}
 	sm.subscriptions = nil
 	sm.subMutex.Unlock()
+
 	if err := sub.unsubscribe(ctx); err != nil {
 		return err
 	}
@@ -102,6 +102,7 @@ func (sm *SubscriberManager) Subscribe(ctx context.Context, topicName string, ha
 		return gerror.Newf("not found subscription of topic '%v'", topicName)
 	}
 	sm.subMutex.Unlock()
+
 	if err := sub.Subscribe(ctx, handler); err != nil {
 		return err
 	}

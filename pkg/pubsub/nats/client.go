@@ -61,8 +61,9 @@ func (c *Client) Connect(ctx context.Context, opts ...clientOpts) error {
 		opt(c)
 	}
 
-	c.connMgr = newConnMgr(c.serverAddr, c.natsConnector, c.jetStreamCreator)
-	c.connMgr.Connect(ctx, c.natsOpts...)
+	connMgr := newConnMgr(c.serverAddr, c.natsConnector, c.jetStreamCreator)
+	connMgr.Connect(ctx, c.natsOpts...)
+	c.connMgr = connMgr
 
 	return nil
 }
@@ -119,6 +120,9 @@ func (c *Client) JsSubscribe(ctx context.Context, stream streamIntf, identity []
 	if !c.connMgr.isConnected() {
 		return errClientNotConnected
 	}
+	if c.jsSubMgr == nil {
+		return errJetStream
+	}
 	err := c.jsSubMgr.NewSubscriber(ctx, stream, identity, consumeType)
 	if err != nil {
 		return err
@@ -141,6 +145,9 @@ func (c *Client) Subscribe(ctx context.Context, topicName string, handler pubsub
 	if err != nil {
 		return err
 	}
+	if c.subMgr == nil {
+		return errSubscriptionError
+	}
 	if err := c.subMgr.NewSubscriber(ctx, conn, topicName, SubTypeSubAsync); err != nil {
 		return err
 	}
@@ -155,15 +162,18 @@ func (c *Client) Close(ctx context.Context) error {
 	if c.subMgr != nil {
 		c.subMgr.Close(ctx)
 		c.subMgr = nil
+		g.Log().Infof(ctx, "nats client '%v' close sub ok", c.name)
 	}
 	if c.jsSubMgr != nil {
 		c.jsSubMgr.Close(ctx)
 		c.jsSubMgr = nil
+		g.Log().Infof(ctx, "nats client '%v' close js-sub ok", c.name)
 	}
 	if c.connMgr != nil {
 		c.connMgr.Close(ctx)
 		c.connMgr = nil
+		g.Log().Infof(ctx, "nats client '%v' close nats conn ok", c.name)
 	}
-	g.Log().Infof(ctx, "nats client '%v' close ok", c.name)
+	g.Log().Infof(ctx, "nats client '%v' close all ok", c.name)
 	return nil
 }

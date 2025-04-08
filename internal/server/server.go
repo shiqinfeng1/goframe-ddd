@@ -46,6 +46,9 @@ func NewHttpServer() *ghttp.Server {
 			handle...,
 		)
 	})
+
+	// 使能管理页面
+	// s.EnableAdmin()
 	// 设置openapi的api接口返回格式
 	oai := s.GetOpenApi()
 	oai.Config.CommonResponse = ghttp.DefaultHandlerResponse{}

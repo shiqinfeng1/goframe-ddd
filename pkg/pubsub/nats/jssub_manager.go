@@ -106,7 +106,6 @@ func (sm *JsSubscriberManager) NewSubscriber(ctx context.Context, stream streamI
 func (sm *JsSubscriberManager) Close(ctx context.Context) error {
 	sm.subMutex.Lock()
 	defer sm.subMutex.Unlock()
-
 	for _, sub := range sm.subscriptions {
 		if err := sub.deleteConsumer(ctx); err != nil {
 			return err
@@ -133,14 +132,14 @@ func (sm *JsSubscriberManager) DeleteSubscriber(ctx context.Context, identity []
 }
 func (sm *JsSubscriberManager) Subscribe(ctx context.Context, identity []string, handler pubsub.JsSubscribeFunc) error {
 	sm.subMutex.Lock()
-	defer sm.subMutex.Unlock()
-
-	if sub, exist := sm.subscriptions[strings.Join(identity, "")]; exist {
+	sub, exist := sm.subscriptions[strings.Join(identity, "")]
+	sm.subMutex.Unlock()
+	if exist {
 		if err := sub.Subscribe(ctx, handler); err != nil {
 			return err
 		}
 	}
-	g.Log().Infof(ctx, "exit subscrbver ok. streamName:%v consumerName:%v topicName%v", identity[0], identity[1], identity[2])
+	g.Log().Infof(ctx, "exit js subscribe ok. streamName:'%v' consumerName:'%v' topicName:'%v'", identity[0], identity[1], identity[2])
 
 	return nil
 }
@@ -226,7 +225,7 @@ func (s *jsSubscriber) subscribeByNext(
 				g.Log().Warningf(ctx, "consumer '%v' subscribe messages again for topic '%s' of '%v' ok", s.consumerName, s.topicName, s.streamName)
 				continue
 			}
-			g.Log().Errorf(ctx, "consumer '%v' fetching messages for topic '%s' of '%v' fail: %v", s.consumerName, s.topicName, s.streamName, err)
+			g.Log().Warningf(ctx, "consumer '%v' fetching messages for topic '%s' of '%v' fail: %v", s.consumerName, s.topicName, s.streamName, err)
 			return nil
 		}
 		err = func() error {

@@ -46,9 +46,11 @@ func main() {
 	// grpc服务需要手动关闭
 	// submgr 手动关闭
 	signalHandler := func(sig os.Signal) {
-		g.Log().Infof(ctx, "signal received: %v, gracefully shutting down grpc server", sig.String())
+		g.Log().Infof(ctx, "signal received: @@@@ '%v' @@@@, gracefully shutting down grpc & pubsub service", sig.String())
 		grpcSrv.Stop()
+		g.Log().Infof(ctx, "gracefully shutting down grpc service ok")
 		pubsubMgr.Stop(ctx)
+		g.Log().Infof(ctx, "gracefully shutting down pubsub service ok")
 	}
 	// 监听系统中断信号
 	gproc.AddSigHandlerShutdown(
@@ -57,5 +59,5 @@ func main() {
 	gproc.Listen()
 
 	wg.Wait()
-	g.Log().Infof(ctx, "exit all ok")
+	g.Log().Infof(ctx, "exit all ok\n---------------------------------------------------------\n")
 }
