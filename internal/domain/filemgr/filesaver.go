@@ -147,7 +147,7 @@ func getFileSaver(ctx context.Context, fileId string, repo Repository) (*fileSav
 			}
 		}
 		// 新建或打开文件
-		file, err := os.OpenFile(recvFile.FilePathSave+".downloading", os.O_CREATE|os.O_RDWR, 0o666)
+		file, err := gfile.OpenFile(recvFile.FilePathSave+".downloading", os.O_CREATE|os.O_RDWR, 0o666)
 		if err != nil {
 			return nil, err
 		}

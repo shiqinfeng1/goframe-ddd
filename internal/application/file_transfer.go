@@ -9,33 +9,33 @@ import (
 	"github.com/shiqinfeng1/goframe-ddd/internal/domain/filemgr"
 )
 
-func (h *Application) StartSendFile(ctx context.Context, in *StartSendFileInput) (*StartSendFileOutput, error) {
+func (app *Application) StartSendFile(ctx context.Context, in *StartSendFileInput) (*StartSendFileOutput, error) {
 	taskId := xid.New().String()
-	h.fileTransfer.AddTask(ctx, taskId, in.BaseName, in.NodeId, in.Files)
+	app.fileTransfer.AddTask(ctx, taskId, in.BaseName, in.NodeId, in.Files)
 	return nil, nil
 }
 
-func (h *Application) PauseSendFile(ctx context.Context, in *PauseSendFileInput) (*PauseSendFileOutput, error) {
-	h.fileTransfer.PauseTask(ctx, in.TaskId)
+func (app *Application) PauseSendFile(ctx context.Context, in *PauseSendFileInput) (*PauseSendFileOutput, error) {
+	app.fileTransfer.PauseTask(ctx, in.TaskId)
 	return nil, nil
 }
 
-func (h *Application) CancelSendFile(ctx context.Context, in *CancelSendFileInput) (*CancelSendFileOutput, error) {
-	h.fileTransfer.CancelTask(ctx, in.TaskId)
+func (app *Application) CancelSendFile(ctx context.Context, in *CancelSendFileInput) (*CancelSendFileOutput, error) {
+	app.fileTransfer.CancelTask(ctx, in.TaskId)
 	return nil, nil
 }
 
-func (h *Application) ResumeSendFile(ctx context.Context, in *ResumeSendFileInput) (*ResumeSendFileOutput, error) {
-	h.fileTransfer.ResumeTask(ctx, in.TaskId)
+func (app *Application) ResumeSendFile(ctx context.Context, in *ResumeSendFileInput) (*ResumeSendFileOutput, error) {
+	app.fileTransfer.ResumeTask(ctx, in.TaskId)
 	return nil, nil
 }
 
-func (h *Application) RemoveTask(ctx context.Context, in *RemoveTaskInput) (*RemoveTaskOutput, error) {
-	h.fileTransfer.RemoveTask(ctx, in.TaskIds)
+func (app *Application) RemoveTask(ctx context.Context, in *RemoveTaskInput) (*RemoveTaskOutput, error) {
+	app.fileTransfer.RemoveTask(ctx, in.TaskIds)
 	return nil, nil
 }
 
-func (h *Application) GetClientIds(ctx context.Context) ([]string, error) {
+func (app *Application) GetClientIds(ctx context.Context) ([]string, error) {
 	nodeIds, err := filemgr.Session().GetNodeList(ctx)
 	if err != nil {
 		g.Log().Error(ctx, err)
@@ -44,9 +44,9 @@ func (h *Application) GetClientIds(ctx context.Context) ([]string, error) {
 	return nodeIds, nil
 }
 
-func (h *Application) GetSendingTaskList(ctx context.Context, in *TaskListInput) (*TaskListOutput, error) {
-	running, maxTasks := h.fileTransfer.GetMaxAndRunning(ctx)
-	tasks, sfs, err := h.fileTransfer.GetNotCompletedTasks(ctx)
+func (app *Application) GetSendingTaskList(ctx context.Context, in *TaskListInput) (*TaskListOutput, error) {
+	running, maxTasks := app.fileTransfer.GetMaxAndRunning(ctx)
+	tasks, sfs, err := app.fileTransfer.GetNotCompletedTasks(ctx)
 	if err != nil {
 		g.Log().Error(ctx, err)
 		return nil, nil
@@ -78,8 +78,8 @@ func (h *Application) GetSendingTaskList(ctx context.Context, in *TaskListInput)
 	return tasklist, nil
 }
 
-func (h *Application) GetCompletedTaskList(ctx context.Context, in *TaskListInput) (*TaskListOutput, error) {
-	tasks, sfs, err := h.fileTransfer.GetCompletedTasks(ctx)
+func (app *Application) GetCompletedTaskList(ctx context.Context, in *TaskListInput) (*TaskListOutput, error) {
+	tasks, sfs, err := app.fileTransfer.GetCompletedTasks(ctx)
 	if err != nil {
 		g.Log().Error(ctx, err)
 		return nil, nil

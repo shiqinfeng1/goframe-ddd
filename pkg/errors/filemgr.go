@@ -19,9 +19,4 @@ var (
 	ErrFileMgrDisable = gerror.NewCode(gcode.New(100005, "未使能文件收发功能", nil))
 
 	ErrOver4GSize = gerror.NewCode(gcode.New(100101, "文件尺寸不能大于4G", nil))
-
-	ErrNatsConnectFail      = func(err error) error { return gerror.NewCode(gcode.New(200001, "连接nats失败", err)) }
-	ErrNatsStreamFail       = func(err error) error { return gerror.NewCode(gcode.New(200002, "查询stream失败", err)) }
-	ErrNatsDeleteStreamFail = func(err error) error { return gerror.NewCode(gcode.New(200003, "删除stream失败", err)) }
-	ErrNatsNotFooundStream  = func(f string) error { return gerror.NewCode(gcode.New(200004, "stream未找到:"+f, nil)) }
 )

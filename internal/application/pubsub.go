@@ -17,7 +17,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
-func (h *Application) SendStreamForTest(ctx context.Context) error {
+func (app *Application) SendStreamForTest(ctx context.Context) error {
 	jssubjects := g.Cfg().MustGet(ctx, "nats.jsSubjects").Strings()
 	exjssubs := utils.ExpandSubjectRange(strings.TrimSuffix(jssubjects[0], ">") + "IED.1~50.point.1~2")
 	for _, j := range exjssubs {
@@ -25,7 +25,7 @@ func (h *Application) SendStreamForTest(ctx context.Context) error {
 	}
 	return nil
 }
-func (h *Application) DeleteStream(ctx context.Context, in *DeleteStreamInput) error {
+func (app *Application) DeleteStream(ctx context.Context, in *DeleteStreamInput) error {
 
 	client := pkgnats.New(
 		g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
@@ -46,7 +46,7 @@ func (h *Application) DeleteStream(ctx context.Context, in *DeleteStreamInput) e
 	}
 	return nil
 }
-func (h *Application) JetStreamInfo(ctx context.Context, in *JetStreamInfoInput) (*JetStreamInfoOutput, error) {
+func (app *Application) JetStreamInfo(ctx context.Context, in *JetStreamInfoInput) (*JetStreamInfoOutput, error) {
 
 	client := pkgnats.New(
 		g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
@@ -86,7 +86,7 @@ func (h *Application) JetStreamInfo(ctx context.Context, in *JetStreamInfoInput)
 }
 
 // 基准测试无业务逻辑处理，不需要domian层参与，因此直接在app层实现测试逻辑
-func (h *Application) PubSubBenchmark(ctx context.Context, in *PubSubBenchmarkInput) error {
+func (app *Application) PubSubBenchmark(ctx context.Context, in *PubSubBenchmarkInput) error {
 
 	// 再运行发布者，一个发布者一个连接
 	for j := range len(in.Subjects) {

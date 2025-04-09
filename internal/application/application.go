@@ -9,12 +9,14 @@ import (
 	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/migration"
 	"github.com/shiqinfeng1/goframe-ddd/internal/domain/filemgr"
 	"github.com/shiqinfeng1/goframe-ddd/internal/domain/pointmgr"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/composectl"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/stream"
 )
 
 type Application struct {
-	fileTransfer FileTransferService
-	pointDataSet PointDataSetService
+	fileTransfer    FileTransferService
+	pointDataSet    PointDataSetService
+	imageController *composectl.ComposeController
 }
 
 var app *Application
@@ -23,7 +25,6 @@ var once sync.Once
 // New 一个DDD的应用层
 func App(ctx context.Context) *Application {
 	once.Do(func() {
-
 		// 实例化一个文件管理的数据仓库
 		var ftSrv *filemgr.FileTransferMgr
 		if g.Cfg().MustGet(ctx, "filemgr.enable").Bool() {
@@ -37,9 +38,15 @@ func App(ctx context.Context) *Application {
 		repoPm := adapters.NewPointmgrRepo(migration.NewEntClient(ctx))
 		pdsSrv := pointmgr.NewPointDataSetService(repoPm)
 
+		// 实例化一个dockeecompose 控制器
+		imageController, err := composectl.New(ctx, "")
+		if err != nil {
+			g.Log().Fatal(ctx, err)
+		}
 		app = &Application{
-			fileTransfer: ftSrv,
-			pointDataSet: pdsSrv,
+			fileTransfer:    ftSrv,
+			pointDataSet:    pdsSrv,
+			imageController: imageController,
 		}
 	})
 	return app

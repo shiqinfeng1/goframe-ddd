@@ -11,5 +11,6 @@ import (
 )
 
 type IOpsV1 interface {
-	Upgrade(ctx context.Context, req *v1.UpgradeReq) (res *v1.UpgradeRes, err error)
+	UpgradeApp(ctx context.Context, req *v1.UpgradeAppReq) (res *v1.UpgradeAppRes, err error)
+	UpgradeImage(ctx context.Context, req *v1.UpgradeImageReq) (res *v1.UpgradeImageRes, err error)
 }
