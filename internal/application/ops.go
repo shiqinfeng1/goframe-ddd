@@ -18,10 +18,12 @@ func (app *Application) UpgradeApp(ctx context.Context, in *UpgradeAppInput) err
 	return nil
 }
 func (app *Application) UpgradeImage(ctx context.Context, in *UpgradeImageInput) error {
-	if err := app.imageController.ComposeUp(ctx); err != nil {
-		return err
-	}
-	g.Log().Debugf(ctx, "upgrade image from '%v' to ...", in.Version)
+	go func() {
+		if err := app.imageController.ComposeUp(ctx); err != nil {
+			g.Log().Debugf(ctx, "exec docker compose up fail':%v", err)
+		}
+	}()
+	g.Log().Debugf(ctx, "upgrade image from '' to '%v' ...", in.Version)
 
 	return nil
 }

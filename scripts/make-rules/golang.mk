@@ -76,7 +76,7 @@ go.build.%:
 	@echo "===========> Building binary $(COMMAND) $(VERSION) for $(OS) $(ARCH)"
 	@mkdir -p $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)
 	CGO_ENABLED=1 GOOS=$(OS) GOARCH=$(ARCH) CC=$(CC) $(GO) build $(GO_BUILD_FLAGS) -o $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)/$(COMMAND)$(GO_OUT_EXT) $(ROOT_PACKAGE)/cmd/$(COMMAND)
-	upx $(UPX_FLAG) $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)/$(COMMAND)$(GO_OUT_EXT)
+# upx $(UPX_FLAG) $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)/$(COMMAND)$(GO_OUT_EXT)
 	@echo "===========> Copy binary $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)/$(COMMAND)$(GO_OUT_EXT) --> deployments/artifacts/$(COMMAND)$(GO_OUT_EXT)"
 	@rm -f deployments/artifacts/$(COMMAND)$(GO_OUT_EXT)
 	@cp $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)/$(COMMAND)$(GO_OUT_EXT) deployments/artifacts/$(COMMAND)$(GO_OUT_EXT)

@@ -7,6 +7,7 @@ require (
 	github.com/compose-spec/compose-go/v2 v2.5.0
 	github.com/docker/cli v28.0.4+incompatible
 	github.com/docker/compose/v2 v2.34.0
+	github.com/docker/docker v28.0.4+incompatible
 	github.com/gogf/gf/contrib/metric/otelmetric/v2 v2.9.0
 	github.com/gogf/gf/contrib/rpc/grpcx/v2 v2.8.3
 	github.com/gogf/gf/v2 v2.9.0
@@ -101,7 +102,6 @@ require (
 	github.com/docker/buildx v0.21.2 // indirect
 	github.com/docker/cli-docs-tool v0.9.0 // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
-	github.com/docker/docker v28.0.4+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.8.2 // indirect
 	github.com/docker/go v1.5.1-1.0.20160303222718-d30aec9fd63c // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
