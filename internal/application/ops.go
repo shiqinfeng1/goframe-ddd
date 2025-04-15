@@ -19,8 +19,9 @@ func (app *Application) UpgradeApp(ctx context.Context, in *UpgradeAppInput) err
 }
 func (app *Application) UpgradeImage(ctx context.Context, in *UpgradeImageInput) error {
 	go func() {
-		if err := app.imageController.ComposeUp(ctx); err != nil {
-			g.Log().Debugf(ctx, "exec docker compose up fail':%v", err)
+		nctx := gctx.New()
+		if err := app.dockerOps.ComposeUp(nctx, in.Version); err != nil {
+			g.Log().Debugf(nctx, "exec docker compose up fail':%v", err)
 		}
 	}()
 	g.Log().Debugf(ctx, "upgrade image from '' to '%v' ...", in.Version)
@@ -29,7 +30,7 @@ func (app *Application) UpgradeImage(ctx context.Context, in *UpgradeImageInput)
 }
 
 func (app *Application) ComposeImages(ctx context.Context) (*ComposeImagesOutput, error) {
-	images, err := app.imageController.ComposeImages(ctx)
+	images, err := app.dockerOps.ComposeImages(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -37,17 +38,18 @@ func (app *Application) ComposeImages(ctx context.Context) (*ComposeImagesOutput
 	out := &ComposeImagesOutput{
 		Images: make([]ImageSummary, 0),
 	}
-	for _, image := range images {
+	for _, repotag := range images {
+		repotags := strings.Split(repotag, ":")
 		out.Images = append(out.Images, ImageSummary{
-			Name: image.Repository,
-			Tag:  image.Tag,
+			Name: repotags[0],
+			Tag:  repotags[1],
 		})
 	}
 
 	return out, nil
 }
 func (app *Application) Images(ctx context.Context) (*ImagesOutput, error) {
-	images, err := app.imageController.Images(ctx)
+	images, err := app.dockerOps.Images(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -55,14 +57,12 @@ func (app *Application) Images(ctx context.Context) (*ImagesOutput, error) {
 	out := &ImagesOutput{
 		Images: make([]ImageSummary, 0),
 	}
-	for _, image := range images {
-		for _, repotag := range image.RepoTags {
-			repotags := strings.Split(repotag, ":")
-			out.Images = append(out.Images, ImageSummary{
-				Name: repotags[0],
-				Tag:  repotags[1],
-			})
-		}
+	for _, repotag := range images {
+		repotags := strings.Split(repotag, ":")
+		out.Images = append(out.Images, ImageSummary{
+			Name: repotags[0],
+			Tag:  repotags[1],
+		})
 	}
 
 	return out, nil

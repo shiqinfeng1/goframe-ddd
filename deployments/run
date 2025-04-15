@@ -1,0 +1,125 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set +o nounset
+set -o pipefail
+
+# 设置统一的密码，方便记忆
+readonly PASSWORD=${PASSWORD:-'123456'}
+readonly APP_WATCHER_HOST=${APP_WATCHER_HOST:-'127.0.0.1'}
+readonly APP_WATCHER_PORT=${APP_WATCHER_PORT:-'31083'}
+
+# Linux系统 going 用户
+readonly LINUX_USERNAME=${LINUX_USERNAME:-admin}
+# Linux root & going 用户密码
+readonly LINUX_PASSWORD=${LINUX_PASSWORD:-${PASSWORD}}
+# 不输入密码执行需要 root 权限的命令
+function common::sudo {
+  echo ${LINUX_PASSWORD} | sudo -S "$@"
+}
+
+log::info() {
+  for message; do
+    echo "${message}"
+  done
+}
+log::error() {
+  timestamp=$(date +"[%m%d %H:%M:%S]")
+  echo "!!! ${timestamp} ${1-}" >&2
+  shift
+  for message; do
+    echo "    ${message}" >&2
+  done
+}
+# The root of the build/dist directory
+APP_ROOT=$(dirname "${BASH_SOURCE[0]}")
+readonly APP_BIN_DIR="${APP_ROOT}/artifacts" # 安装文件存放目录
+
+# 安装
+function watcher::install()
+{
+  if systemctl status watcher| grep -q 'active'; then 
+    log::info "watcher is already running, please shutdown first!"
+    return 1
+  fi
+
+  pushd ${APP_ROOT} > /dev/null || return 1
+
+  common::sudo cp ${APP_BIN_DIR}/watcher /usr/local/bin
+  common::sudo cp ${APP_BIN_DIR}/watcher.service /etc/systemd/system/watcher.service
+  ABS_BIN_DIR=$(realpath "$APP_ROOT")  # 获取绝对路径
+
+  common::sudo sed -i "s|\${DATA_DIR}|$ABS_BIN_DIR|g" "/etc/systemd/system/watcher.service"    # 替换工作路径
+  
+  # 4. 启动-watcher 服务
+  common::sudo systemctl daemon-reload
+  common::sudo systemctl restart watcher
+  common::sudo systemctl enable watcher
+  watcher::status || return 1
+
+  log::info "install watcher successfully"
+  popd > /dev/null || return 1
+}
+
+# 卸载
+function watcher::uninstall()
+{
+  set +o errexit
+  common::sudo systemctl stop watcher
+  common::sudo systemctl disable watcher
+  common::sudo rm -f /usr/local/bin/watcher
+  common::sudo rm -f /etc/systemd/system/watcher.service
+  set -o errexit
+  log::info "uninstall watcher successfully"
+}
+
+# 状态检查
+function watcher::status()
+{
+  # 查看 watcher 运行状态，如果输出中包含 active (running) 字样说明 watcher 成功启动。
+  systemctl status watcher|grep -q 'active' || {
+    log::error "watcher failed to start, maybe not installed properly"
+    return 1
+  }
+
+  # 监听端口在配置文件中是 hardcode
+  if which ss &> /dev/null; then
+    if ss -tuln | grep :${APP_WATCHER_PORT} &>/dev/null; then
+      log::info "watcher is runnnng at ':${APP_WATCHER_PORT}'"
+      return 0
+    fi
+    echo "111"
+  elif which nc &> /dev/null; then
+    if nc -z -w 2 127.0.0.1 ${} &>/dev/null; then
+      log::info "watcher is runnnng at ':${APP_WATCHER_PORT}'"
+      return 0
+    fi
+    echo "222"
+  fi
+  log::error "cannot access watcher port(:${APP_WATCHER_PORT}), watcher maybe not startup"
+}
+
+if [[ "$*" =~ startup ]];then
+  watcher::install
+  docker compose up -d
+  exit 0
+fi
+if [[ "$*" =~ shutdown ]];then
+  watcher::uninstall
+  docker compose down
+  exit 0
+fi
+if [[ "$*" =~ restart ]];then
+  watcher::uninstall
+  docker compose down
+  watcher::install
+  docker compose up -d
+  exit 0
+fi
+if [[ "$*" =~ upgrade ]];then
+  docker compose up -d 
+  exit 0
+fi
+if [[ "$*" =~ watcher:: ]];then
+  eval $*
+fi

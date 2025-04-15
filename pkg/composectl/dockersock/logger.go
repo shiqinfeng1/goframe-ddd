@@ -1,4 +1,4 @@
-package composectl
+package dockersock
 
 import (
 	"context"

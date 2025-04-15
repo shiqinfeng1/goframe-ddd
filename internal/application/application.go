@@ -10,13 +10,16 @@ import (
 	"github.com/shiqinfeng1/goframe-ddd/internal/domain/filemgr"
 	"github.com/shiqinfeng1/goframe-ddd/internal/domain/pointmgr"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/composectl"
+
+	// "github.com/shiqinfeng1/goframe-ddd/pkg/composectl/dockersock"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/composectl/dockercmd"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/stream"
 )
 
 type Application struct {
-	fileTransfer    FileTransferService
-	pointDataSet    PointDataSetService
-	imageController *composectl.ComposeController
+	fileTransfer FileTransferService
+	pointDataSet PointDataSetService
+	dockerOps    composectl.DockerOps
 }
 
 var app *Application
@@ -39,14 +42,14 @@ func App(ctx context.Context) *Application {
 		pdsSrv := pointmgr.NewPointDataSetService(repoPm)
 
 		// 实例化一个dockeecompose 控制器
-		imageController, err := composectl.New(ctx, "")
+		dockerOps, err := dockercmd.New(ctx)
 		if err != nil {
 			g.Log().Fatal(ctx, err)
 		}
 		app = &Application{
-			fileTransfer:    ftSrv,
-			pointDataSet:    pdsSrv,
-			imageController: imageController,
+			fileTransfer: ftSrv,
+			pointDataSet: pdsSrv,
+			dockerOps:    dockerOps,
 		}
 	})
 	return app

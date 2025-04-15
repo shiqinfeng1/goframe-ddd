@@ -1,4 +1,4 @@
-package composectl
+package dockersock
 
 import (
 	"context"
@@ -112,23 +112,31 @@ func (ctl *ComposeController) LoadImage(ctx context.Context, imageFile string) e
 }
 
 // docker images 所有镜像信息
-func (ctl *ComposeController) Images(ctx context.Context) ([]image.Summary, error) {
+func (ctl *ComposeController) Images(ctx context.Context) ([]string, error) {
 	images, err := ctl.dockerCli.Client().ImageList(ctx, image.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
-	return images, nil
+	reoptags := make([]string, 0)
+	for _, v := range images {
+		reoptags = append(reoptags, v.RepoTags...)
+	}
+	return reoptags, nil
 }
 
 // docker compose images 当前运行容器的镜像信息
-func (ctl *ComposeController) ComposeImages(ctx context.Context) ([]api.ImageSummary, error) {
+func (ctl *ComposeController) ComposeImages(ctx context.Context) ([]string, error) {
 	images, err := ctl.service.Images(ctx, ctl.project.Name, api.ImagesOptions{})
 	if err != nil {
 		return nil, err
 	}
-	return images, nil
+	reoptags := make([]string, 0)
+	for _, v := range images {
+		reoptags = append(reoptags, v.Repository+":"+v.Tag)
+	}
+	return reoptags, nil
 }
-func (ctl *ComposeController) ComposeUp(ctx context.Context) error {
+func (ctl *ComposeController) ComposeUp(ctx context.Context, version string) error {
 	err := ctl.service.Up(ctx, ctl.project, api.UpOptions{
 		Start: api.StartOptions{
 			Project: ctl.project,

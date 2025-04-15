@@ -1,1 +1,17 @@
-# app应用容器化部署指南
+# 启动
+
+```
+./run  startup
+```
+
+# 停止
+
+```
+./run  shutdown
+```
+
+# 重启
+
+```
+./run  restart
+```
