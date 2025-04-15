@@ -7,6 +7,7 @@ import (
 	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/stream"
 )
 
 // FileTransferMgr 表示文件发送队列
@@ -16,12 +17,12 @@ type FileTransferMgr struct {
 	tasks    gmap.StrAnyMap
 	mutex    sync.Mutex
 	notify   chan struct{}
-	stream   StreamIntf
+	stream   stream.StreamIntf
 	repo     Repository
 }
 
 // NewFileSendQueue 创建一个新的文件发送队列
-func NewFileTransferService(maxTasks int, stm StreamIntf, repo Repository) *FileTransferMgr {
+func NewFileTransferService(maxTasks int, stm stream.StreamIntf, repo Repository) *FileTransferMgr {
 	q := &FileTransferMgr{
 		maxTasks: maxTasks,
 		tasks:    *gmap.NewStrAnyMap(true),

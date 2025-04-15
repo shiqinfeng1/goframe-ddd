@@ -1,4 +1,4 @@
-package filemgr
+package session
 
 import (
 	"context"
@@ -23,17 +23,13 @@ type SessionMgr struct {
 
 var (
 	sessionMgr *SessionMgr
-	once       sync.Once
 )
 
-func Session() *SessionMgr {
-	once.Do(func() {
-		sessionMgr = &SessionMgr{
-			serverSess: cache.Memory(),
-		}
-		go sessionMgr.checkLiveness()
-	})
-	return sessionMgr
+func init() {
+	sessionMgr = &SessionMgr{
+		serverSess: cache.Memory(),
+	}
+	go sessionMgr.checkLiveness()
 }
 
 func (s *SessionMgr) checkLiveness() {
@@ -59,22 +55,22 @@ func (s *SessionMgr) checkLiveness() {
 	}
 }
 
-func (s *SessionMgr) GetNodeList(ctx context.Context) ([]string, error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	ids, err := s.serverSess.Keys(ctx)
+func GetNodeList(ctx context.Context) ([]string, error) {
+	sessionMgr.mutex.Lock()
+	defer sessionMgr.mutex.Unlock()
+	ids, err := sessionMgr.serverSess.Keys(ctx)
 	if err != nil {
 		return []string{}, gerror.Wrap(err, "get sesson nodeIds fail")
 	}
 	return gconv.Strings(ids), nil
 }
 
-func (s *SessionMgr) SaveSession(ctx context.Context, nodeId string, sess *smux.Session) error {
+func SaveSession(ctx context.Context, nodeId string, sess *smux.Session) error {
 	// 检查之前是否有会话
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	if exist, _ := s.serverSess.Contains(ctx, nodeId); exist {
-		oldVal, err := s.serverSess.Remove(ctx, nodeId)
+	sessionMgr.mutex.Lock()
+	defer sessionMgr.mutex.Unlock()
+	if exist, _ := sessionMgr.serverSess.Contains(ctx, nodeId); exist {
+		oldVal, err := sessionMgr.serverSess.Remove(ctx, nodeId)
 		if err != nil {
 			return gerror.Wrapf(err, "remove old session fail. nodeId=%v", nodeId)
 		}
@@ -90,16 +86,16 @@ func (s *SessionMgr) SaveSession(ctx context.Context, nodeId string, sess *smux.
 			}
 		}
 	}
-	if err := s.serverSess.Set(ctx, nodeId, sess, 0); err != nil {
+	if err := sessionMgr.serverSess.Set(ctx, nodeId, sess, 0); err != nil {
 		return gerror.Wrapf(err, "set new session fail. nodeId=%v", nodeId)
 	}
 	return nil
 }
 
-func (s *SessionMgr) GetSession(ctx context.Context, nodeId string) (*smux.Session, error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	item, err := s.serverSess.Get(ctx, nodeId)
+func GetSession(ctx context.Context, nodeId string) (*smux.Session, error) {
+	sessionMgr.mutex.Lock()
+	defer sessionMgr.mutex.Unlock()
+	item, err := sessionMgr.serverSess.Get(ctx, nodeId)
 	if err != nil {
 		return nil, gerror.Wrapf(err, "get session fail. nodeId=%v", nodeId)
 	}

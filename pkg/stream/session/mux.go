@@ -1,4 +1,4 @@
-package stream
+package session
 
 import (
 	"io"
@@ -9,11 +9,11 @@ import (
 	"github.com/xtaci/smux"
 )
 
-func newSessoinByServer(conn net.Conn) (*smux.Session, error) {
+func NewSessoinByServer(conn net.Conn) (*smux.Session, error) {
 	return newSession(conn, smux.Server)
 }
 
-func newSessionByClient(conn net.Conn) (*smux.Session, error) {
+func NewSessionByClient(conn net.Conn) (*smux.Session, error) {
 	return newSession(conn, smux.Client)
 }
 

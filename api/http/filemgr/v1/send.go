@@ -14,28 +14,36 @@ type StartSendFileRes struct {
 	g.Meta `status:"200"`
 }
 
-type PauseSendFileReq struct {
-	g.Meta `path:"/file/pauseSend" tags:"文件收发" method:"post" summary:"暂停发送文件"`
-	TaskId string `p:"task_id" v:"required" dc:"任务id"`
-}
-type PauseSendFileRes struct {
-	g.Meta `status:"200"`
-}
+// type PauseSendFileReq struct {
+// 	g.Meta `path:"/file/pauseSend" tags:"文件收发" method:"post" summary:"暂停发送文件"`
+// 	TaskId string `p:"task_id" v:"required" dc:"任务id"`
+// }
+// type PauseSendFileRes struct {
+// 	g.Meta `status:"200"`
+// }
 
-type CancelSendFileReq struct {
-	g.Meta `path:"/file/cancelSend" tags:"文件收发" method:"post" summary:"取消发送文件"`
-	TaskId string `p:"task_id" v:"required" dc:"任务id"`
-}
-type CancelSendFileRes struct {
-	g.Meta `status:"200"`
-}
-type ResumeSendFileReq struct {
-	g.Meta `path:"/file/resumeSend" tags:"文件收发" method:"post" summary:"继续发送文件"`
-	TaskId string `p:"task_id" v:"required" dc:"任务id"`
-}
-type ResumeSendFileRes struct {
-	g.Meta `status:"200"`
-}
+// type CancelSendFileReq struct {
+// 	g.Meta `path:"/file/cancelSend" tags:"文件收发" method:"post" summary:"取消发送文件"`
+// 	TaskId string `p:"task_id" v:"required" dc:"任务id"`
+// }
+// type CancelSendFileRes struct {
+// 	g.Meta `status:"200"`
+// }
+// type ResumeSendFileReq struct {
+// 	g.Meta `path:"/file/resumeSend" tags:"文件收发" method:"post" summary:"继续发送文件"`
+// 	TaskId string `p:"task_id" v:"required" dc:"任务id"`
+// }
+// type ResumeSendFileRes struct {
+// 	g.Meta `status:"200"`
+// }
+// type RemoveTaskReq struct {
+// 	g.Meta  `path:"/task/remove" tags:"文件收发" method:"post" summary:"删除任务"`
+// 	TaskIds []string `p:"task_ids" v:"required" dc:"任务id列表"`
+// }
+
+// type RemoveTaskRes struct {
+// 	g.Meta `status:"200"`
+// }
 
 type SendingTaskListReq struct {
 	g.Meta `path:"/task/sendingList" tags:"文件收发" method:"post" summary:"查询未完成的任务列表"`
@@ -55,13 +63,4 @@ type CompletedTaskListReq struct {
 type CompletedTaskListRes struct {
 	g.Meta `status:"200"`
 	Tasks  []application.Task `json:"tasks" dc:"已连接节点客户端id列表"`
-}
-
-type RemoveTaskReq struct {
-	g.Meta  `path:"/task/remove" tags:"文件收发" method:"post" summary:"删除任务"`
-	TaskIds []string `p:"task_ids" v:"required" dc:"任务id列表"`
-}
-
-type RemoveTaskRes struct {
-	g.Meta `status:"200"`
 }

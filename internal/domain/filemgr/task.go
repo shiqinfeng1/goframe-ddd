@@ -14,21 +14,12 @@ import (
 	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/rs/xid"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/stream"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/stream/session"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/utils"
 	"github.com/xtaci/smux"
 	"golang.org/x/net/context"
 )
-
-type (
-	RecvStreamHandleFunc func(*smux.Session, io.ReadWriter) error
-	SendStreamHandleFunc func(*smux.Stream) error
-)
-
-// 数据流管理
-type StreamIntf interface {
-	SendByClient(ctx context.Context, handler SendStreamHandleFunc) error
-	SendByServer(ctx context.Context, session *smux.Session, handler SendStreamHandleFunc) error
-}
 
 // 任务状态枚举
 type Status struct {
@@ -88,14 +79,14 @@ type TransferTask struct {
 	sendFileChan chan postSendFunc
 	pauseChan    chan postFunc
 	cancelChan   chan postFunc
-	stream       StreamIntf
+	stream       stream.StreamIntf
 	chunkOffsets []int64
 	chunkSizes   []int
 	notifyStatus atomic.Uint32
 	exit         context.CancelFunc
 }
 
-func NewTransferTask(ctx context.Context, id, name, nodeId string, paths []string, status Status, stream StreamIntf, repo Repository) *TransferTask {
+func NewTransferTask(ctx context.Context, id, name, nodeId string, paths []string, status Status, stream stream.StreamIntf, repo Repository) *TransferTask {
 	task := &TransferTask{
 		taskId:       id,
 		paths:        paths,
@@ -417,7 +408,7 @@ func (t *TransferTask) worker(ctx context.Context) {
 			// 在协程中执行回调doSend
 			// 在回调doSend中执行成功后调用postHandle
 			if t.nodeId != "" { // 服务端需指定nodeid
-				sess, err := Session().GetSession(ctx, t.nodeId)
+				sess, err := session.GetSession(ctx, t.nodeId)
 				if err != nil {
 					g.Log().Errorf(ctx, "send file fail:%v", err)
 					postHandle(false)

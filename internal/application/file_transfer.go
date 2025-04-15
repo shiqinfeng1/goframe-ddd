@@ -6,7 +6,6 @@ import (
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/rs/xid"
-	"github.com/shiqinfeng1/goframe-ddd/internal/domain/filemgr"
 )
 
 func (app *Application) StartSendFile(ctx context.Context, in *StartSendFileInput) (*StartSendFileOutput, error) {
@@ -33,15 +32,6 @@ func (app *Application) ResumeSendFile(ctx context.Context, in *ResumeSendFileIn
 func (app *Application) RemoveTask(ctx context.Context, in *RemoveTaskInput) (*RemoveTaskOutput, error) {
 	app.fileTransfer.RemoveTask(ctx, in.TaskIds)
 	return nil, nil
-}
-
-func (app *Application) GetClientIds(ctx context.Context) ([]string, error) {
-	nodeIds, err := filemgr.Session().GetNodeList(ctx)
-	if err != nil {
-		g.Log().Error(ctx, err)
-		return nil, nil
-	}
-	return nodeIds, nil
 }
 
 func (app *Application) GetSendingTaskList(ctx context.Context, in *TaskListInput) (*TaskListOutput, error) {

@@ -11,25 +11,37 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
-	"github.com/shiqinfeng1/goframe-ddd/internal/domain/filemgr"
-	"github.com/shiqinfeng1/goframe-ddd/pkg/stream/transport"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/stream/session"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/transport"
 	"github.com/xtaci/smux"
 )
 
-type StreamMgr struct {
-	clientSess          *smux.Session // 客户端首次连接后，会话信息会被缓存
-	clientSessIsRunning atomic.Bool
-	transport           Transport
-	IsCloud             bool
-	recvHandler         filemgr.RecvStreamHandleFunc
+type (
+	RecvStreamHandleFunc func(*smux.Session, io.ReadWriter) error
+	SendStreamHandleFunc func(*smux.Stream) error
+)
+
+// 数据流管理
+type StreamIntf interface {
+	SendByClient(ctx context.Context, handler SendStreamHandleFunc) error
+	SendByServer(ctx context.Context, sess *smux.Session, handler SendStreamHandleFunc) error
 }
 
+type StreamMgr struct {
+	clientSess          *smux.Session // 客户端首次连接后，缓存的会话信息
+	clientSessIsRunning atomic.Bool
+	transport           transport.Transport
+	IsCloud             bool
+	recvHandler         RecvStreamHandleFunc
+}
+
+// 新建一个流管理
 func NewStream() *StreamMgr {
 	ctx := gctx.New()
 	var stm *StreamMgr
 
 	// 实例化一个流通道管理服务，流通道支持2种传输层：tcp和kcp
-	transType := g.Cfg().MustGet(ctx, "filemgr.transport").String()
+	transType := g.Cfg().MustGet(ctx, "sessionmgr.transport").String()
 	switch transType {
 	case "kcp":
 		stm = &StreamMgr{
@@ -40,20 +52,20 @@ func NewStream() *StreamMgr {
 			transport: transport.NewTcpTransport(),
 		}
 	default:
-		g.Log().Fatalf(ctx, "config of filemgr.transport is invalid:%v", transType)
+		g.Log().Fatalf(ctx, "config of sessionmgr.transport is invalid:%v", transType)
 	}
-	stm.IsCloud = g.Cfg().MustGet(ctx, "filemgr.isCloud").Bool()
+	stm.IsCloud = g.Cfg().MustGet(ctx, "sessionmgr.isCloud").Bool()
 
 	return stm
 }
 
-func (s *StreamMgr) Startup(ctx context.Context, recvHandler filemgr.RecvStreamHandleFunc) {
-	addr := g.Cfg().MustGet(ctx, "filemgr.addr").String()
+func (s *StreamMgr) Startup(ctx context.Context, recvHandler RecvStreamHandleFunc, clientHandshake func(context.Context, io.ReadWriter) error) {
+	addr := g.Cfg().MustGet(ctx, "sessionmgr.addr").String()
 	s.recvHandler = recvHandler
 	if s.IsCloud {
 		s.StartupServer(ctx, addr)
 	} else {
-		s.StartupClient(ctx, addr)
+		s.StartupClient(ctx, addr, clientHandshake)
 	}
 }
 
@@ -97,16 +109,16 @@ func (s *StreamMgr) acceptStream(ctx context.Context, session *smux.Session) {
 // 服务端接收一个数据流，首次接收握手消息时，会先启动服务，每个客户端的连接会被缓存
 func (s *StreamMgr) StartupServer(ctx context.Context, addr string) error {
 	return s.transport.NewServer(ctx, addr, func(conn net.Conn) {
-		session, err := newSessoinByServer(conn)
+		sess, err := session.NewSessoinByServer(conn)
 		if err != nil {
 			g.Log().Error(ctx, err)
 			return
 		}
-		go s.acceptStream(ctx, session)
+		go s.acceptStream(ctx, sess)
 	})
 }
 
-func (s *StreamMgr) startupClient(ctx context.Context, addr string) error {
+func (s *StreamMgr) startupClient(ctx context.Context, addr string, clientHandshake func(context.Context, io.ReadWriter) error) error {
 	if s.clientSessIsRunning.Load() {
 		return nil
 	}
@@ -114,39 +126,39 @@ func (s *StreamMgr) startupClient(ctx context.Context, addr string) error {
 	if err != nil {
 		return err
 	}
-	session, err := newSessionByClient(conn)
+	sess, err := session.NewSessionByClient(conn)
 	if err != nil {
 		conn.Close()
 		return err
 	}
-	s.clientSess = session
+	s.clientSess = sess
 	s.clientSessIsRunning.Store(true)
 	// 会话建立成功， 立即主动发起握手
 	err = s.SendByClient(ctx, func(stm *smux.Stream) error {
 		c := gctx.New()
-		if err := filemgr.ReqHandshakeWithSync(c, stm); err != nil {
+		if err := clientHandshake(c, stm); err != nil {
 			return gerror.Wrap(err, "handshake fail")
 		}
-		g.Log().Infof(c, "my nodeId is %v, handshake to server:%v ok", filemgr.MyClientID, addr)
+		g.Log().Infof(c, "handshake to server:%v ok", addr)
 		return nil
 	})
 	if err != nil {
 		g.Log().Warningf(ctx, "handshake to server fail:%v", err)
-		session.Close()
+		sess.Close()
 		conn.Close()
 		s.clientSessIsRunning.Store(false)
 	}
-	go s.acceptStream(ctx, session)
+	go s.acceptStream(ctx, sess)
 	return err
 }
 
-func (s *StreamMgr) StartupClient(ctx context.Context, addr string) {
+func (s *StreamMgr) StartupClient(ctx context.Context, addr string, clientHandshake func(context.Context, io.ReadWriter) error) {
 	// 定时3秒检查连通性
 	ticker := time.NewTicker(time.Second * 3)
 	go func() {
 		for range ticker.C {
-			if err := s.startupClient(ctx, addr); err != nil {
-				g.Log().Errorf(ctx, "filemgr connect to server fail:%v", err)
+			if err := s.startupClient(ctx, addr, clientHandshake); err != nil {
+				g.Log().Errorf(ctx, "file mgr connect to server fail:%v", err)
 				continue
 			}
 			if s.clientSess.IsClosed() {
@@ -156,7 +168,7 @@ func (s *StreamMgr) StartupClient(ctx context.Context, addr string) {
 	}()
 }
 
-func (s *StreamMgr) send(ctx context.Context, session *smux.Session, handler filemgr.SendStreamHandleFunc) error {
+func (s *StreamMgr) send(ctx context.Context, session *smux.Session, handler SendStreamHandleFunc) error {
 	stream, err := session.OpenStream()
 	if err != nil {
 		if errors.Is(err, io.ErrClosedPipe) {
@@ -185,14 +197,16 @@ func (s *StreamMgr) send(ctx context.Context, session *smux.Session, handler fil
 	return nil
 }
 
-func (s *StreamMgr) SendByServer(ctx context.Context, session *smux.Session, handler filemgr.SendStreamHandleFunc) error {
+// 实现文件发送接口
+func (s *StreamMgr) SendByServer(ctx context.Context, session *smux.Session, handler SendStreamHandleFunc) error {
 	if !s.IsCloud {
 		return gerror.New("my is client, cannot send by server")
 	}
 	return s.send(ctx, session, handler)
 }
 
-func (s *StreamMgr) SendByClient(ctx context.Context, handler filemgr.SendStreamHandleFunc) error {
+// 实现文件发送接口
+func (s *StreamMgr) SendByClient(ctx context.Context, handler SendStreamHandleFunc) error {
 	if s.IsCloud {
 		return gerror.New("my is server, cannot send by client")
 	}

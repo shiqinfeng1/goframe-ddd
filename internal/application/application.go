@@ -10,10 +10,10 @@ import (
 	"github.com/shiqinfeng1/goframe-ddd/internal/domain/filemgr"
 	"github.com/shiqinfeng1/goframe-ddd/internal/domain/pointmgr"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/dockerctl"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/stream"
 
 	// "github.com/shiqinfeng1/goframe-ddd/pkg/dockerctl/dockersock"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/dockerctl/dockercmd"
-	"github.com/shiqinfeng1/goframe-ddd/pkg/stream"
 )
 
 type Application struct {
@@ -30,13 +30,14 @@ func App(ctx context.Context) *Application {
 	once.Do(func() {
 		// 实例化一个文件管理的数据仓库
 		var ftSrv *filemgr.FileTransferMgr
-		if g.Cfg().MustGet(ctx, "filemgr.enable").Bool() {
-			repoFm := adapters.NewFilemgrRepo(migration.NewEntClient(ctx))
-			stm := stream.NewStream() // 实例化一个文件传输服务
-			maxTasks := g.Cfg().MustGet(ctx, "filemgr.maxTasks").Int()
-			ftSrv = filemgr.NewFileTransferService(maxTasks, stm, repoFm)
-			stm.Startup(ctx, ftSrv.StreamRecvHandler)
-		}
+		repoFm := adapters.NewFilemgrRepo(migration.NewEntClient(ctx))
+		stmMgr := stream.NewStream() // 实例化一个文件传输服务
+
+		maxTasks := g.Cfg().MustGet(ctx, "filemgr.maxTasks").Int()
+		ftSrv = filemgr.NewFileTransferService(maxTasks, stmMgr, repoFm)
+
+		stmMgr.Startup(ctx, ftSrv.StreamRecvHandler, filemgr.ReqHandshakeWithSync)
+
 		// 点位数据集服务
 		repoPm := adapters.NewPointmgrRepo(migration.NewEntClient(ctx))
 		pdsSrv := pointmgr.NewPointDataSetService(repoPm)
@@ -47,7 +48,7 @@ func App(ctx context.Context) *Application {
 			g.Log().Fatal(ctx, err)
 		}
 		app = &Application{
-			fileTransfer: ftSrv,
+			// fileTransfer: ftSrv,
 			pointDataSet: pdsSrv,
 			dockerOps:    dockerOps,
 		}

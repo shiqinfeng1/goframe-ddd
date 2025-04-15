@@ -16,7 +16,6 @@ var (
 	ErrEmptyDir       = func(f string) error { return gerror.NewCode(gcode.New(100002, "文件夹内无有效文件:"+f, nil)) }
 	ErrInvalidFiles   = func(f string) error { return gerror.NewCode(gcode.New(100003, "无有效文件:"+f, nil)) }
 	ErrInvalidNodeId  = gerror.NewCode(gcode.New(100004, "无效的客户端节点ID", nil))
-	ErrFileMgrDisable = gerror.NewCode(gcode.New(100005, "未使能文件收发功能", nil))
 
 	ErrOver4GSize = gerror.NewCode(gcode.New(100101, "文件尺寸不能大于4G", nil))
 )

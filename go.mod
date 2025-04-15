@@ -16,12 +16,12 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/nats-io/nats.go v1.39.1
 	github.com/rs/xid v1.6.0
-	github.com/stretchr/testify v1.10.0
 	github.com/xtaci/kcp-go v5.4.20+incompatible
 	github.com/xtaci/smux v1.5.34
 	go.opentelemetry.io/otel/exporters/prometheus v0.57.0
 	go.uber.org/automaxprocs v1.6.0
 	go.uber.org/mock v0.5.0
+	golang.org/x/crypto v0.36.0
 	golang.org/x/net v0.37.0
 	golang.org/x/sync v0.12.0
 	golang.org/x/time v0.11.0
@@ -212,6 +212,7 @@ require (
 	github.com/spf13/cobra v1.9.1 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/spf13/viper v1.13.0 // indirect
+	github.com/stretchr/testify v1.10.0 // indirect
 	github.com/templexxx/cpufeat v0.0.0-20180724012125-cef66df7f161 // indirect
 	github.com/templexxx/xor v0.0.0-20191217153810-f85b25db303b // indirect
 	github.com/theupdateframework/notary v0.7.0 // indirect
@@ -246,7 +247,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.35.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.5.0 // indirect
 	golang.org/x/arch v0.8.0 // indirect
-	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/mod v0.23.0 // indirect
 	golang.org/x/oauth2 v0.26.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect

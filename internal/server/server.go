@@ -37,15 +37,10 @@ func NewHttpServer() *ghttp.Server {
 	// 业务api接口注册
 	s.Group("/mgrid", func(group *ghttp.RouterGroup) {
 		group.Middleware(ghttp.MiddlewareHandlerResponse)
-		handle := []any{
+		group.Bind(
 			pointdata.NewV1(),
 			ops.NewV1(),
-		}
-		if g.Cfg().MustGet(ctx, "filemgr.enable").Bool() {
-			handle = append(handle, http_filemgr.NewV1())
-		}
-		group.Bind(
-			handle...,
+			http_filemgr.NewV1(),
 		)
 	})
 

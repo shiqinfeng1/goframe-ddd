@@ -121,12 +121,13 @@ logger:
   stdoutColorDisabled:   false                 # 关闭终端的颜色打印。默认开启
   writerColorEnable:     false                 # 日志文件是否带上颜色。默认false，表示不带颜色
 
-filemgr: 
-  enable: false # 使能文件收发功能
+filemgr:
+  maxTasks: 2 # 最大同时发送文件任务数量
+
+sessionmgr:
+  addr: 10.17.11.13:31082  #服务端地址
   isCloud: false  # true:cloud-side false:edge-side
   transport: kcp # kcp tcp
-  maxTasks: 2 # 最大同时发送文件任务数量
-  addr: 10.17.11.13:31082  # 文件传输的服务地址
 
 pprof: true   # 开启性能分析
 

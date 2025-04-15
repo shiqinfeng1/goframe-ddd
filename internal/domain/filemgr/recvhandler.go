@@ -8,6 +8,7 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/util/gconv"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/stream/session"
 	"github.com/xtaci/smux"
 )
 
@@ -60,7 +61,7 @@ func ackHandshake(ctx context.Context, sesion *smux.Session, stream io.Writer, b
 		return gerror.Wrap(err, "handshake fail")
 	}
 	// 缓存会话
-	if err := Session().SaveSession(ctx, nodeId, sesion); err != nil {
+	if err := session.SaveSession(ctx, nodeId, sesion); err != nil {
 		return gerror.Wrap(err, "save session fail")
 	}
 	g.Log().Infof(ctx, "handshake from:%v ok", nodeId)
