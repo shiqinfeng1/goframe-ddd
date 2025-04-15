@@ -9,17 +9,17 @@ import (
 	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/migration"
 	"github.com/shiqinfeng1/goframe-ddd/internal/domain/filemgr"
 	"github.com/shiqinfeng1/goframe-ddd/internal/domain/pointmgr"
-	"github.com/shiqinfeng1/goframe-ddd/pkg/composectl"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/dockerctl"
 
-	// "github.com/shiqinfeng1/goframe-ddd/pkg/composectl/dockersock"
-	"github.com/shiqinfeng1/goframe-ddd/pkg/composectl/dockercmd"
+	// "github.com/shiqinfeng1/goframe-ddd/pkg/dockerctl/dockersock"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/dockerctl/dockercmd"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/stream"
 )
 
 type Application struct {
 	fileTransfer FileTransferService
 	pointDataSet PointDataSetService
-	dockerOps    composectl.DockerOps
+	dockerOps    dockerctl.DockerOps
 }
 
 var app *Application

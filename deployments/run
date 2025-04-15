@@ -99,27 +99,36 @@ function watcher::status()
   log::error "cannot access watcher port(:${APP_WATCHER_PORT}), watcher maybe not startup"
 }
 
-if [[ "$*" =~ startup ]];then
+if [[ "$1" = startup ]];then
   watcher::install
   docker compose up -d
   exit 0
 fi
-if [[ "$*" =~ shutdown ]];then
+if [[ "$1" = shutdown ]];then
   watcher::uninstall
   docker compose down
   exit 0
 fi
-if [[ "$*" =~ restart ]];then
+if [[ "$1" = restart ]];then
   watcher::uninstall
   docker compose down
   watcher::install
   docker compose up -d
   exit 0
 fi
-if [[ "$*" =~ upgrade ]];then
+if [[ "$1" = upgrade ]];then
   docker compose up -d 
   exit 0
 fi
+if [[ "$1" = images ]];then
+  docker images 
+  exit 0
+fi
+if [[ "$1" = composeimages ]];then
+  docker compose images 
+  exit 0
+fi
+
 if [[ "$*" =~ watcher:: ]];then
   eval $*
 fi

@@ -20,7 +20,7 @@ var (
 	errInvalidProject = fmt.Errorf("invalid docker compose project")
 )
 
-type ComposeController struct {
+type DockerController struct {
 	project   *types.Project
 	service   api.Service
 	dockerCli *command.DockerCli
@@ -49,14 +49,14 @@ func newProject(composePath string) (*types.Project, error) {
 	}
 	return p, nil
 }
-func New(ctx context.Context, composePath string) (*ComposeController, error) {
+func New(ctx context.Context, composePath string) (*DockerController, error) {
 
 	project, err := newProject(composePath)
 	if err != nil {
 		return nil, err
 	}
 
-	c := &ComposeController{
+	c := &DockerController{
 		project: project,
 	}
 
@@ -98,7 +98,7 @@ func New(ctx context.Context, composePath string) (*ComposeController, error) {
 }
 
 // docker images 所有镜像信息
-func (ctl *ComposeController) LoadImage(ctx context.Context, imageFile string) error {
+func (ctl *DockerController) LoadImage(ctx context.Context, imageFile string) error {
 	file, err := gfile.Open(imageFile)
 	if err != nil {
 		return err
@@ -112,7 +112,7 @@ func (ctl *ComposeController) LoadImage(ctx context.Context, imageFile string) e
 }
 
 // docker images 所有镜像信息
-func (ctl *ComposeController) Images(ctx context.Context) ([]string, error) {
+func (ctl *DockerController) Images(ctx context.Context) ([]string, error) {
 	images, err := ctl.dockerCli.Client().ImageList(ctx, image.ListOptions{})
 	if err != nil {
 		return nil, err
@@ -125,7 +125,7 @@ func (ctl *ComposeController) Images(ctx context.Context) ([]string, error) {
 }
 
 // docker compose images 当前运行容器的镜像信息
-func (ctl *ComposeController) ComposeImages(ctx context.Context) ([]string, error) {
+func (ctl *DockerController) ComposeImages(ctx context.Context) ([]string, error) {
 	images, err := ctl.service.Images(ctx, ctl.project.Name, api.ImagesOptions{})
 	if err != nil {
 		return nil, err
@@ -136,7 +136,7 @@ func (ctl *ComposeController) ComposeImages(ctx context.Context) ([]string, erro
 	}
 	return reoptags, nil
 }
-func (ctl *ComposeController) ComposeUp(ctx context.Context, version string) error {
+func (ctl *DockerController) ComposeUp(ctx context.Context, version string) error {
 	err := ctl.service.Up(ctx, ctl.project, api.UpOptions{
 		Start: api.StartOptions{
 			Project: ctl.project,
@@ -150,7 +150,7 @@ func (ctl *ComposeController) ComposeUp(ctx context.Context, version string) err
 	return nil
 }
 
-func (ctl *ComposeController) Down(ctx context.Context) error {
+func (ctl *DockerController) Down(ctx context.Context) error {
 	if ctl.project == nil {
 		return errInvalidProject
 	}

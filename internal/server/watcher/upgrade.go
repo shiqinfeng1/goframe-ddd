@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/gproc"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/dockerctl"
 )
 
 // updateEnvFile 根据传入的版本号更新.env文件中的镜像版本
@@ -67,19 +68,19 @@ func restartContainers() error {
 func UpgradeImage(c *gin.Context) {
 	version := c.Param("version")
 	if version == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请提供有效的镜像版本号"})
+		c.JSON(http.StatusBadRequest, dockerctl.HandlerResponse{Code: -1, Message: "请提供有效的镜像版本号"})
 		return
 	}
 
 	if err := updateYmlFile(version); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("更新yml文件时出错: %v", err)})
+		c.JSON(http.StatusInternalServerError, dockerctl.HandlerResponse{Code: -1, Message: fmt.Sprintf("更新yml文件时出错: %v", err)})
 		return
 	}
 
 	if err := restartContainers(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("重启容器时出错: %v", err)})
+		c.JSON(http.StatusInternalServerError, dockerctl.HandlerResponse{Code: -1, Message: fmt.Sprintf("重启容器时出错: %v", err)})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "容器镜像版本升级成功"})
+	c.JSON(http.StatusOK, dockerctl.HandlerResponse{Code: 0, Message: "容器镜像版本升级成功"})
 }

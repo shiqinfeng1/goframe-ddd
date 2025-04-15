@@ -6,32 +6,32 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 )
 
-type ComposeController struct {
+type DockerController struct {
 }
 
-func New(ctx context.Context) (*ComposeController, error) {
-	return &ComposeController{}, nil
+func New(ctx context.Context) (*DockerController, error) {
+	return &DockerController{}, nil
 }
 
 // docker images 所有镜像信息
-func (ctl *ComposeController) LoadImage(ctx context.Context, imageFile string) error {
+func (ctl *DockerController) LoadImage(ctx context.Context, imageFile string) error {
 
 	return nil
 }
 
 // docker images 所有镜像信息
-func (ctl *ComposeController) Images(ctx context.Context) ([]string, error) {
+func (ctl *DockerController) Images(ctx context.Context) ([]string, error) {
 	reoptags := make([]string, 0)
 
 	return reoptags, nil
 }
 
 // docker compose images 当前运行容器的镜像信息
-func (ctl *ComposeController) ComposeImages(ctx context.Context) ([]string, error) {
+func (ctl *DockerController) ComposeImages(ctx context.Context) ([]string, error) {
 	reoptags := make([]string, 0)
 	return reoptags, nil
 }
-func (ctl *ComposeController) ComposeUp(ctx context.Context, version string) error {
+func (ctl *DockerController) ComposeUp(ctx context.Context, version string) error {
 	r, err := g.Client().Post(ctx, "http://host.docker.internal:31083/image/upgrade/"+version)
 	if err != nil {
 		return err
