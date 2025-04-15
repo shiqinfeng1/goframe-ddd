@@ -159,6 +159,7 @@ func (q *FileTransferMgr) CancelTask(ctx context.Context, id string) {
 		task = v.(*TransferTask)
 		if task.taskId == id &&
 			(task.status == StatusSending || task.status == StatusWaiting || task.status == StatusPaused) {
+
 			oldStatus = task.status
 			task.status = StatusPaused
 			task.cancelChan <- func() {
