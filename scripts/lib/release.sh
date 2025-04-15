@@ -100,6 +100,7 @@ function release::package_src_tarball() {
   if [[ "${APP_GIT_TREE_STATE-}" = 'clean' ]]; then
     git archive -o "${src_tarball}" HEAD
   else
+  # 用于排除一些不需要的文件和目录
     find "${APP_ROOT}" -mindepth 1 -maxdepth 1 \
       ! \( \
       \( -path "${APP_ROOT}"/_\* -o \
@@ -112,7 +113,8 @@ function release::package_src_tarball() {
       -path "${APP_ROOT}"/.golangci.yaml -o \
       -path "${APP_ROOT}"/.goreleaser.yml -o \
       -path "${APP_ROOT}"/.note.md -o \
-      -path "${APP_ROOT}"/.todo.md \
+      -path "${APP_ROOT}"/.todo.md -o \
+      -path "${APP_ROOT}"/deployments\* \
       \) -prune \
       \) -print0 \
       | "${TAR}" czf "${src_tarball}" --transform "s|${APP_ROOT#/*}|app|" --null -T -
