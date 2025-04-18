@@ -128,7 +128,7 @@ func (fs *fileSaver) EventNotify(status int) {
 // 一个文件对应一个fileSaver,
 func getFileSaver(ctx context.Context, fileId string, repo Repository) (*fileSaver, error) {
 	// 检查缓存，如果存在，直接返回，如果不存在，新建
-	val, err := cache.Memory().GetOrSetFuncLock(ctx, fileId, gcache.Func(func(ctx context.Context) (value interface{}, err error) {
+	val, err := cache.KV().GetOrSetFuncLock(ctx, fileId, gcache.Func(func(ctx context.Context) (value interface{}, err error) {
 		// 查询文件接收记录
 		recvFile, err := repo.GetRecvFile(ctx, fileId)
 		if err != nil {
@@ -182,10 +182,10 @@ func getFileSaver(ctx context.Context, fileId string, repo Repository) (*fileSav
 }
 
 func mustGetFileSaver(ctx context.Context, fileId string) (*fileSaver, error) {
-	if exist, _ := cache.Memory().Contains(ctx, fileId); !exist {
+	if exist, _ := cache.KV().Contains(ctx, fileId); !exist {
 		return nil, nil
 	}
-	val, err := cache.Memory().Get(ctx, fileId)
+	val, err := cache.KV().Get(ctx, fileId)
 	if err != nil {
 		return nil, gerror.Wrapf(err, "get fileSaver from cache fail: fileId=%v", fileId)
 	}
@@ -198,7 +198,7 @@ func mustGetFileSaver(ctx context.Context, fileId string) (*fileSaver, error) {
 }
 
 func removeFileSaver(ctx context.Context, fileId string) error {
-	val, err := cache.Memory().Remove(ctx, fileId)
+	val, err := cache.KV().Remove(ctx, fileId)
 	if err != nil {
 		return gerror.Wrapf(err, "get fileSaver from cache fail: fileId=%v", fileId)
 	}

@@ -8,7 +8,7 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/util/gconv"
-	"github.com/shiqinfeng1/goframe-ddd/pkg/stream/session"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/session"
 	"github.com/xtaci/smux"
 )
 
@@ -68,19 +68,19 @@ func ackHandshake(ctx context.Context, sesion *smux.Session, stream io.Writer, b
 	return nil
 }
 
-func (f *FileTransferMgr) StreamRecvHandler(sesion *smux.Session, stream io.ReadWriter) error {
+func (f *FileTransferMgr) StreamRecvHandler(sesion *smux.Session, stm io.ReadWriter) error {
 	ctx := gctx.New()
-	header, err := recvHeader(ctx, stream)
+	header, err := recvHeader(ctx, stm)
 	if err != nil {
 		return err
 	}
-	body, err := recvBody(ctx, stream, header.length)
+	body, err := recvBody(ctx, stm, header.length)
 	if err != nil {
 		return err
 	}
 	// 首个消息是握手消息，单独处理，缓存session
 	if header.typ.Is(msgHandshake) {
-		if err := ackHandshake(ctx, sesion, stream, body); err != nil {
+		if err := ackHandshake(ctx, sesion, stm, body); err != nil {
 			return err
 		}
 		return nil
@@ -89,7 +89,7 @@ func (f *FileTransferMgr) StreamRecvHandler(sesion *smux.Session, stream io.Read
 	if handler, ok := msgHandlerMap[header.typ]; ok {
 		ack := handler(ctx, body, f.repo)
 		// 回复握手确认消息
-		if _, err := stream.Write(ack); err != nil {
+		if _, err := stm.Write(ack); err != nil {
 			return gerror.Wrap(err, "write ack fail")
 		}
 	} else {

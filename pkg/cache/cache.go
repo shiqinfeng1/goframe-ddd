@@ -2,12 +2,18 @@ package cache
 
 import "github.com/gogf/gf/v2/os/gcache"
 
-var inst *gcache.Cache
-
-func init() {
-	inst = gcache.NewWithAdapter(gcache.NewAdapterMemory())
+type Cache struct {
+	kv *gcache.Cache
 }
 
-func Memory() *gcache.Cache {
-	return inst
+var DefaultBackend Cache
+
+func init() {
+	DefaultBackend = Cache{
+		kv: gcache.NewWithAdapter(gcache.NewAdapterMemory()),
+	}
+}
+
+func KV() *gcache.Cache {
+	return DefaultBackend.kv
 }

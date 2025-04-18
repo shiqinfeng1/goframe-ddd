@@ -14,8 +14,8 @@ import (
 	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/rs/xid"
-	"github.com/shiqinfeng1/goframe-ddd/pkg/stream"
-	"github.com/shiqinfeng1/goframe-ddd/pkg/stream/session"
+	"github.com/shiqinfeng1/goframe-ddd/internal/domain/streammgr"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/session"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/utils"
 	"github.com/xtaci/smux"
 	"golang.org/x/net/context"
@@ -79,14 +79,14 @@ type TransferTask struct {
 	sendFileChan chan postSendFunc
 	pauseChan    chan postFunc
 	cancelChan   chan postFunc
-	stream       stream.StreamIntf
+	stream       streammgr.StreamIntf
 	chunkOffsets []int64
 	chunkSizes   []int
 	notifyStatus atomic.Uint32
 	exit         context.CancelFunc
 }
 
-func NewTransferTask(ctx context.Context, id, name, nodeId string, paths []string, status Status, stream stream.StreamIntf, repo Repository) *TransferTask {
+func newTransferTask(ctx context.Context, id, name, nodeId string, paths []string, status Status, stm streammgr.StreamIntf, repo Repository) *TransferTask {
 	task := &TransferTask{
 		taskId:       id,
 		paths:        paths,
@@ -96,7 +96,7 @@ func NewTransferTask(ctx context.Context, id, name, nodeId string, paths []strin
 		sendFileChan: make(chan postSendFunc, 4),
 		pauseChan:    make(chan postFunc, 4),
 		cancelChan:   make(chan postFunc, 4),
-		stream:       stream,
+		stream:       stm,
 		repo:         repo,
 	}
 	if err := repo.SaveTask(ctx, &FileTransferTask{
@@ -140,7 +140,7 @@ func (t *TransferTask) updateStatusAndNotifyPeer(ctx context.Context, fileId str
 	return nil
 }
 
-func (t *TransferTask) getFileAndChunks(ctx context.Context, filePath string, stream io.ReadWriter) (*SendFile, *os.File, error) {
+func (t *TransferTask) getFileAndChunks(ctx context.Context, filePath string, stm io.ReadWriter) (*SendFile, *os.File, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, nil, gerror.Wrapf(err, "open file fail:%v", filePath)
@@ -177,7 +177,7 @@ func (t *TransferTask) getFileAndChunks(ctx context.Context, filePath string, st
 			ChunkNumSended: 0,
 			Status:         StatusSending.Int(),
 		}
-		if err := t.syncFileInfoToPeer(ctx, sendFile, stream); err != nil {
+		if err := t.syncFileInfoToPeer(ctx, sendFile, stm); err != nil {
 			file.Close()
 			return nil, nil, gerror.Wrapf(err, "sync file info fail:%+v", sendFile)
 		}

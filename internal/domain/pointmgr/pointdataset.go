@@ -13,7 +13,7 @@ type PointDataSetMgr struct {
 }
 
 // NewFileSendQueue 创建一个新的文件发送队列
-func NewPointDataSetService(repo Repository) *PointDataSetMgr {
+func NewPointDataSetService(_ context.Context, repo Repository) *PointDataSetMgr {
 	return &PointDataSetMgr{
 		repo: repo,
 	}

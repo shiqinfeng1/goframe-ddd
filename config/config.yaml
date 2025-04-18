@@ -129,6 +129,9 @@ sessionmgr:
   isCloud: false  # true:cloud-side false:edge-side
   transport: kcp # kcp tcp
 
+remotelogin:
+  addr: 10.17.11.13:31084
+  
 pprof: true   # 开启性能分析
 
 nats:

@@ -7,7 +7,7 @@ import (
 	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
-	"github.com/shiqinfeng1/goframe-ddd/pkg/stream"
+	"github.com/shiqinfeng1/goframe-ddd/internal/domain/streammgr"
 )
 
 // FileTransferMgr 表示文件发送队列
@@ -17,20 +17,33 @@ type FileTransferMgr struct {
 	tasks    gmap.StrAnyMap
 	mutex    sync.Mutex
 	notify   chan struct{}
-	stream   stream.StreamIntf
 	repo     Repository
+	stream   streammgr.StreamIntf
 }
 
 // NewFileSendQueue 创建一个新的文件发送队列
-func NewFileTransferService(maxTasks int, stm stream.StreamIntf, repo Repository) *FileTransferMgr {
+func NewFileTransferService(ctx context.Context, repo Repository) *FileTransferMgr {
 	q := &FileTransferMgr{
-		maxTasks: maxTasks,
+		maxTasks: g.Cfg().MustGet(ctx, "filemgr.maxTasks").Int(),
 		tasks:    *gmap.NewStrAnyMap(true),
 		running:  0,
-		stream:   stm,
 		repo:     repo,
+		notify:   make(chan struct{}, 16), // 运行多个任务通知缓存到通道里
 	}
-	ctx := gctx.New()
+	return q
+}
+func (q *FileTransferMgr) Start(ctx context.Context) {
+
+	// 实例化一个流管理
+	stmMgr := streammgr.New()
+	stmMgr.RecvHandler = q.StreamRecvHandler
+	stmMgr.ReqHandshake = ReqHandshakeWithSync
+	if stmMgr.IsCloud {
+		stmMgr.StartupServer(ctx)
+	} else {
+		stmMgr.StartupClient(ctx)
+	}
+	q.stream = stmMgr
 	// 从数据库中取出未完成的任务
 	tasks, sendfiles, err := q.repo.GetNotCompletedTasks(ctx)
 	if err != nil {
@@ -42,15 +55,13 @@ func NewFileTransferService(maxTasks int, stm stream.StreamIntf, repo Repository
 		for _, sf := range sendfiles[task.TaskID] {
 			paths = append(paths, sf.FilePath)
 		}
-		newtask := NewTransferTask(ctx, task.TaskID, task.TaskName, task.NodeID, paths, NewStatus(uint32(task.Status)), q.stream, q.repo)
+		newtask := newTransferTask(ctx, task.TaskID, task.TaskName, task.NodeID, paths, NewStatus(uint32(task.Status)), q.stream, q.repo)
 		// 缓存到tasks队列
 		q.tasks.Set(task.TaskID, newtask)
 		// todo 何时触发重新发送未完成的任务?
 	}
 
-	q.notify = make(chan struct{}, 16) // 运行多个任务通知缓存到通道里
-	q.start(ctx)
-	return q
+	q.start(gctx.New())
 }
 
 func (q *FileTransferMgr) GetMaxAndRunning(ctx context.Context) (int, int) {
@@ -69,7 +80,7 @@ func (q *FileTransferMgr) GetCompletedTasks(ctx context.Context) ([]*FileTransfe
 func (q *FileTransferMgr) AddTask(ctx context.Context, id, name, nodeId string, paths []string) {
 	q.mutex.Lock()
 	defer q.mutex.Unlock()
-	task := NewTransferTask(ctx, id, name, nodeId, paths, StatusWaiting, q.stream, q.repo)
+	task := newTransferTask(ctx, id, name, nodeId, paths, StatusWaiting, q.stream, q.repo)
 	q.tasks.Set(id, task)
 	q.notify <- struct{}{}
 }
