@@ -6,42 +6,43 @@ import (
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/rs/xid"
+	"github.com/shiqinfeng1/goframe-ddd/internal/application/dto"
 )
 
-func (app *Application) StartSendFile(ctx context.Context, in *StartSendFileInput) (*StartSendFileOutput, error) {
+func (app *Application) StartSendFile(ctx context.Context, in *dto.StartSendFileInput) (*dto.StartSendFileOutput, error) {
 	taskId := xid.New().String()
 	app.fileTransfer.AddTask(ctx, taskId, in.BaseName, in.NodeId, in.Files)
 	return nil, nil
 }
 
-func (app *Application) PauseSendFile(ctx context.Context, in *PauseSendFileInput) (*PauseSendFileOutput, error) {
+func (app *Application) PauseSendFile(ctx context.Context, in *dto.PauseSendFileInput) (*dto.PauseSendFileOutput, error) {
 	app.fileTransfer.PauseTask(ctx, in.TaskId)
 	return nil, nil
 }
 
-func (app *Application) CancelSendFile(ctx context.Context, in *CancelSendFileInput) (*CancelSendFileOutput, error) {
+func (app *Application) CancelSendFile(ctx context.Context, in *dto.CancelSendFileInput) (*dto.CancelSendFileOutput, error) {
 	app.fileTransfer.CancelTask(ctx, in.TaskId)
 	return nil, nil
 }
 
-func (app *Application) ResumeSendFile(ctx context.Context, in *ResumeSendFileInput) (*ResumeSendFileOutput, error) {
+func (app *Application) ResumeSendFile(ctx context.Context, in *dto.ResumeSendFileInput) (*dto.ResumeSendFileOutput, error) {
 	app.fileTransfer.ResumeTask(ctx, in.TaskId)
 	return nil, nil
 }
 
-func (app *Application) RemoveTask(ctx context.Context, in *RemoveTaskInput) (*RemoveTaskOutput, error) {
+func (app *Application) RemoveTask(ctx context.Context, in *dto.RemoveTaskInput) (*dto.RemoveTaskOutput, error) {
 	app.fileTransfer.RemoveTask(ctx, in.TaskIds)
 	return nil, nil
 }
 
-func (app *Application) GetSendingTaskList(ctx context.Context, in *TaskListInput) (*TaskListOutput, error) {
+func (app *Application) GetSendingTaskList(ctx context.Context, in *dto.TaskListInput) (*dto.TaskListOutput, error) {
 	running, maxTasks := app.fileTransfer.GetMaxAndRunning(ctx)
 	tasks, sfs, err := app.fileTransfer.GetNotCompletedTasks(ctx)
 	if err != nil {
 		g.Log().Error(ctx, err)
 		return nil, nil
 	}
-	tasklist := &TaskListOutput{
+	tasklist := &dto.TaskListOutput{
 		Running:  running,
 		MaxTasks: maxTasks,
 	}
@@ -55,7 +56,7 @@ func (app *Application) GetSendingTaskList(ctx context.Context, in *TaskListInpu
 			sendTotal += float32(sf.ChunkNumTotal)
 			sended += float32(sf.ChunkNumSended)
 		}
-		tasklist.Tasks = append(tasklist.Tasks, Task{
+		tasklist.Tasks = append(tasklist.Tasks, dto.Task{
 			TaskName:      task.TaskName,
 			TaskId:        task.TaskID,
 			NodeId:        task.NodeID,
@@ -68,13 +69,13 @@ func (app *Application) GetSendingTaskList(ctx context.Context, in *TaskListInpu
 	return tasklist, nil
 }
 
-func (app *Application) GetCompletedTaskList(ctx context.Context, in *TaskListInput) (*TaskListOutput, error) {
+func (app *Application) GetCompletedTaskList(ctx context.Context, in *dto.TaskListInput) (*dto.TaskListOutput, error) {
 	tasks, sfs, err := app.fileTransfer.GetCompletedTasks(ctx)
 	if err != nil {
 		g.Log().Error(ctx, err)
 		return nil, nil
 	}
-	tasklist := &TaskListOutput{}
+	tasklist := &dto.TaskListOutput{}
 	for _, task := range tasks {
 		var (
 			paths             []string
@@ -85,7 +86,7 @@ func (app *Application) GetCompletedTaskList(ctx context.Context, in *TaskListIn
 			sendTotal += float32(sf.ChunkNumTotal)
 			sended += float32(sf.ChunkNumSended)
 		}
-		tasklist.Tasks = append(tasklist.Tasks, Task{
+		tasklist.Tasks = append(tasklist.Tasks, dto.Task{
 			TaskName:      task.TaskName,
 			TaskId:        task.TaskID,
 			NodeId:        task.NodeID,

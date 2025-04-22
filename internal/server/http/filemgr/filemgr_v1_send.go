@@ -9,7 +9,7 @@ import (
 	"github.com/gogf/gf/v2/util/gconv"
 
 	v1 "github.com/shiqinfeng1/goframe-ddd/api/http/filemgr/v1"
-	"github.com/shiqinfeng1/goframe-ddd/internal/application"
+	"github.com/shiqinfeng1/goframe-ddd/internal/application/dto"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/errors"
 )
 
@@ -39,7 +39,7 @@ func (c *ControllerV1) StartSendFile(ctx context.Context, req *v1.StartSendFileR
 			if len(files) == 0 {
 				return res, errors.ErrEmptyDir(v)
 			}
-			c.app.StartSendFile(ctx, &application.StartSendFileInput{
+			c.app.StartSendFile(ctx, &dto.StartSendFileInput{
 				BaseName: gfile.Basename(v),
 				Files:    files,
 				NodeId:   req.NodeId,
@@ -52,7 +52,7 @@ func (c *ControllerV1) StartSendFile(ctx context.Context, req *v1.StartSendFileR
 			if len(files) == 0 {
 				return res, errors.ErrInvalidFiles(gconv.String(req.FilePath))
 			}
-			c.app.StartSendFile(ctx, &application.StartSendFileInput{
+			c.app.StartSendFile(ctx, &dto.StartSendFileInput{
 				BaseName: gfile.Basename(v),
 				Files:    files,
 				NodeId:   req.NodeId,
@@ -101,7 +101,7 @@ func (c *ControllerV1) StartSendFile(ctx context.Context, req *v1.StartSendFileR
 
 func (c *ControllerV1) SendingTaskList(ctx context.Context, req *v1.SendingTaskListReq) (res *v1.SendingTaskListRes, err error) {
 
-	out, _ := c.app.GetSendingTaskList(ctx, &application.TaskListInput{})
+	out, _ := c.app.GetSendingTaskList(ctx, &dto.TaskListInput{})
 	res = &v1.SendingTaskListRes{
 		Running:  out.Running,
 		MaxTasks: out.MaxTasks,
@@ -112,7 +112,7 @@ func (c *ControllerV1) SendingTaskList(ctx context.Context, req *v1.SendingTaskL
 
 func (c *ControllerV1) CompletedTaskList(ctx context.Context, req *v1.CompletedTaskListReq) (res *v1.CompletedTaskListRes, err error) {
 
-	out, _ := c.app.GetCompletedTaskList(ctx, &application.TaskListInput{})
+	out, _ := c.app.GetCompletedTaskList(ctx, &dto.TaskListInput{})
 	res = &v1.CompletedTaskListRes{
 		Tasks: out.Tasks,
 	}

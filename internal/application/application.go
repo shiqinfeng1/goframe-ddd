@@ -5,10 +5,11 @@ import (
 	"sync"
 
 	"github.com/gogf/gf/v2/frame/g"
-	"github.com/shiqinfeng1/goframe-ddd/internal/adapters"
-	"github.com/shiqinfeng1/goframe-ddd/internal/adapters/migration"
+	"github.com/shiqinfeng1/goframe-ddd/internal/application/service"
 	"github.com/shiqinfeng1/goframe-ddd/internal/domain/filemgr"
 	"github.com/shiqinfeng1/goframe-ddd/internal/domain/pointmgr"
+	"github.com/shiqinfeng1/goframe-ddd/internal/infrastructure/repositories"
+	"github.com/shiqinfeng1/goframe-ddd/internal/infrastructure/repositories/migration"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/dockerctl"
 
 	// "github.com/shiqinfeng1/goframe-ddd/pkg/dockerctl/dockersock"
@@ -16,8 +17,8 @@ import (
 )
 
 type Application struct {
-	fileTransfer FileTransferService
-	pointDataSet PointDataSetService
+	fileTransfer service.FileTransferService
+	pointDataSet service.PointDataSetService
 	dockerOps    dockerctl.DockerOps
 }
 
@@ -28,10 +29,10 @@ var once sync.Once
 func App(ctx context.Context) *Application {
 	once.Do(func() {
 		// 文件传输服务
-		repoFm := adapters.NewFilemgrRepo(migration.NewEntClient(ctx))
+		repoFm := repositories.NewFilemgrRepo(migration.NewEntClient(ctx))
 		ftSrv := filemgr.NewFileTransferService(ctx, repoFm)
 		// 点位数据集服务
-		repoPm := adapters.NewPointmgrRepo(migration.NewEntClient(ctx))
+		repoPm := repositories.NewPointmgrRepo(migration.NewEntClient(ctx))
 		pdsSrv := pointmgr.NewPointDataSetService(ctx, repoPm)
 
 		ftSrv.Start(ctx)

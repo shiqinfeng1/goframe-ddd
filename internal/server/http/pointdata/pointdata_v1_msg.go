@@ -6,13 +6,13 @@ import (
 
 	"github.com/gogf/gf/v2/frame/g"
 	v1 "github.com/shiqinfeng1/goframe-ddd/api/http/pointdata/v1"
-	"github.com/shiqinfeng1/goframe-ddd/internal/application"
+	"github.com/shiqinfeng1/goframe-ddd/internal/application/dto"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/utils"
 )
 
 func (c *ControllerV1) PubSubBenchmark(ctx context.Context, req *v1.PubSubBenchmarkReq) (res *v1.PubSubBenchmarkRes, err error) {
 
-	in := &application.PubSubBenchmarkInput{
+	in := &dto.PubSubBenchmarkInput{
 		StreamName:   g.Cfg().MustGet(ctx, "nats.streamName").String(),
 		ConsumerName: g.Cfg().MustGet(ctx, "nats.consumerName").String(),
 	}
@@ -30,21 +30,21 @@ func (c *ControllerV1) PubSubBenchmark(ctx context.Context, req *v1.PubSubBenchm
 	return
 }
 func (c *ControllerV1) GetStreamInfo(ctx context.Context, req *v1.GetStreamInfoReq) (res *v1.GetStreamInfoRes, err error) {
-	in := &application.JetStreamInfoInput{
+	in := &dto.JetStreamInfoInput{
 		Name: req.StreamName,
 	}
 	streams, err := c.app.JetStreamInfo(ctx, in)
 	if err != nil {
 		return &v1.GetStreamInfoRes{}, err
 	}
-	si := &application.StreamInfo{
+	si := &dto.StreamInfo{
 		Subjects:  streams.StreamInfo.Config.Subjects,
 		Retention: streams.StreamInfo.Config.Retention.String(),
 		State:     streams.StreamInfo.State,
 	}
-	var cis []*application.ConsumerInfo
+	var cis []*dto.ConsumerInfo
 	for _, ci := range streams.ConsumerInfos {
-		cis = append(cis, &application.ConsumerInfo{
+		cis = append(cis, &dto.ConsumerInfo{
 			Name:           ci.Name,
 			Durable:        ci.Config.Durable,
 			Description:    ci.Config.Description,
@@ -65,7 +65,7 @@ func (c *ControllerV1) GetStreamInfo(ctx context.Context, req *v1.GetStreamInfoR
 	return res, nil
 }
 func (c *ControllerV1) DeleteStream(ctx context.Context, req *v1.DeleteStreamReq) (res *v1.DeleteStreamRes, err error) {
-	err = c.app.DeleteStream(ctx, &application.DeleteStreamInput{Name: req.StreamName})
+	err = c.app.DeleteStream(ctx, &dto.DeleteStreamInput{Name: req.StreamName})
 	return
 }
 func (c *ControllerV1) StreamSend(ctx context.Context, req *v1.StreamSendReq) (res *v1.StreamSendRes, err error) {

@@ -7,9 +7,10 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/gproc"
+	"github.com/shiqinfeng1/goframe-ddd/internal/application/dto"
 )
 
-func (app *Application) UpgradeApp(ctx context.Context, in *UpgradeAppInput) error {
+func (app *Application) UpgradeApp(ctx context.Context, in *dto.UpgradeAppInput) error {
 	go func() {
 		gproc.ShellExec(gctx.New(), `supervisorctl restart `+in.AppName)
 	}()
@@ -17,7 +18,7 @@ func (app *Application) UpgradeApp(ctx context.Context, in *UpgradeAppInput) err
 
 	return nil
 }
-func (app *Application) UpgradeImage(ctx context.Context, in *UpgradeImageInput) error {
+func (app *Application) UpgradeImage(ctx context.Context, in *dto.UpgradeImageInput) error {
 	go func() {
 		nctx := gctx.New()
 		if err := app.dockerOps.ComposeUp(nctx, in.Version); err != nil {
@@ -29,18 +30,18 @@ func (app *Application) UpgradeImage(ctx context.Context, in *UpgradeImageInput)
 	return nil
 }
 
-func (app *Application) ComposeImages(ctx context.Context) (*ComposeImagesOutput, error) {
+func (app *Application) ComposeImages(ctx context.Context) (*dto.ComposeImagesOutput, error) {
 	images, err := app.dockerOps.ComposeImages(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	out := &ComposeImagesOutput{
-		Images: make([]ImageSummary, 0),
+	out := &dto.ComposeImagesOutput{
+		Images: make([]dto.ImageSummary, 0),
 	}
 	for _, repotag := range images {
 		repotags := strings.Split(repotag, ":")
-		out.Images = append(out.Images, ImageSummary{
+		out.Images = append(out.Images, dto.ImageSummary{
 			Name: repotags[0],
 			Tag:  repotags[1],
 		})
@@ -48,18 +49,18 @@ func (app *Application) ComposeImages(ctx context.Context) (*ComposeImagesOutput
 
 	return out, nil
 }
-func (app *Application) Images(ctx context.Context) (*ImagesOutput, error) {
+func (app *Application) Images(ctx context.Context) (*dto.ImagesOutput, error) {
 	images, err := app.dockerOps.Images(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	out := &ImagesOutput{
-		Images: make([]ImageSummary, 0),
+	out := &dto.ImagesOutput{
+		Images: make([]dto.ImageSummary, 0),
 	}
 	for _, repotag := range images {
 		repotags := strings.Split(repotag, ":")
-		out.Images = append(out.Images, ImageSummary{
+		out.Images = append(out.Images, dto.ImageSummary{
 			Name: repotags[0],
 			Tag:  repotags[1],
 		})

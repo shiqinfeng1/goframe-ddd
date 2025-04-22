@@ -2,7 +2,7 @@ package v1
 
 import (
 	"github.com/gogf/gf/v2/frame/g"
-	"github.com/shiqinfeng1/goframe-ddd/internal/application"
+	"github.com/shiqinfeng1/goframe-ddd/internal/application/dto"
 )
 
 type PubSubBenchmarkReq struct {
@@ -24,8 +24,8 @@ type GetStreamInfoReq struct {
 }
 type GetStreamInfoRes struct {
 	g.Meta        `status:"200"`
-	StreamInfo    *application.StreamInfo     `json:"stream_info" dc:"流信息"`
-	ConsumerInfos []*application.ConsumerInfo `json:"consumer_infos" dc:"流对应的消费者信息"`
+	StreamInfo    *dto.StreamInfo     `json:"stream_info" dc:"流信息"`
+	ConsumerInfos []*dto.ConsumerInfo `json:"consumer_infos" dc:"流对应的消费者信息"`
 }
 
 type DeleteStreamReq struct {

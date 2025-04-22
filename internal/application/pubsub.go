@@ -11,6 +11,7 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/util/grand"
 	"github.com/nats-io/nats.go/jetstream"
+	"github.com/shiqinfeng1/goframe-ddd/internal/application/dto"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/errors"
 	pkgnats "github.com/shiqinfeng1/goframe-ddd/pkg/pubsub/nats"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/utils"
@@ -25,7 +26,7 @@ func (app *Application) SendStreamForTest(ctx context.Context) error {
 	}
 	return nil
 }
-func (app *Application) DeleteStream(ctx context.Context, in *DeleteStreamInput) error {
+func (app *Application) DeleteStream(ctx context.Context, in *dto.DeleteStreamInput) error {
 
 	client := pkgnats.New(
 		g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
@@ -46,7 +47,7 @@ func (app *Application) DeleteStream(ctx context.Context, in *DeleteStreamInput)
 	}
 	return nil
 }
-func (app *Application) JetStreamInfo(ctx context.Context, in *JetStreamInfoInput) (*JetStreamInfoOutput, error) {
+func (app *Application) JetStreamInfo(ctx context.Context, in *dto.JetStreamInfoInput) (*dto.JetStreamInfoOutput, error) {
 
 	client := pkgnats.New(
 		g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
@@ -79,14 +80,14 @@ func (app *Application) JetStreamInfo(ctx context.Context, in *JetStreamInfoInpu
 	for consumer := range stream.ListConsumers(ctx).Info() {
 		cis = append(cis, consumer)
 	}
-	return &JetStreamInfoOutput{
+	return &dto.JetStreamInfoOutput{
 		StreamInfo:    si,
 		ConsumerInfos: cis,
 	}, nil
 }
 
 // 基准测试无业务逻辑处理，不需要domian层参与，因此直接在app层实现测试逻辑
-func (app *Application) PubSubBenchmark(ctx context.Context, in *PubSubBenchmarkInput) error {
+func (app *Application) PubSubBenchmark(ctx context.Context, in *dto.PubSubBenchmarkInput) error {
 
 	// 再运行发布者，一个发布者一个连接
 	for j := range len(in.Subjects) {

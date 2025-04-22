@@ -24,15 +24,15 @@ func main() {
 	}
 	// root用户
 	if os.Geteuid() == 0 && cfg.SingleUserPassword != "" {
-		log.Println("SSH agent cannot run as root when single-user mode is enabled.")
-		log.Println("To disable single-user mode unset SHELLHUB_SINGLE_USER_PASSWORD env.")
+		log.Println("当前系统只有root用户, 不能使用单用户模式.")
+		log.Println("要取消单用户模式, 请不要配置SingleUserPassword.")
 		os.Exit(1)
 	}
 	// 非root用户
 	if os.Geteuid() != 0 && cfg.SingleUserPassword == "" {
-		log.Println("When running as non-root user you need to set password for single-user mode by SHELLHUB_SINGLE_USER_PASSWORD environment variable.")
-		log.Println("You can use openssl passwd utility to generate password hash. The following algorithms are supported: bsd1, apr1, sha256, sha512.")
-		log.Println("Example: SHELLHUB_SINGLE_USER_PASSWORD=$(openssl passwd -6)")
+		log.Println("非root用户必须设置密码(hash).")
+		log.Println("需使用openssl密码工具生成密码hash. agent支持如下hash算法: bsd1, apr1, sha256, sha512.")
+		log.Println("举例: openssl passwd -6")
 		log.Println("See man openssl-passwd for more information.")
 		os.Exit(1)
 	}
