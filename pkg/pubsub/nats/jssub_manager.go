@@ -62,14 +62,14 @@ type jsSubscriber struct {
 }
 
 // 订阅器管理
-type JsSubscriberManager struct {
+type JsSubscriber struct {
 	subscriptions map[string]*jsSubscriber
 	subMutex      sync.Mutex
 	exitNotify    chan []string
 }
 
-func NewJsSubMgr() *JsSubscriberManager {
-	sm := &JsSubscriberManager{
+func NewJsSub() *JsSubscriber {
+	sm := &JsSubscriber{
 		subscriptions: make(map[string]*jsSubscriber),
 		exitNotify:    make(chan []string),
 	}
@@ -84,7 +84,7 @@ func NewJsSubMgr() *JsSubscriberManager {
 	return sm
 }
 
-func (sm *JsSubscriberManager) NewSubscriber(ctx context.Context, stream streamIntf, identity []string, consumeType SubType) error {
+func (sm *JsSubscriber) New(ctx context.Context, stream streamIntf, identity []string, consumeType SubType) error {
 	sub := &jsSubscriber{
 		stream:       stream,
 		streamName:   identity[0],
@@ -103,7 +103,7 @@ func (sm *JsSubscriberManager) NewSubscriber(ctx context.Context, stream streamI
 	return nil
 }
 
-func (sm *JsSubscriberManager) Close(ctx context.Context) error {
+func (sm *JsSubscriber) Close(ctx context.Context) error {
 	sm.subMutex.Lock()
 	defer sm.subMutex.Unlock()
 	for _, sub := range sm.subscriptions {
@@ -114,7 +114,7 @@ func (sm *JsSubscriberManager) Close(ctx context.Context) error {
 	sm.subscriptions = make(map[string]*jsSubscriber)
 	return nil
 }
-func (sm *JsSubscriberManager) deleteSubscriber(ctx context.Context, identity []string) error {
+func (sm *JsSubscriber) deleteSubscriber(ctx context.Context, identity []string) error {
 	sm.subMutex.Lock()
 	defer sm.subMutex.Unlock()
 
@@ -127,10 +127,10 @@ func (sm *JsSubscriberManager) deleteSubscriber(ctx context.Context, identity []
 	g.Log().Infof(ctx, "delete subscriber ok. streamName:%v consumerName:%v topicName%v", identity[0], identity[1], identity[2])
 	return nil
 }
-func (sm *JsSubscriberManager) DeleteSubscriber(ctx context.Context, identity []string) error {
+func (sm *JsSubscriber) Delete(ctx context.Context, identity []string) error {
 	return sm.deleteSubscriber(ctx, identity)
 }
-func (sm *JsSubscriberManager) Subscribe(ctx context.Context, identity []string, handler pubsub.JsSubscribeFunc) error {
+func (sm *JsSubscriber) Subscribe(ctx context.Context, identity []string, handler pubsub.JsSubscribeFunc) error {
 	sm.subMutex.Lock()
 	sub, exist := sm.subscriptions[strings.Join(identity, "")]
 	sm.subMutex.Unlock()

@@ -122,8 +122,8 @@ func runPublisher(subj string) {
 			"Benchmark Publisher",
 		)
 		if err := pubClient.Connect(ctx,
-			pkgnats.WithJsManager(pkgnats.NewJsSubMgr()),
-			pkgnats.WithSubManager(pkgnats.NewSubMgr()),
+			pkgnats.WithJsMgr(pkgnats.NewJsSub()),
+			pkgnats.WithSubMgr(pkgnats.NewSub()),
 		); err != nil {
 			return
 		}
@@ -167,8 +167,8 @@ func runStreamPublisherToRemote(subj string) {
 			"Benchmark JsPublisher",
 		)
 		if err := jspubClient.Connect(ctx,
-			pkgnats.WithJsManager(pkgnats.NewJsSubMgr()),
-			pkgnats.WithSubManager(pkgnats.NewSubMgr()),
+			pkgnats.WithJsMgr(pkgnats.NewJsSub()),
+			pkgnats.WithSubMgr(pkgnats.NewSub()),
 		); err != nil {
 			g.Log().Error(ctx, err)
 			return
@@ -212,8 +212,8 @@ func runStreamPublisher(subj string) {
 			"Benchmark JsPublisher",
 		)
 		if err := jspubClient.Connect(ctx,
-			pkgnats.WithJsManager(pkgnats.NewJsSubMgr()),
-			pkgnats.WithSubManager(pkgnats.NewSubMgr()),
+			pkgnats.WithJsMgr(pkgnats.NewJsSub()),
+			pkgnats.WithSubMgr(pkgnats.NewSub()),
 		); err != nil {
 			return
 		}

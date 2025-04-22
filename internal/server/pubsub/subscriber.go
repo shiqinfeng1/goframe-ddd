@@ -71,8 +71,8 @@ func (s *ControllerV1) JsTopics() (topics []string) {
 // 运行nats订阅客户端
 func (s *ControllerV1) Run(ctx context.Context) error {
 	if err := s.natsClient.Connect(ctx,
-		pkgnats.WithJsManager(pkgnats.NewJsSubMgr()),
-		pkgnats.WithSubManager(pkgnats.NewSubMgr()),
+		pkgnats.WithJsMgr(pkgnats.NewJsSub()),
+		pkgnats.WithSubMgr(pkgnats.NewSub()),
 	); err != nil {
 		return gerror.Wrapf(err, "run subscription manager fail")
 	}

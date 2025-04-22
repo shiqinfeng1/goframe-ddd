@@ -5,18 +5,29 @@
 package ops
 
 import (
+	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/shiqinfeng1/goframe-ddd/api/http/ops"
 	"github.com/shiqinfeng1/goframe-ddd/internal/application"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/dockerctl"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/dockerctl/dockercmd"
 )
 
 type ControllerV1 struct {
-	app *application.Application
+	app       *application.Application
+	dockerOps dockerctl.DockerOps
 }
 
 func NewV1() ops.IOpsV1 {
 	ctx := gctx.New()
+
+	// 实例化一个dockeecompose 控制器
+	dockerOps, err := dockercmd.New(ctx)
+	if err != nil {
+		g.Log().Fatal(ctx, err)
+	}
 	return &ControllerV1{
-		app: application.App(ctx),
+		app:       application.App(ctx),
+		dockerOps: dockerOps,
 	}
 }

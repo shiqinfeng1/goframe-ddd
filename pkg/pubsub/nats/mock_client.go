@@ -344,32 +344,32 @@ func (mr *MockJsSubMgrMockRecorder) Close(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockJsSubMgr)(nil).Close), ctx)
 }
 
-// DeleteSubscriber mocks base method.
-func (m *MockJsSubMgr) DeleteSubscriber(ctx context.Context, identity []string) error {
+// Delete mocks base method.
+func (m *MockJsSubMgr) Delete(ctx context.Context, identity []string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteSubscriber", ctx, identity)
+	ret := m.ctrl.Call(m, "Delete", ctx, identity)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// DeleteSubscriber indicates an expected call of DeleteSubscriber.
-func (mr *MockJsSubMgrMockRecorder) DeleteSubscriber(ctx, identity any) *gomock.Call {
+// Delete indicates an expected call of Delete.
+func (mr *MockJsSubMgrMockRecorder) Delete(ctx, identity any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSubscriber", reflect.TypeOf((*MockJsSubMgr)(nil).DeleteSubscriber), ctx, identity)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockJsSubMgr)(nil).Delete), ctx, identity)
 }
 
-// NewSubscriber mocks base method.
-func (m *MockJsSubMgr) NewSubscriber(ctx context.Context, stream streamIntf, identity []string, consumeType SubType) error {
+// New mocks base method.
+func (m *MockJsSubMgr) New(ctx context.Context, stream streamIntf, identity []string, consumeType SubType) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NewSubscriber", ctx, stream, identity, consumeType)
+	ret := m.ctrl.Call(m, "New", ctx, stream, identity, consumeType)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// NewSubscriber indicates an expected call of NewSubscriber.
-func (mr *MockJsSubMgrMockRecorder) NewSubscriber(ctx, stream, identity, consumeType any) *gomock.Call {
+// New indicates an expected call of New.
+func (mr *MockJsSubMgrMockRecorder) New(ctx, stream, identity, consumeType any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewSubscriber", reflect.TypeOf((*MockJsSubMgr)(nil).NewSubscriber), ctx, stream, identity, consumeType)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "New", reflect.TypeOf((*MockJsSubMgr)(nil).New), ctx, stream, identity, consumeType)
 }
 
 // Subscribe mocks base method.
@@ -424,32 +424,32 @@ func (mr *MockSubMgrMockRecorder) Close(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockSubMgr)(nil).Close), ctx)
 }
 
-// DeleteSubscriber mocks base method.
-func (m *MockSubMgr) DeleteSubscriber(ctx context.Context, topicName string) error {
+// Delete mocks base method.
+func (m *MockSubMgr) Delete(ctx context.Context, topicName string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteSubscriber", ctx, topicName)
+	ret := m.ctrl.Call(m, "Delete", ctx, topicName)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// DeleteSubscriber indicates an expected call of DeleteSubscriber.
-func (mr *MockSubMgrMockRecorder) DeleteSubscriber(ctx, topicName any) *gomock.Call {
+// Delete indicates an expected call of Delete.
+func (mr *MockSubMgrMockRecorder) Delete(ctx, topicName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSubscriber", reflect.TypeOf((*MockSubMgr)(nil).DeleteSubscriber), ctx, topicName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockSubMgr)(nil).Delete), ctx, topicName)
 }
 
-// NewSubscriber mocks base method.
-func (m *MockSubMgr) NewSubscriber(ctx context.Context, conn *nats.Conn, topicName string, consumeType SubType) error {
+// New mocks base method.
+func (m *MockSubMgr) New(ctx context.Context, conn *nats.Conn, topicName string, consumeType SubType) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NewSubscriber", ctx, conn, topicName, consumeType)
+	ret := m.ctrl.Call(m, "New", ctx, conn, topicName, consumeType)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// NewSubscriber indicates an expected call of NewSubscriber.
-func (mr *MockSubMgrMockRecorder) NewSubscriber(ctx, conn, topicName, consumeType any) *gomock.Call {
+// New indicates an expected call of New.
+func (mr *MockSubMgrMockRecorder) New(ctx, conn, topicName, consumeType any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewSubscriber", reflect.TypeOf((*MockSubMgr)(nil).NewSubscriber), ctx, conn, topicName, consumeType)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "New", reflect.TypeOf((*MockSubMgr)(nil).New), ctx, conn, topicName, consumeType)
 }
 
 // Subscribe mocks base method.

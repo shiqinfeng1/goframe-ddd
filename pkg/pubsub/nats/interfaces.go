@@ -42,14 +42,14 @@ type ConnMgr interface {
 
 // SubMgr represents the main Subscription Manager.
 type JsSubMgr interface {
-	NewSubscriber(ctx context.Context, stream streamIntf, identity []string, consumeType SubType) error
-	DeleteSubscriber(ctx context.Context, identity []string) error
+	New(ctx context.Context, stream streamIntf, identity []string, consumeType SubType) error
+	Delete(ctx context.Context, identity []string) error
 	Subscribe(ctx context.Context, identity []string, handler pubsub.JsSubscribeFunc) error
 	Close(ctx context.Context) error
 }
 type SubMgr interface {
-	NewSubscriber(ctx context.Context, conn *nats.Conn, topicName string, consumeType SubType) error
-	DeleteSubscriber(ctx context.Context, topicName string) error
+	New(ctx context.Context, conn *nats.Conn, topicName string, consumeType SubType) error
+	Delete(ctx context.Context, topicName string) error
 	Subscribe(ctx context.Context, topicName string, handler pubsub.SubscribeFunc) error
 	Close(ctx context.Context) error
 }

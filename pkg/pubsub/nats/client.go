@@ -40,12 +40,12 @@ func New(srvAddr, name string, natsOpts ...nats.Option) *Client {
 
 type clientOpts func(c *Client)
 
-func WithJsManager(jsm JsSubMgr) func(c *Client) {
+func WithJsMgr(jsm JsSubMgr) func(c *Client) {
 	return func(c *Client) {
 		c.jsSubMgr = jsm
 	}
 }
-func WithSubManager(subm SubMgr) func(c *Client) {
+func WithSubMgr(subm SubMgr) func(c *Client) {
 	return func(c *Client) {
 		c.subMgr = subm
 	}
@@ -61,7 +61,7 @@ func (c *Client) Connect(ctx context.Context, opts ...clientOpts) error {
 		opt(c)
 	}
 
-	connMgr := newConnMgr(c.serverAddr, c.natsConnector, c.jetStreamCreator)
+	connMgr := newConn(c.serverAddr, c.natsConnector, c.jetStreamCreator)
 	connMgr.Connect(ctx, c.natsOpts...)
 	c.connMgr = connMgr
 
@@ -123,7 +123,7 @@ func (c *Client) JsSubscribe(ctx context.Context, stream streamIntf, identity []
 	if c.jsSubMgr == nil {
 		return errJetStream
 	}
-	err := c.jsSubMgr.NewSubscriber(ctx, stream, identity, consumeType)
+	err := c.jsSubMgr.New(ctx, stream, identity, consumeType)
 	if err != nil {
 		return err
 	}
@@ -148,7 +148,7 @@ func (c *Client) Subscribe(ctx context.Context, topicName string, handler pubsub
 	if c.subMgr == nil {
 		return errSubscriptionError
 	}
-	if err := c.subMgr.NewSubscriber(ctx, conn, topicName, SubTypeSubAsync); err != nil {
+	if err := c.subMgr.New(ctx, conn, topicName, SubTypeSubAsync); err != nil {
 		return err
 	}
 	if err := c.subMgr.Subscribe(ctx, topicName, handler); err != nil {
