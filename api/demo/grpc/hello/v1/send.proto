@@ -1,0 +1,22 @@
+// Indicates the protocol buffer version that is being used
+syntax = "proto3";
+
+// Indicates the go package where the generated file will be produced
+option go_package = "github.com/shiqinfeng1/goframe-ddd/api/demo/grpc/filemgr/v1";
+
+service HelloService {
+  rpc SayHello(SayHelloRequest) returns (SayHelloResponse) {}
+}
+
+message SayHelloRequest {
+  int64 id = 1;
+  string name = 2;
+  // other fields that can be passed
+}
+
+message SayHelloResponse {
+  int64 id = 1;
+  string name = 2;
+  string address = 3;
+  // other customer related fields
+}

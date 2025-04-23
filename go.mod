@@ -29,7 +29,6 @@ require (
 	go.opentelemetry.io/otel/exporters/prometheus v0.57.0
 	go.uber.org/automaxprocs v1.6.0
 	go.uber.org/mock v0.5.0
-	golang.org/x/crypto v0.37.0
 	golang.org/x/net v0.39.0
 	golang.org/x/sync v0.13.0
 	golang.org/x/time v0.11.0
@@ -295,6 +294,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.5.0 // indirect
 	go4.org v0.0.0-20200411211856-f5505b9728dd // indirect
 	golang.org/x/arch v0.8.0 // indirect
+	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/mod v0.23.0 // indirect
 	golang.org/x/oauth2 v0.28.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect

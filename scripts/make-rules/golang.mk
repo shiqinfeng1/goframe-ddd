@@ -53,8 +53,8 @@ ifeq (${BINS},)
   $(error Could not determine BINS, set ROOT_DIR or run in source dir)
 endif
 
-# 测试报告过滤的文件夹
-EXCLUDE_TESTS=github.com/shiqinfeng1/goframe-ddd/api'|'github.com/shiqinfeng1/goframe-ddd/cmd'|'github.com/shiqinfeng1/goframe-ddd/internal/adapters/ent
+# 测试报告过滤的文件夹         
+EXCLUDE_TESTS=github.com/shiqinfeng1/goframe-ddd/api'|'github.com/shiqinfeng1/goframe-ddd/cmd'|'github.com/shiqinfeng1/goframe-ddd/internal/filexfer/infrastructure/repositories/ent
 
 # Minimum test coverage
 ifeq ($(origin COVERAGE_TARGET——TARFGET),undefined)
@@ -109,7 +109,7 @@ go.test: tools.verify.go-junit-report
 # 打乱测试用例的执行顺序，增强测试的随机性
 # 设置测试超时时间，避免测试无限期运行
 # 运行简短测试，跳过一些耗时较长的测试用例
-# 把EXCLUDE_TESTS列表中的空格替换为|（在正则表达式中|表示或），再过滤掉当前项目下所有Go包中在EXCLUDE_TESTS中的包
+# 把 EXCLUDE_TESTS 列表中的空格替换为|（在正则表达式中|表示或），再过滤掉当前项目下所有Go包中在EXCLUDE_TESTS中的包
 # 执行测试用例，并生成的代码覆盖率数据文件coverage.out
 # 将测试结果同时输出到终端和 JUnit 格式的 XML 报告文件
 	@set -o pipefail;$(GO) test -race -cover -coverprofile=$(OUTPUT_DIR)/coverage.out \

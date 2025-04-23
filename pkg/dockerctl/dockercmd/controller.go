@@ -2,8 +2,9 @@ package dockercmd
 
 import (
 	"context"
+	"log"
 
-	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/net/gclient"
 )
 
 type DockerController struct {
@@ -32,11 +33,11 @@ func (ctl *DockerController) ComposeImages(ctx context.Context) ([]string, error
 	return reoptags, nil
 }
 func (ctl *DockerController) ComposeUp(ctx context.Context, version string) error {
-	r, err := g.Client().Post(ctx, "http://host.docker.internal:31083/image/upgrade/"+version)
+	r, err := gclient.New().Post(ctx, "http://host.docker.internal:31083/image/upgrade/"+version)
 	if err != nil {
 		return err
 	}
 	defer r.Close()
-	g.Log().Infof(ctx, "docker upgrade image version:%v", r.ReadAllString())
+	log.Println("docker upgrade image version:", r.ReadAllString())
 	return nil
 }

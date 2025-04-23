@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
-	"github.com/shiqinfeng1/goframe-ddd/internal/server/watcher"
+	"github.com/shiqinfeng1/goframe-ddd/internal/watcher"
 )
 
 func main() {

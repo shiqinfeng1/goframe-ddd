@@ -11,13 +11,13 @@ type DockerOps interface {
 	ComposeUp(ctx context.Context, version string) error
 }
 
-type HandlerResponse struct {
+type HandlerResp struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 	Data    any    `json:"data"`
 }
 
-func (hr *HandlerResponse) GetStrings() []string {
+func (hr *HandlerResp) GetStrings() []string {
 	if v, ok := hr.Data.([]string); ok {
 		return v
 	}
