@@ -2,20 +2,24 @@ package application
 
 import (
 	"context"
-
-	"github.com/google/wire"
-	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application/service"
 )
 
-type Service struct {
-	pointDataSet service.PointDataSetService
+type backend struct {
+	pointDataSet PointDataSetSrv
+	jetStream    JetStreamSrv
 }
 
-var WireProviderSet = wire.NewSet(New)
+func (s *backend) PointDataSet() PointDataSetSrv {
+	return s.pointDataSet
+}
+func (s *backend) JetStream() JetStreamSrv {
+	return s.jetStream
+}
 
 // New 一个DDD的应用层
-func New(ctx context.Context, pdsSrv service.PointDataSetService) *Service {
-	return &Service{
+func New(ctx context.Context, pdsSrv PointDataSetSrv, jsSrv JetStreamSrv) Service {
+	return &backend{
 		pointDataSet: pdsSrv,
+		jetStream:    jsSrv,
 	}
 }

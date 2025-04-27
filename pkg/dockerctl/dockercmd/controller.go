@@ -5,14 +5,11 @@ import (
 	"log"
 
 	"github.com/gogf/gf/v2/net/gclient"
-	"github.com/google/wire"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/dockerctl"
 )
 
 type DockerController struct {
 }
-
-var WireProviderSet = wire.NewSet(New)
 
 func New(ctx context.Context) (dockerctl.DockerOps, error) {
 	return &DockerController{}, nil

@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/google/wire"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
+	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/domain/repository"
 )
 
@@ -14,10 +14,8 @@ type PointDataSetMgr struct {
 	repo repository.Repository
 }
 
-var WireProviderSet = wire.NewSet(NewPointDataSetService)
-
 // NewFileSendQueue 创建一个新的文件发送队列
-func NewPointDataSetService(_ context.Context, repo repository.Repository) PointDataSetService {
+func NewPointDataSetService(_ context.Context, repo repository.Repository) application.PointDataSetSrv {
 	return &PointDataSetMgr{
 		repo: repo,
 	}

@@ -20,10 +20,10 @@ type ControllerV1 struct {
 	jsSubscriptions map[string]pubsub.JsSubscribeFunc
 	group           errgroup.Group
 	natsClient      *pkgnats.Client
-	app             *application.Service
+	app             application.Service
 }
 
-func NewV1(app *application.Service) *ControllerV1 {
+func NewV1(app application.Service) *ControllerV1 {
 	ctx := gctx.New()
 	c := &ControllerV1{
 		subscriptions:   make(map[string]pubsub.SubscribeFunc),
@@ -41,13 +41,13 @@ func NewV1(app *application.Service) *ControllerV1 {
 	subs := g.Cfg().MustGet(ctx, "nats.subjects").Strings()
 	exsubs := utils.ExpandSubjectRange(subs[0])
 	for _, exsub := range exsubs {
-		c.RegisterSubscription(ctx, exsub, c.app.HandleTopic1)
+		c.RegisterSubscription(ctx, exsub, c.app.PointDataSet().HandleTopic1)
 	}
 
 	subjs := g.Cfg().MustGet(ctx, "nats.jsSubjects").Strings()
 	exsubjs := utils.ExpandSubjectRange(subjs[0])
 	for _, exsub := range exsubjs {
-		c.RegisterJsSubscription(ctx, exsub, c.app.HandleTopic2)
+		c.RegisterJsSubscription(ctx, exsub, c.app.PointDataSet().HandleTopic2)
 	}
 	return c
 }

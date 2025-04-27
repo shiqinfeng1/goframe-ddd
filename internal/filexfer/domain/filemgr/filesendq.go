@@ -7,7 +7,6 @@ import (
 	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
-	"github.com/google/wire"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/domain/service"
 )
 
@@ -21,8 +20,6 @@ type FileTransferMgr struct {
 	repo     Repository
 	stream   service.StreamIntf
 }
-
-var WireProviderSet = wire.NewSet(NewFileTransferService)
 
 // NewFileSendQueue 创建一个新的文件发送队列
 func NewFileTransferService(ctx context.Context, repo Repository) *FileTransferMgr {

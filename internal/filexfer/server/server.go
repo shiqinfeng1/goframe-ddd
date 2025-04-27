@@ -6,13 +6,10 @@ import (
 	"github.com/gogf/gf/contrib/metric/otelmetric/v2"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
-	"github.com/google/wire"
 	"github.com/shiqinfeng1/goframe-ddd/internal/filexfer/application"
 	"github.com/shiqinfeng1/goframe-ddd/internal/filexfer/server/http/filemgr"
 	"github.com/shiqinfeng1/goframe-ddd/internal/filexfer/server/http/session"
 )
-
-var WireProviderSet = wire.NewSet(NewHttpServer)
 
 func NewHttpServer(ctx context.Context, app *application.Service) *ghttp.Server {
 	// 启动http服务

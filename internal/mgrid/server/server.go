@@ -6,7 +6,6 @@ import (
 	"github.com/gogf/gf/contrib/metric/otelmetric/v2"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
-	"github.com/google/wire"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/server/http/ops"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/server/http/pointdata"
@@ -14,10 +13,7 @@ import (
 	"github.com/shiqinfeng1/goframe-ddd/pkg/dockerctl"
 )
 
-var WireHttpProviderSet = wire.NewSet(NewHttpServer)
-var WireSubProviderSet = wire.NewSet(NewSubscriptions)
-
-func NewHttpServer(ctx context.Context, app *application.Service, dockerOps dockerctl.DockerOps) *ghttp.Server {
+func NewHttpServer(ctx context.Context, app application.Service, dockerOps dockerctl.DockerOps) *ghttp.Server {
 	// 启动http服务
 	s := g.Server()
 	if g.Cfg().MustGet(ctx, "pprof").Bool() {
@@ -55,7 +51,7 @@ func NewHttpServer(ctx context.Context, app *application.Service, dockerOps dock
 	return s
 }
 
-func NewSubscriptions(app *application.Service) *pubsub.ControllerV1 {
+func NewSubscriptions(app application.Service) *pubsub.ControllerV1 {
 	subMgr := pubsub.NewV1(app)
 	return subMgr
 }

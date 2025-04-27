@@ -54,11 +54,13 @@ type closer struct {
 	stop   func()
 }
 type jsSubscriber struct {
-	consumeType                         SubType
-	streamName, consumerName, topicName string
-	stream                              streamIntf
-	close                               closer
-	exitNotify                          chan []string
+	consumeType  SubType
+	streamName   string
+	consumerName string
+	topicName    string
+	stream       streamIntf
+	close        closer
+	exitNotify   chan []string
 }
 
 // 订阅器管理

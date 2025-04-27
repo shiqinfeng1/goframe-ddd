@@ -10,10 +10,10 @@ import (
 )
 
 type ControllerV1 struct {
-	app *application.Service
+	app application.Service
 }
 
-func NewV1(app *application.Service) pointdata.IPointdataV1 {
+func NewV1(app application.Service) pointdata.IPointdataV1 {
 	return &ControllerV1{
 		app: app,
 	}

@@ -23,19 +23,19 @@ type StreamInfo struct {
 	State     jetstream.StreamState `json:"state"  dc:"流状态信息"`
 }
 
-type DeleteStreamInput struct {
+type DeleteStreamIn struct {
 	Name string
 }
-type JetStreamInfoInput struct {
+type JetStreamInfoIn struct {
 	Name string
 }
 
-type JetStreamInfoOutput struct {
+type JetStreamInfoOut struct {
 	StreamInfo    *jetstream.StreamInfo
 	ConsumerInfos []*jetstream.ConsumerInfo
 }
 
-type PubSubBenchmarkInput struct {
+type PubSubBenchmarkIn struct {
 	Subjects     []string
 	JsSubjects   []string
 	StreamName   string

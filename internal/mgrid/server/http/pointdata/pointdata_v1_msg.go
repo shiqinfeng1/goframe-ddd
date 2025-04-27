@@ -12,7 +12,7 @@ import (
 
 func (c *ControllerV1) PubSubBenchmark(ctx context.Context, req *v1.PubSubBenchmarkReq) (res *v1.PubSubBenchmarkRes, err error) {
 
-	in := &dto.PubSubBenchmarkInput{
+	in := &dto.PubSubBenchmarkIn{
 		StreamName:   g.Cfg().MustGet(ctx, "nats.streamName").String(),
 		ConsumerName: g.Cfg().MustGet(ctx, "nats.consumerName").String(),
 	}
@@ -26,14 +26,14 @@ func (c *ControllerV1) PubSubBenchmark(ctx context.Context, req *v1.PubSubBenchm
 	exjssubs := utils.ExpandSubjectRange(strings.TrimSuffix(jssubjects[0], ">") + "IED.1~50.point.1~2")
 	in.JsSubjects = append(in.JsSubjects, exjssubs...)
 
-	err = c.app.PubSubBenchmark(ctx, in)
+	err = c.app.JetStream().PubSubBenchmark(ctx, in)
 	return
 }
 func (c *ControllerV1) GetStreamInfo(ctx context.Context, req *v1.GetStreamInfoReq) (res *v1.GetStreamInfoRes, err error) {
-	in := &dto.JetStreamInfoInput{
+	in := &dto.JetStreamInfoIn{
 		Name: req.StreamName,
 	}
-	streams, err := c.app.JetStreamInfo(ctx, in)
+	streams, err := c.app.JetStream().JetStreamInfo(ctx, in)
 	if err != nil {
 		return &v1.GetStreamInfoRes{}, err
 	}
@@ -65,10 +65,10 @@ func (c *ControllerV1) GetStreamInfo(ctx context.Context, req *v1.GetStreamInfoR
 	return res, nil
 }
 func (c *ControllerV1) DeleteStream(ctx context.Context, req *v1.DeleteStreamReq) (res *v1.DeleteStreamRes, err error) {
-	err = c.app.DeleteStream(ctx, &dto.DeleteStreamInput{Name: req.StreamName})
+	err = c.app.JetStream().DeleteStream(ctx, &dto.DeleteStreamIn{Name: req.StreamName})
 	return
 }
 func (c *ControllerV1) StreamSend(ctx context.Context, req *v1.StreamSendReq) (res *v1.StreamSendRes, err error) {
-	err = c.app.SendStreamForTest(ctx)
+	err = c.app.JetStream().SendStreamForTest(ctx)
 	return
 }

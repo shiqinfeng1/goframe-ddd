@@ -27,8 +27,9 @@ import (
 func initServer() (*ghttp.Server, func(), error) {
 	context := ProvideContext()
 	repository := repositories.NewPointmgrRepo()
-	pointDataSetService := service.NewPointDataSetService(context, repository)
-	applicationService := application.New(context, pointDataSetService)
+	pointDataSetSrv := service.NewPointDataSetService(context, repository)
+	jetStreamSrv := service.NeJetStreamService(context, repository)
+	applicationService := application.New(context, pointDataSetSrv, jetStreamSrv)
 	dockerOps, err := dockercmd.New(context)
 	if err != nil {
 		return nil, nil, err
@@ -41,8 +42,9 @@ func initServer() (*ghttp.Server, func(), error) {
 func initSub() (*pubsub.ControllerV1, func(), error) {
 	context := ProvideContext()
 	repository := repositories.NewPointmgrRepo()
-	pointDataSetService := service.NewPointDataSetService(context, repository)
-	applicationService := application.New(context, pointDataSetService)
+	pointDataSetSrv := service.NewPointDataSetService(context, repository)
+	jetStreamSrv := service.NeJetStreamService(context, repository)
+	applicationService := application.New(context, pointDataSetSrv, jetStreamSrv)
 	controllerV1 := server.NewSubscriptions(applicationService)
 	return controllerV1, func() {
 	}, nil

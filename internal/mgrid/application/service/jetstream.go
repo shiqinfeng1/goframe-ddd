@@ -1,4 +1,4 @@
-package application
+package service
 
 import (
 	"context"
@@ -11,14 +11,27 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/util/grand"
 	"github.com/nats-io/nats.go/jetstream"
+	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application/dto"
+	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/domain/repository"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/errors"
 	pkgnats "github.com/shiqinfeng1/goframe-ddd/pkg/pubsub/nats"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/utils"
 	"golang.org/x/time/rate"
 )
 
-func (app *Service) SendStreamForTest(ctx context.Context) error {
+type JetStreamMgr struct {
+	repo repository.Repository
+}
+
+// NewFileSendQueue 创建一个新的文件发送队列
+func NeJetStreamService(_ context.Context, repo repository.Repository) application.JetStreamSrv {
+	return &JetStreamMgr{
+		repo: repo,
+	}
+}
+
+func (app *JetStreamMgr) SendStreamForTest(ctx context.Context) error {
 	jssubjects := g.Cfg().MustGet(ctx, "nats.jsSubjects").Strings()
 	exjssubs := utils.ExpandSubjectRange(strings.TrimSuffix(jssubjects[0], ">") + "IED.1~50.point.1~2")
 	for _, j := range exjssubs {
@@ -26,7 +39,7 @@ func (app *Service) SendStreamForTest(ctx context.Context) error {
 	}
 	return nil
 }
-func (app *Service) DeleteStream(ctx context.Context, in *dto.DeleteStreamInput) error {
+func (app *JetStreamMgr) DeleteStream(ctx context.Context, in *dto.DeleteStreamIn) error {
 
 	client := pkgnats.New(
 		g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
@@ -47,7 +60,7 @@ func (app *Service) DeleteStream(ctx context.Context, in *dto.DeleteStreamInput)
 	}
 	return nil
 }
-func (app *Service) JetStreamInfo(ctx context.Context, in *dto.JetStreamInfoInput) (*dto.JetStreamInfoOutput, error) {
+func (app *JetStreamMgr) JetStreamInfo(ctx context.Context, in *dto.JetStreamInfoIn) (*dto.JetStreamInfoOut, error) {
 
 	client := pkgnats.New(
 		g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
@@ -80,14 +93,14 @@ func (app *Service) JetStreamInfo(ctx context.Context, in *dto.JetStreamInfoInpu
 	for consumer := range stream.ListConsumers(ctx).Info() {
 		cis = append(cis, consumer)
 	}
-	return &dto.JetStreamInfoOutput{
+	return &dto.JetStreamInfoOut{
 		StreamInfo:    si,
 		ConsumerInfos: cis,
 	}, nil
 }
 
 // 基准测试无业务逻辑处理，不需要domian层参与，因此直接在app层实现测试逻辑
-func (app *Service) PubSubBenchmark(ctx context.Context, in *dto.PubSubBenchmarkInput) error {
+func (app *JetStreamMgr) PubSubBenchmark(ctx context.Context, in *dto.PubSubBenchmarkIn) error {
 
 	// 再运行发布者，一个发布者一个连接
 	for j := range len(in.Subjects) {

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/gogf/gf/v2/errors/gerror"
-	"github.com/google/wire"
 
 	"github.com/shiqinfeng1/goframe-ddd/internal/filexfer/domain/filemgr"
 	"github.com/shiqinfeng1/goframe-ddd/internal/filexfer/infrastructure/repositories/ent"
@@ -18,8 +17,6 @@ import (
 type filemgrRepo struct {
 	db *ent.Client
 }
-
-var WireProviderSet = wire.NewSet(NewFilemgrRepo)
 
 var _ filemgr.Repository = (*filemgrRepo)(nil)
 

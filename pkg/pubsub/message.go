@@ -1,17 +1,30 @@
 package pubsub
 
-// type Message struct {
-// 	Topic    string
-// 	Value    []byte
-// 	MetaData any
-// 	Subject  string
-// 	Committer
-// }
+import (
+	"encoding/json"
 
-// func NewMessage() *Message {
-// 	return &Message{}
-// }
+	"github.com/gogf/gf/v2/util/gconv"
+)
 
-// func (m Message) String() string {
-// 	return fmt.Sprintf("topic:'%v' subject:'%v' value:'%v' metadata:'%v'", m.Topic, m.Subject, gconv.String(m.Value), gconv.String(m.MetaData))
-// }
+type Message struct {
+	Topic    string
+	Value    []byte
+	MetaData any
+	Subject  string
+	Committer
+}
+
+func NewMessage() *Message {
+	return &Message{}
+}
+
+func (m Message) String() string {
+	v := map[string]string{
+		"topic":    m.Topic,
+		"subject":  m.Subject,
+		"value":    gconv.String(m.Value),
+		"metaData": gconv.String(m.MetaData),
+	}
+	bytes, _ := json.Marshal(v)
+	return string(bytes)
+}

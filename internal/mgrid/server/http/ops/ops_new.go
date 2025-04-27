@@ -11,11 +11,11 @@ import (
 )
 
 type ControllerV1 struct {
-	app       *application.Service
+	app       application.Service
 	dockerOps dockerctl.DockerOps
 }
 
-func NewV1(app *application.Service, dockerOps dockerctl.DockerOps) ops.IOpsV1 {
+func NewV1(app application.Service, dockerOps dockerctl.DockerOps) ops.IOpsV1 {
 	return &ControllerV1{
 		app:       app,
 		dockerOps: dockerOps,
