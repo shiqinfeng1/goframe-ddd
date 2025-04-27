@@ -7,19 +7,25 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/gproc"
-	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/server"
 	_ "go.uber.org/automaxprocs"
 )
 
 func main() {
 	ctx := gctx.New()
 	wg := sync.WaitGroup{}
-	httpSrv := server.NewHttpServer()
-	pubsubMgr := server.NewSubscriptions()
+	httpSrv, cleanup1, err := initServer()
+	if err != nil {
+		g.Log().Panic(ctx, err)
+	}
+	defer cleanup1()
+	pubsubMgr, cleanup2, err := initSub()
+	if err != nil {
+		g.Log().Panic(ctx, err)
+	}
+	defer cleanup2()
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		g.Log().Infof(ctx, "start http server ...")
 		httpSrv.Run()
 		g.Log().Infof(ctx, "exit http server ok")
 	}()
@@ -27,7 +33,6 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		g.Log().Infof(ctx, "start nats subscribe ...")
 		if err := pubsubMgr.Run(ctx); err != nil {
 			g.Log().Fatalf(ctx, "subscription error : %v", err)
 		}

@@ -7,7 +7,7 @@ import (
 	"github.com/shiqinfeng1/goframe-ddd/pkg/session"
 )
 
-func (app *Application) GetClientIds(ctx context.Context) ([]string, error) {
+func (app *Service) GetClientIds(ctx context.Context) ([]string, error) {
 	nodeIds, err := session.GetSessionNodeList(ctx)
 	if err != nil {
 		g.Log().Error(ctx, err)

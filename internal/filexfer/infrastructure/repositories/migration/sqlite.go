@@ -5,9 +5,12 @@ import (
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gfile"
+	"github.com/google/wire"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/shiqinfeng1/goframe-ddd/internal/filexfer/infrastructure/repositories/ent"
 )
+
+var WireProviderSet = wire.NewSet(NewEntClient)
 
 func NewEntClient(ctx context.Context) *ent.Client {
 	if !gfile.IsDir("./data") {

@@ -5,18 +5,16 @@
 package pointdata
 
 import (
-	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/shiqinfeng1/goframe-ddd/api/mgrid/http/pointdata"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application"
 )
 
 type ControllerV1 struct {
-	app *application.Application
+	app *application.Service
 }
 
-func NewV1() pointdata.IPointdataV1 {
-	ctx := gctx.New()
+func NewV1(app *application.Service) pointdata.IPointdataV1 {
 	return &ControllerV1{
-		app: application.App(ctx),
+		app: app,
 	}
 }

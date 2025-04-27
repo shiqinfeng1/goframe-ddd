@@ -2,29 +2,20 @@ package application
 
 import (
 	"context"
-	"sync"
 
+	"github.com/google/wire"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application/service"
-	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/infrastructure/repositories"
 )
 
-type Application struct {
+type Service struct {
 	pointDataSet service.PointDataSetService
 }
 
-var app *Application
-var once sync.Once
+var WireProviderSet = wire.NewSet(New)
 
 // New 一个DDD的应用层
-func App(ctx context.Context) *Application {
-	once.Do(func() {
-		// 点位数据集服务
-		repoPm := repositories.NewPointmgrRepo()
-		pdsSrv := service.NewPointDataSetService(ctx, repoPm)
-
-		app = &Application{
-			pointDataSet: pdsSrv,
-		}
-	})
-	return app
+func New(ctx context.Context, pdsSrv service.PointDataSetService) *Service {
+	return &Service{
+		pointDataSet: pdsSrv,
+	}
 }

@@ -20,10 +20,10 @@ type ControllerV1 struct {
 	jsSubscriptions map[string]pubsub.JsSubscribeFunc
 	group           errgroup.Group
 	natsClient      *pkgnats.Client
-	app             *application.Application
+	app             *application.Service
 }
 
-func NewV1() *ControllerV1 {
+func NewV1(app *application.Service) *ControllerV1 {
 	ctx := gctx.New()
 	c := &ControllerV1{
 		subscriptions:   make(map[string]pubsub.SubscribeFunc),
@@ -33,7 +33,7 @@ func NewV1() *ControllerV1 {
 			g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
 			"Client For Subscriber",
 		),
-		app: application.App(ctx),
+		app: app,
 	}
 	// 注册topic的处理函数
 	// 默认一个topic注册一个处理函数， topic支持通配符

@@ -109,9 +109,9 @@ install.protoc-gen-go-grpc:
 # install.protoc-gen-openapi:
 # 	@$(GO) install github.com/google/gnostic/cmd/protoc-gen-openapi@latest
 
-# .PHONY: install.wire
-# install.wire:
-# 	@$(GO) install github.com/google/wire/cmd/wire@latest
+.PHONY: install.wire
+install.wire:
+	@$(GO) install github.com/google/wire/cmd/wire@latest
 
 # .PHONY: install.addlicense
 # install.addlicense:

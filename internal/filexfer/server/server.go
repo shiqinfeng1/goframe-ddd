@@ -1,15 +1,20 @@
 package server
 
 import (
+	"context"
+
 	"github.com/gogf/gf/contrib/metric/otelmetric/v2"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
-	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/google/wire"
+	"github.com/shiqinfeng1/goframe-ddd/internal/filexfer/application"
 	"github.com/shiqinfeng1/goframe-ddd/internal/filexfer/server/http/filemgr"
+	"github.com/shiqinfeng1/goframe-ddd/internal/filexfer/server/http/session"
 )
 
-func NewHttpServer() *ghttp.Server {
-	ctx := gctx.New()
+var WireProviderSet = wire.NewSet(NewHttpServer)
+
+func NewHttpServer(ctx context.Context, app *application.Service) *ghttp.Server {
 	// 启动http服务
 	s := g.Server()
 	if g.Cfg().MustGet(ctx, "pprof").Bool() {
@@ -33,7 +38,8 @@ func NewHttpServer() *ghttp.Server {
 	s.Group("/filexfer", func(group *ghttp.RouterGroup) {
 		group.Middleware(ghttp.MiddlewareHandlerResponse)
 		group.Bind(
-			filemgr.NewV1(),
+			filemgr.NewV1(app),
+			session.NewV1(app),
 		)
 	})
 

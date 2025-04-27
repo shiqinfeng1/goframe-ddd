@@ -10,7 +10,7 @@ else
 endif
 
 .PHONY: gen.run
-gen.run: gen.clean gen.pb gen.ctrl gen.generate
+gen.run: gen.clean gen.pb gen.ctrl gen.generate gen.wire
 
 .PHONY: gen.pb
 gen.pb: tools.verify.gf tools.verify.protoc tools.verify.protoc-gen-go tools.verify.protoc-gen-go-grpc
@@ -19,8 +19,8 @@ gen.pb: tools.verify.gf tools.verify.protoc tools.verify.protoc-gen-go tools.ver
 	@for dir in $(shell find $(ROOT_DIR)/api -mindepth 1 -maxdepth 1 -type d); do \
         name=$$(basename $$dir); \
 		if [ -d "$(ROOT_DIR)/api/$$name/grpc" ]; then \
-			mkdir -p ${ROOT_DIR}/internal/server/$$name/grpc; \
-        	gf gen pb -p $(ROOT_DIR)/api/$$name/grpc -a ${ROOT_DIR}/api/$$name/grpc -c ${ROOT_DIR}/internal/server/$$name/grpc; \
+			mkdir -p ${ROOT_DIR}/internal/$$name/server/grpc; \
+        	gf gen pb -p $(ROOT_DIR)/api/$$name/grpc -a ${ROOT_DIR}/api/$$name/grpc -c ${ROOT_DIR}/internal/$$name/server/grpc; \
 		fi \
     done 
 
@@ -31,14 +31,14 @@ gen.ctrl: tools.verify.gf
 	@for dir in $(shell find $(ROOT_DIR)/api -mindepth 1 -maxdepth 1 -type d); do \
         name=$$(basename $$dir); \
 		if [ -d "$(ROOT_DIR)/api/$$name/http" ]; then \
-    		gf gen ctrl -s $(ROOT_DIR)/api/$$name/http -d $(ROOT_DIR)/internal/server/$$name/http -m; \
+    		gf gen ctrl -s $(ROOT_DIR)/api/$$name/http -d $(ROOT_DIR)/internal/$$name/server/http -m; \
 		fi \
     done 
 
 .PHONY: gen.wire
 gen.wire: tools.verify.wire
 	@echo "===========> Generating wire_gen.go from wire.go file through wire"
-	@find internal  -mindepth 2 -maxdepth 2 | grep server | $(wireCmd)
+	@find cmd  -mindepth 1 -maxdepth 1  | $(wireCmd)
 
 .PHONY: gen.clean
 gen.clean:

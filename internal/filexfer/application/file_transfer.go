@@ -9,33 +9,33 @@ import (
 	"github.com/shiqinfeng1/goframe-ddd/internal/filexfer/application/dto"
 )
 
-func (app *Application) StartSendFile(ctx context.Context, in *dto.StartSendFileInput) (*dto.StartSendFileOutput, error) {
+func (app *Service) StartSendFile(ctx context.Context, in *dto.StartSendFileInput) (*dto.StartSendFileOutput, error) {
 	taskId := xid.New().String()
 	app.fileTransfer.AddTask(ctx, taskId, in.BaseName, in.NodeId, in.Files)
 	return nil, nil
 }
 
-func (app *Application) PauseSendFile(ctx context.Context, in *dto.PauseSendFileInput) (*dto.PauseSendFileOutput, error) {
+func (app *Service) PauseSendFile(ctx context.Context, in *dto.PauseSendFileInput) (*dto.PauseSendFileOutput, error) {
 	app.fileTransfer.PauseTask(ctx, in.TaskId)
 	return nil, nil
 }
 
-func (app *Application) CancelSendFile(ctx context.Context, in *dto.CancelSendFileInput) (*dto.CancelSendFileOutput, error) {
+func (app *Service) CancelSendFile(ctx context.Context, in *dto.CancelSendFileInput) (*dto.CancelSendFileOutput, error) {
 	app.fileTransfer.CancelTask(ctx, in.TaskId)
 	return nil, nil
 }
 
-func (app *Application) ResumeSendFile(ctx context.Context, in *dto.ResumeSendFileInput) (*dto.ResumeSendFileOutput, error) {
+func (app *Service) ResumeSendFile(ctx context.Context, in *dto.ResumeSendFileInput) (*dto.ResumeSendFileOutput, error) {
 	app.fileTransfer.ResumeTask(ctx, in.TaskId)
 	return nil, nil
 }
 
-func (app *Application) RemoveTask(ctx context.Context, in *dto.RemoveTaskInput) (*dto.RemoveTaskOutput, error) {
+func (app *Service) RemoveTask(ctx context.Context, in *dto.RemoveTaskInput) (*dto.RemoveTaskOutput, error) {
 	app.fileTransfer.RemoveTask(ctx, in.TaskIds)
 	return nil, nil
 }
 
-func (app *Application) GetSendingTaskList(ctx context.Context, in *dto.TaskListInput) (*dto.TaskListOutput, error) {
+func (app *Service) GetSendingTaskList(ctx context.Context, in *dto.TaskListInput) (*dto.TaskListOutput, error) {
 	running, maxTasks := app.fileTransfer.GetMaxAndRunning(ctx)
 	tasks, sfs, err := app.fileTransfer.GetNotCompletedTasks(ctx)
 	if err != nil {
@@ -69,7 +69,7 @@ func (app *Application) GetSendingTaskList(ctx context.Context, in *dto.TaskList
 	return tasklist, nil
 }
 
-func (app *Application) GetCompletedTaskList(ctx context.Context, in *dto.TaskListInput) (*dto.TaskListOutput, error) {
+func (app *Service) GetCompletedTaskList(ctx context.Context, in *dto.TaskListInput) (*dto.TaskListOutput, error) {
 	tasks, sfs, err := app.fileTransfer.GetCompletedTasks(ctx)
 	if err != nil {
 		g.Log().Error(ctx, err)

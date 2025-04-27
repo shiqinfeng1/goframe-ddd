@@ -5,18 +5,16 @@
 package session
 
 import (
-	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/shiqinfeng1/goframe-ddd/api/filexfer/http/session"
 	"github.com/shiqinfeng1/goframe-ddd/internal/filexfer/application"
 )
 
 type ControllerV1 struct {
-	app *application.Application
+	app *application.Service
 }
 
-func NewV1() session.ISessionV1 {
-	ctx := gctx.New()
+func NewV1(app *application.Service) session.ISessionV1 {
 	return &ControllerV1{
-		app: application.App(ctx),
+		app: app,
 	}
 }

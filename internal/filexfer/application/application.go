@@ -2,33 +2,25 @@ package application
 
 import (
 	"context"
-	"sync"
 
+	"github.com/google/wire"
 	"github.com/shiqinfeng1/goframe-ddd/internal/filexfer/application/service"
 	"github.com/shiqinfeng1/goframe-ddd/internal/filexfer/domain/filemgr"
-	"github.com/shiqinfeng1/goframe-ddd/internal/filexfer/infrastructure/repositories"
-	"github.com/shiqinfeng1/goframe-ddd/internal/filexfer/infrastructure/repositories/migration"
 )
 
-type Application struct {
+type Service struct {
 	fileTransfer service.FilexferService
 }
 
-var app *Application
-var once sync.Once
+var WireProviderSet = wire.NewSet(New)
 
 // New 一个DDD的应用层
-func App(ctx context.Context) *Application {
-	once.Do(func() {
-		// 文件传输服务
-		repoFm := repositories.NewFilemgrRepo(migration.NewEntClient(ctx))
-		ftSrv := filemgr.NewFileTransferService(ctx, repoFm)
+func New(ctx context.Context, ftSrv *filemgr.FileTransferMgr) *Service {
 
-		ftSrv.Start(ctx)
+	ftSrv.Start(ctx)
 
-		app = &Application{
-			fileTransfer: ftSrv,
-		}
-	})
-	return app
+	return &Service{
+		fileTransfer: ftSrv,
+	}
+
 }
