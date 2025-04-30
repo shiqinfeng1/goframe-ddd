@@ -13,7 +13,7 @@ import (
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application/service"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/infrastructure/repositories"
-	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/server"
+	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/server/http"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/server/pubsub"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/dockerctl/dockercmd"
 )
@@ -24,28 +24,39 @@ import (
 
 // Injectors from wire.go:
 
-func initServer() (*ghttp.Server, func(), error) {
-	context := ProvideContext()
+func initApp(ctx context.Context) (application.Service, error) {
+	logger := application.ProvideLogger()
 	repository := repositories.NewPointmgrRepo()
-	pointDataSetSrv := service.NewPointDataSetService(context, repository)
-	jetStreamSrv := service.NeJetStreamService(context, repository)
-	applicationService := application.New(context, pointDataSetSrv, jetStreamSrv)
-	dockerOps, err := dockercmd.New(context)
+	pointDataSetSrv := service.NewPointDataSetService(ctx, logger, repository)
+	jetStreamSrv := service.NeJetStreamService(ctx, logger, repository)
+	applicationService := application.New(ctx, pointDataSetSrv, jetStreamSrv)
+	return applicationService, nil
+}
+
+func initServer() (*ghttp.Server, func(), error) {
+	contextContext := ProvideContext()
+	logger := http.ProvideLogger()
+	applicationService, err := app(contextContext)
 	if err != nil {
 		return nil, nil, err
 	}
-	ghttpServer := server.NewHttpServer(context, applicationService, dockerOps)
-	return ghttpServer, func() {
+	dockerOps, err := dockercmd.New(contextContext)
+	if err != nil {
+		return nil, nil, err
+	}
+	server := http.NewHttpServer(contextContext, logger, applicationService, dockerOps)
+	return server, func() {
 	}, nil
 }
 
-func initSub() (*pubsub.ControllerV1, func(), error) {
-	context := ProvideContext()
-	repository := repositories.NewPointmgrRepo()
-	pointDataSetSrv := service.NewPointDataSetService(context, repository)
-	jetStreamSrv := service.NeJetStreamService(context, repository)
-	applicationService := application.New(context, pointDataSetSrv, jetStreamSrv)
-	controllerV1 := server.NewSubscriptions(applicationService)
+func initSubOrConsume() (*pubsub.ControllerV1, func(), error) {
+	logger := pubsub.ProvideLogger()
+	contextContext := ProvideContext()
+	applicationService, err := app(contextContext)
+	if err != nil {
+		return nil, nil, err
+	}
+	controllerV1 := pubsub.NewSubOrConsume(logger, applicationService)
 	return controllerV1, func() {
 	}, nil
 }
@@ -55,4 +66,13 @@ func initSub() (*pubsub.ControllerV1, func(), error) {
 // ProvideContext 提供 context.Context 实例
 func ProvideContext() context.Context {
 	return gctx.New()
+}
+
+var appSrv application.Service
+
+func app(ctx context.Context) (application.Service, error) {
+	if appSrv == nil {
+		return initApp(ctx)
+	}
+	return appSrv, nil
 }

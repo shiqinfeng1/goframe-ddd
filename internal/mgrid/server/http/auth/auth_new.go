@@ -6,10 +6,15 @@ package auth
 
 import (
 	"github.com/shiqinfeng1/goframe-ddd/api/mgrid/http/auth"
+	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/server"
 )
 
-type ControllerV1 struct{}
+type ControllerV1 struct {
+	logger server.Logger
+}
 
-func NewV1() auth.IAuthV1 {
-	return &ControllerV1{}
+func NewV1(logger server.Logger) auth.IAuthV1 {
+	return &ControllerV1{
+		logger: logger,
+	}
 }

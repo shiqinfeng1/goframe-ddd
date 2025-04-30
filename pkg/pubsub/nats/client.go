@@ -2,178 +2,142 @@ package nats
 
 import (
 	"context"
-	"time"
 
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/nats-io/nats.go"
-	"github.com/nats-io/nats.go/jetstream"
-	"github.com/shiqinfeng1/goframe-ddd/pkg/health"
-	pubsub "github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
 )
 
-const defaultRetryTimeout = 5 * time.Second
+var defaultNatsOpts []nats.Option = []nats.Option{
+	nats.NoEcho(),
+}
 
 // Client represents a Client for NATS jStream operations.
 type Client struct {
-	natsOpts         []nats.Option
-	connMgr          ConnMgr          // 连接到服务的连接管理器
-	jsSubMgr         JsSubMgr         // jetstream的发布和消费
-	subMgr           SubMgr           // 普通订阅发布
-	serverAddr       string           // nats服务地址
-	name             string           // 客户端名称
-	natsConnector    Connector        // 方便单元测试封装mock接口
-	jetStreamCreator JetStreamCreator // 方便单元测试封装mock接口
+	logger         pubsub.Logger
+	natsOpts       []nats.Option
+	connFactory    ConnFactory     // 连接到服务的连接管理器
+	serverAddr     string          // nats服务地址
+	subscriber     *Subscriber     // 管理消息订阅者
+	streamConsumer *StreamConsumer // 管理流的消费者
 }
 
 // New 创建一个新的客户端
-func New(srvAddr, name string, natsOpts ...nats.Option) *Client {
+func New(ctx context.Context, logger pubsub.Logger, srvAddr string, natsConnector Connector) *Client {
 	c := &Client{
-		serverAddr: srvAddr,
-		name:       name,
+		logger:         logger,
+		serverAddr:     srvAddr,
+		connFactory:    NewFactory(logger, srvAddr, natsConnector),
+		subscriber:     NewSubscriber(logger),
+		streamConsumer: NewStreamConsumer(logger),
 	}
-	c.natsOpts = append(c.natsOpts,
-		nats.Name(name),
-		nats.NoEcho())
+	c.natsOpts = append(c.natsOpts, defaultNatsOpts...)
 	return c
 }
 
-type clientOpts func(c *Client)
-
-func WithJsMgr(jsm JsSubMgr) func(c *Client) {
-	return func(c *Client) {
-		c.jsSubMgr = jsm
-	}
-}
-func WithSubMgr(subm SubMgr) func(c *Client) {
-	return func(c *Client) {
-		c.subMgr = subm
-	}
+// 获取一个新的连接，到nats服务端
+func (c *Client) NewConn(ctx context.Context, opts ...nats.Option) (*Conn, error) {
+	return c.connFactory.New(ctx, append(opts, defaultNatsOpts...)...)
 }
 
-// Connect establishes a connection to NATS and sets up jStream.
-func (c *Client) Connect(ctx context.Context, opts ...clientOpts) error {
-	if c.connMgr != nil && c.connMgr.Health().Status == health.StatusUp {
-		g.Log().Warning(ctx, "NATS connection already established")
-		return nil
+// 订阅消息
+func (c *Client) SubMsg(ctx context.Context, natsConn *Conn, subject string, stype SubType, handler SubscribeFunc) error {
+	if err := c.subscriber.AddSubscription(ctx, natsConn, subject, stype, handler); err != nil {
+		return gerror.Wrap(err, "add subscription fail")
 	}
-	for _, opt := range opts {
-		opt(c)
-	}
-
-	connMgr := newConn(c.serverAddr, c.natsConnector, c.jetStreamCreator)
-	connMgr.Connect(ctx, c.natsOpts...)
-	c.connMgr = connMgr
-
 	return nil
 }
-func (c *Client) Conn() (*nats.Conn, error) {
-	js, err := c.JetStream()
-	if err != nil {
-		return nil, err
-	}
-	return js.Conn(), nil
-}
-func (c *Client) JetStream() (jetstream.JetStream, error) {
-	if c.connMgr == nil || c.connMgr.Health().Status == health.StatusDown {
-		return nil, gerror.New("NATS connection not established")
-	}
-	js, err := c.connMgr.GetJetStream()
-	if err != nil {
-		return nil, err
-	}
-	return js, nil
-}
-func (c *Client) Flush() error {
-	js, err := c.JetStream()
+
+// 创建流
+func (c *Client) CreateStream(ctx context.Context, natsConn *Conn, streamName string, subjects []string) error {
+	js, err := natsConn.JetStream()
 	if err != nil {
 		return err
 	}
-	return js.Conn().Flush()
-}
-
-// Publish publishes a message to a topic.
-func (c *Client) Publish(ctx context.Context, subject string, message []byte) error {
-	if c == nil || c.connMgr == nil {
-		return nil
-	}
-	if !c.connMgr.isConnected() {
-		return errClientNotConnected
-	}
-	return c.connMgr.Publish(ctx, subject, message)
-}
-func (c *Client) JsPublish(ctx context.Context, subject string, message []byte) error {
-	if c == nil || c.connMgr == nil {
-		return nil
-	}
-	if !c.connMgr.isConnected() {
-		return errClientNotConnected
-	}
-	return c.connMgr.JsPublish(ctx, subject, message)
-}
-
-// 流订阅
-func (c *Client) JsSubscribe(ctx context.Context, stream streamIntf, identity []string, consumeType SubType, handler pubsub.JsSubscribeFunc) error {
-	if c == nil || c.connMgr == nil {
-		return nil
-	}
-	if !c.connMgr.isConnected() {
-		return errClientNotConnected
-	}
-	if c.jsSubMgr == nil {
-		return errJetStream
-	}
-	err := c.jsSubMgr.New(ctx, stream, identity, consumeType)
-	if err != nil {
-		return err
-	}
-	if err := c.jsSubMgr.Subscribe(ctx, identity, handler); err != nil {
+	jswrapper := NewJetStreamWrapper(c.logger, js)
+	if err := jswrapper.CreateStream(ctx, streamName, subjects); err != nil {
 		return err
 	}
 	return nil
 }
 
-// 消息订阅
-func (c *Client) Subscribe(ctx context.Context, topicName string, handler pubsub.SubscribeFunc) error {
-	if c == nil || c.connMgr == nil {
-		return nil
-	}
-	if !c.connMgr.isConnected() {
-		return errClientNotConnected
-	}
-	conn, err := c.Conn()
+// 创建或更新流
+func (c *Client) CreateOrUpdateStream(ctx context.Context, natsConn *Conn, streamName string, subjects []string) error {
+	js, err := natsConn.JetStream()
 	if err != nil {
 		return err
 	}
-	if c.subMgr == nil {
-		return errSubscriptionError
-	}
-	if err := c.subMgr.New(ctx, conn, topicName, SubTypeSubAsync); err != nil {
+	jswrapper := NewJetStreamWrapper(c.logger, js)
+	if err := jswrapper.CreateOrUpdateStream(ctx, streamName, subjects); err != nil {
 		return err
 	}
-	if err := c.subMgr.Subscribe(ctx, topicName, handler); err != nil {
+	return nil
+}
+
+// 删除流,  该流上的所有consumer也会被自动删除
+func (c *Client) DeleteStream(ctx context.Context, natsConn *Conn, streamName string) error {
+	js, err := natsConn.JetStream()
+	if err != nil {
 		return err
+	}
+	jswrapper := NewJetStreamWrapper(c.logger, js)
+	if err := jswrapper.DeleteStream(ctx, streamName); err != nil {
+		return err
+	}
+	return nil
+}
+
+// 流消费
+func (c *Client) ConsumeStream(ctx context.Context, natsConn *Conn, streamName, consumerName, subject string, stype SubType, handler ConsumeFunc) error {
+	js, err := natsConn.JetStream()
+	if err != nil {
+		return err
+	}
+	// 在服务端创建消费者
+	jswrapper := NewJetStreamWrapper(c.logger, js)
+	consumer, err := jswrapper.CreateConsumer(ctx, streamName, consumerName, subject)
+	if err != nil {
+		return err
+	}
+	//
+	skey := NewSubsKey(subject, streamName, consumerName)
+	if err := c.streamConsumer.AddConsume(ctx, stype, skey, consumer, handler, c.streamConsumer.exitNotify); err != nil {
+		return gerror.Wrap(err, "add consume fail")
+	}
+	return nil
+}
+
+// 删除流消费
+func (c *Client) DeleteConsumer(ctx context.Context, natsConn *Conn, streamName, consumerName, subject string, stype SubType, handler ConsumeFunc) error {
+	js, err := natsConn.JetStream()
+	if err != nil {
+		return err
+	}
+	jswrapper := NewJetStreamWrapper(c.logger, js)
+	if err := jswrapper.DeleteConsumer(ctx, streamName, consumerName, subject); err != nil {
+		return err
+	}
+	skey := NewSubsKey(subject, streamName, consumerName)
+	if err := c.streamConsumer.DeleteConsumer(ctx, skey); err != nil {
+		return gerror.Wrap(err, "add consume fail")
 	}
 	return nil
 }
 
 // Close closes the Client.
 func (c *Client) Close(ctx context.Context) error {
-	if c.subMgr != nil {
-		c.subMgr.Close(ctx)
-		c.subMgr = nil
-		g.Log().Infof(ctx, "nats client '%v' close sub ok", c.name)
+	if c.subscriber != nil {
+		c.subscriber.Close(ctx)
+		c.subscriber = nil
+		g.Log().Infof(ctx, "nats client '%v' close sub ok", c.serverAddr)
 	}
-	if c.jsSubMgr != nil {
-		c.jsSubMgr.Close(ctx)
-		c.jsSubMgr = nil
-		g.Log().Infof(ctx, "nats client '%v' close js-sub ok", c.name)
+	if c.streamConsumer != nil {
+		c.streamConsumer.Close(ctx)
+		c.streamConsumer = nil
+		g.Log().Infof(ctx, "nats client '%v' close stream consume ok", c.serverAddr)
 	}
-	if c.connMgr != nil {
-		c.connMgr.Close(ctx)
-		c.connMgr = nil
-		g.Log().Infof(ctx, "nats client '%v' close nats conn ok", c.name)
-	}
-	g.Log().Infof(ctx, "nats client '%v' close all ok", c.name)
+
+	g.Log().Infof(ctx, "nats client '%v' close all ok", c.serverAddr)
 	return nil
 }

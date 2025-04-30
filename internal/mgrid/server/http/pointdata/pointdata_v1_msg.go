@@ -2,33 +2,11 @@ package pointdata
 
 import (
 	"context"
-	"strings"
 
-	"github.com/gogf/gf/v2/frame/g"
 	v1 "github.com/shiqinfeng1/goframe-ddd/api/mgrid/http/pointdata/v1"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application/dto"
-	"github.com/shiqinfeng1/goframe-ddd/pkg/utils"
 )
 
-func (c *ControllerV1) PubSubBenchmark(ctx context.Context, req *v1.PubSubBenchmarkReq) (res *v1.PubSubBenchmarkRes, err error) {
-
-	in := &dto.PubSubBenchmarkIn{
-		StreamName:   g.Cfg().MustGet(ctx, "nats.streamName").String(),
-		ConsumerName: g.Cfg().MustGet(ctx, "nats.consumerName").String(),
-	}
-	// 将范围主题展开, 例如：pubsub.station.1.IED.1~50.* 转换成：pubsub.station.1.IED.1.* pubsub.station.1.IED.2.*  ...
-	subjects := g.Cfg().MustGet(ctx, "nats.subjects").Strings()
-
-	// exsubs := utils.ExpandSubjectRange(strings.TrimSuffix(subjects[0], ">") + "point1~100")
-	exsubs := utils.ExpandSubjectRange(subjects[0])
-	in.Subjects = append(in.Subjects, exsubs...)
-	jssubjects := g.Cfg().MustGet(ctx, "nats.jsSubjects").Strings()
-	exjssubs := utils.ExpandSubjectRange(strings.TrimSuffix(jssubjects[0], ">") + "IED.1~50.point.1~2")
-	in.JsSubjects = append(in.JsSubjects, exjssubs...)
-
-	err = c.app.JetStream().PubSubBenchmark(ctx, in)
-	return
-}
 func (c *ControllerV1) GetStreamInfo(ctx context.Context, req *v1.GetStreamInfoReq) (res *v1.GetStreamInfoRes, err error) {
 	in := &dto.JetStreamInfoIn{
 		Name: req.StreamName,
@@ -38,6 +16,7 @@ func (c *ControllerV1) GetStreamInfo(ctx context.Context, req *v1.GetStreamInfoR
 		return &v1.GetStreamInfoRes{}, err
 	}
 	si := &dto.StreamInfo{
+		Name:      streams.StreamInfo.Config.Name,
 		Subjects:  streams.StreamInfo.Config.Subjects,
 		Retention: streams.StreamInfo.Config.Retention.String(),
 		State:     streams.StreamInfo.State,
@@ -65,10 +44,26 @@ func (c *ControllerV1) GetStreamInfo(ctx context.Context, req *v1.GetStreamInfoR
 	return res, nil
 }
 func (c *ControllerV1) DeleteStream(ctx context.Context, req *v1.DeleteStreamReq) (res *v1.DeleteStreamRes, err error) {
+	res = &v1.DeleteStreamRes{}
 	err = c.app.JetStream().DeleteStream(ctx, &dto.DeleteStreamIn{Name: req.StreamName})
 	return
 }
-func (c *ControllerV1) StreamSend(ctx context.Context, req *v1.StreamSendReq) (res *v1.StreamSendRes, err error) {
-	err = c.app.JetStream().SendStreamForTest(ctx)
-	return
+func (c *ControllerV1) GetStreamList(ctx context.Context, req *v1.GetStreamListReq) (res *v1.GetStreamListRes, err error) {
+	streams, err := c.app.JetStream().JetStreamList(ctx, &dto.JetStreamListIn{})
+	if err != nil {
+		return &v1.GetStreamListRes{}, err
+	}
+	var cis []*dto.StreamInfo
+	for _, si := range streams.Streams {
+		cis = append(cis, &dto.StreamInfo{
+			Name:      si.Config.Name,
+			Subjects:  si.Config.Subjects,
+			Retention: si.Config.Retention.String(),
+			State:     si.State,
+		})
+	}
+	res = &v1.GetStreamListRes{
+		Streams: cis,
+	}
+	return res, nil
 }

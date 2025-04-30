@@ -1,6 +1,6 @@
 services:
   mgrid-runtime:
-    image: "runtime-infrastructure:1.1"
+    image: "runtime-infrastructure:latest"
     container_name: mgrid-runtime
     restart: unless-stopped
     volumes: 

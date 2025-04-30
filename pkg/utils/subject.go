@@ -6,6 +6,13 @@ import (
 )
 
 // expandRange 函数用于展开字符串中的范围
+// 例：pubsub.station.1~100.IED.1~1000.point.1~100  展开为：
+// pubsub.station.1.IED.1.point.1
+// pubsub.station.1.IED.1.point.2
+// ...
+// pubsub.station.1.IED.2.point.1
+// ...
+// pubsub.station.100.IED.1000.point.100
 func ExpandSubjectRange(s string) []string {
 	// 按 . 分割字符串
 	parts := strings.Split(s, ".")

@@ -9,14 +9,13 @@ import (
 )
 
 type JetStreamSrv interface {
-	SendStreamForTest(ctx context.Context) error
 	DeleteStream(ctx context.Context, in *dto.DeleteStreamIn) error
 	JetStreamInfo(ctx context.Context, in *dto.JetStreamInfoIn) (*dto.JetStreamInfoOut, error)
-	PubSubBenchmark(ctx context.Context, in *dto.PubSubBenchmarkIn) error
+	JetStreamList(ctx context.Context, in *dto.JetStreamListIn) (*dto.JetStreamListOut, error)
 }
 type PointDataSetSrv interface {
-	HandleTopic1(ctx context.Context, msg *nats.Msg) error
-	HandleTopic2(ctx context.Context, msg *jetstream.Msg) error
+	HandleMsg(ctx context.Context, msg *nats.Msg) error
+	HandleStream(ctx context.Context, msg *jetstream.Msg) error
 }
 
 type Service interface {

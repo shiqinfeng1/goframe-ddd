@@ -4,21 +4,39 @@ import (
 	"context"
 	"time"
 
-	"github.com/gogf/gf/v2/frame/g"
 	"github.com/nats-io/nats.go"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/metrics"
-	pubsub "github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/panic"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
 )
 
 type subscription struct {
-	consumeType SubType
-	topicName   string
-	conn        *nats.Conn
-	sub         *nats.Subscription
-	cancel      chan struct{}
+	logger    pubsub.Logger
+	stype     SubType
+	topicName string
+	conn      *Conn
+	sub       *nats.Subscription
+	handler   SubscribeFunc
+	exit      chan struct{}
 }
 
-func (s *subscription) unsubscribe(ctx context.Context) error {
+func NewSubscription(
+	l pubsub.Logger,
+	stype SubType,
+	tn string,
+	c *Conn,
+	handler SubscribeFunc) *subscription {
+
+	return &subscription{
+		logger:    l,
+		stype:     stype,
+		topicName: tn,
+		conn:      c,
+		handler:   handler,
+		exit:      make(chan struct{}),
+	}
+}
+func (s *subscription) Stop(ctx context.Context) error {
 	if s.sub != nil {
 		if err := s.sub.Drain(); err != nil {
 			return err
@@ -27,14 +45,14 @@ func (s *subscription) unsubscribe(ctx context.Context) error {
 			return err
 		}
 	}
-	close(s.cancel)
-	g.Log().Infof(ctx, "unsubscribe topic '%v' ok", s.topicName)
+	close(s.exit)
+	s.logger.Infof(ctx, "unsubscribe topic '%v' ok", s.topicName)
 	return nil
 }
-func (s *subscription) Subscribe(ctx context.Context, handler pubsub.SubscribeFunc) error {
-	switch s.consumeType {
+func (s *subscription) Start(ctx context.Context) error {
+	switch s.stype {
 	case SubTypeSubAsync:
-		return s.subscribeAsync(ctx, handler)
+		return s.subscribeAsync(ctx, s.handler)
 	}
 	return nil
 }
@@ -42,14 +60,16 @@ func (s *subscription) Subscribe(ctx context.Context, handler pubsub.SubscribeFu
 // 订阅指定的topic的消息
 func (s *subscription) subscribeAsync(
 	ctx context.Context,
-	handler pubsub.SubscribeFunc,
+	handler SubscribeFunc,
 ) error {
-	sub, err := s.conn.Subscribe(s.topicName, func(msg *nats.Msg) {
-		metrics.IncrementCounter(ctx, metrics.NatsSubscribeTotalCount, "topic", s.topicName)
+	sub, err := s.conn.SubMsg(ctx, s.topicName, func(msg *nats.Msg) {
+		metrics.IncCnt(ctx, metrics.NatsSubscribeTotalCount, "topic", s.topicName)
 
 		err := func() error {
 			defer func() {
-				panicRecovery(ctx, recover())
+				panic.Recovery(ctx, func(ctx context.Context, exception error) {
+					s.logger.Errorf(ctx, "panic in handler:%v", exception)
+				})
 			}()
 			if err := handler(ctx, msg); err != nil {
 				time.Sleep(ConsumeMessageDelay)
@@ -58,7 +78,7 @@ func (s *subscription) subscribeAsync(
 			return nil
 		}()
 		if err != nil {
-			g.Log().Errorf(ctx, "error in handler for topic '%s': %v", s.topicName, err)
+			s.logger.Errorf(ctx, "error in handler for topic '%s': %v", s.topicName, err)
 		}
 
 	})
@@ -67,9 +87,9 @@ func (s *subscription) subscribeAsync(
 	}
 	sub.SetPendingLimits(-1, -1)
 	s.sub = sub
-	g.Log().Infof(ctx, "ready to subscribe msg for '%v'", s.topicName)
+	s.logger.Infof(ctx, "ready to subscribe msg for '%v'", s.topicName)
 	// 等待被取消
-	<-s.cancel
-	g.Log().Infof(ctx, "subscribe of '%v' is canceled", s.topicName)
+	<-s.exit
+	s.logger.Infof(ctx, "subscribe of '%v' is exited", s.topicName)
 	return nil
 }

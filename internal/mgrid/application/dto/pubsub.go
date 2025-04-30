@@ -18,6 +18,7 @@ type ConsumerInfo struct {
 	NumPending     uint64   `json:"num_pending" dc:"未投递的消息数量"`
 }
 type StreamInfo struct {
+	Name      string                `json:"name,omitempty" dc:"流名称"`
 	Subjects  []string              `json:"subjects,omitempty" dc:"流的主题列表"`
 	Retention string                `json:"retention" dc:"保留策略"`
 	State     jetstream.StreamState `json:"state"  dc:"流状态信息"`
@@ -26,18 +27,17 @@ type StreamInfo struct {
 type DeleteStreamIn struct {
 	Name string
 }
+
 type JetStreamInfoIn struct {
 	Name string
 }
-
 type JetStreamInfoOut struct {
 	StreamInfo    *jetstream.StreamInfo
 	ConsumerInfos []*jetstream.ConsumerInfo
 }
 
-type PubSubBenchmarkIn struct {
-	Subjects     []string
-	JsSubjects   []string
-	StreamName   string
-	ConsumerName string
+type JetStreamListIn struct {
+}
+type JetStreamListOut struct {
+	Streams []*jetstream.StreamInfo
 }

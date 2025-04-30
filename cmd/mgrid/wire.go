@@ -11,7 +11,7 @@ import (
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application/service"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/infrastructure/repositories"
-	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/server"
+	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/server/http"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/server/pubsub"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/dockerctl/dockercmd"
 )
@@ -21,20 +21,35 @@ func ProvideContext() context.Context {
 	return gctx.New()
 }
 
+var appSrv application.Service
+
+func app(ctx context.Context) (application.Service, error) {
+	if appSrv == nil {
+		return initApp(ctx)
+	}
+	return appSrv, nil
+}
+
+func initApp(ctx context.Context) (application.Service, error) {
+	panic(wire.Build(
+		repositories.WireProviderSet,
+		service.WireProviderSet,
+		application.WireProviderSet,
+	))
+}
+
 func initServer() (*ghttp.Server, func(), error) {
 	panic(wire.Build(
 		ProvideContext,
-		service.WireProviderSet,
-		application.WireProviderSet,
-		repositories.WireProviderSet,
-		server.WireHttpProviderSet,
-		dockercmd.WireProviderSet))
+		dockercmd.WireProviderSet,
+		app,
+		http.WireProviderSet,
+	))
 }
-func initSub() (*pubsub.ControllerV1, func(), error) {
+func initSubOrConsume() (*pubsub.ControllerV1, func(), error) {
 	panic(wire.Build(
 		ProvideContext,
-		service.WireProviderSet,
-		repositories.WireProviderSet,
-		application.WireProviderSet,
-		server.WireSubProviderSet))
+		app,
+		pubsub.WireProviderSet,
+	))
 }

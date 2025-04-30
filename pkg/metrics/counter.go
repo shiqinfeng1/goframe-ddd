@@ -113,7 +113,7 @@ func Shutdown(ctx context.Context) {
 	provider.Shutdown(ctx)
 }
 
-func IncrementCounter(ctx context.Context, name, label, value string) {
+func IncCnt(ctx context.Context, name, label, value string) {
 	// if c, ok := counter[name]; ok {
 	// 	c.Inc(ctx, gmetric.Option{
 	// 		Attributes: []gmetric.Attribute{

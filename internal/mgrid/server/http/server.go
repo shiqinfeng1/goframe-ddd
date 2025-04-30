@@ -1,4 +1,4 @@
-package server
+package http
 
 import (
 	"context"
@@ -7,13 +7,13 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application"
+	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/server"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/server/http/ops"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/server/http/pointdata"
-	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/server/pubsub"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/dockerctl"
 )
 
-func NewHttpServer(ctx context.Context, app application.Service, dockerOps dockerctl.DockerOps) *ghttp.Server {
+func NewHttpServer(ctx context.Context, logger server.Logger, app application.Service, dockerOps dockerctl.DockerOps) *ghttp.Server {
 	// 启动http服务
 	s := g.Server()
 	if g.Cfg().MustGet(ctx, "pprof").Bool() {
@@ -37,8 +37,8 @@ func NewHttpServer(ctx context.Context, app application.Service, dockerOps docke
 	s.Group("/mgrid", func(g *ghttp.RouterGroup) {
 		g.Middleware(ghttp.MiddlewareHandlerResponse)
 		g.Bind(
-			pointdata.NewV1(app),
-			ops.NewV1(app, dockerOps),
+			pointdata.NewV1(logger, app),
+			ops.NewV1(logger, app, dockerOps),
 		)
 	})
 
@@ -49,9 +49,4 @@ func NewHttpServer(ctx context.Context, app application.Service, dockerOps docke
 	oai.Config.CommonResponse = ghttp.DefaultHandlerResponse{}
 	oai.Config.CommonResponseDataField = `Data`
 	return s
-}
-
-func NewSubscriptions(app application.Service) *pubsub.ControllerV1 {
-	subMgr := pubsub.NewV1(app)
-	return subMgr
 }

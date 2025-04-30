@@ -5,17 +5,12 @@ import (
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application/dto"
 )
 
-type PubSubBenchmarkReq struct {
-	g.Meta `path:"/pubsub/benchmark" tags:"消息队列管理" method:"post" summary:"消息发布订阅基准测试"`
+type GetStreamListReq struct {
+	g.Meta `path:"/pubsub/stream/list" tags:"消息队列管理" method:"post" summary:"查询消息流列表"`
 }
-type PubSubBenchmarkRes struct {
-	g.Meta `status:"200"`
-}
-type StreamSendReq struct {
-	g.Meta `path:"/pubsub/sendStream" tags:"消息队列管理" method:"post" summary:"发送消息流(测试接口)"`
-}
-type StreamSendRes struct {
-	g.Meta `status:"200"`
+type GetStreamListRes struct {
+	g.Meta  `status:"200"`
+	Streams []*dto.StreamInfo `json:"streams" dc:"流信息"`
 }
 
 type GetStreamInfoReq struct {

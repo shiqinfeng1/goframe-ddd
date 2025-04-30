@@ -6,9 +6,10 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
+	natsio "github.com/nats-io/nats.go"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application"
-	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
-	pkgnats "github.com/shiqinfeng1/goframe-ddd/pkg/pubsub/nats"
+	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/server"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub/nats"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/utils"
 	"golang.org/x/sync/errgroup"
 )
@@ -16,134 +17,138 @@ import (
 // 消息处理函数
 
 type ControllerV1 struct {
-	subscriptions   map[string]pubsub.SubscribeFunc
-	jsSubscriptions map[string]pubsub.JsSubscribeFunc
-	group           errgroup.Group
-	natsClient      *pkgnats.Client
-	app             application.Service
+	logger        server.Logger
+	subscriptions map[string]nats.SubscribeFunc
+	consumes      map[string]nats.ConsumeFunc
+	group         errgroup.Group
+	natsClient    *nats.Client
+	app           application.Service
 }
 
-func NewV1(app application.Service) *ControllerV1 {
+func NewV1(logger server.Logger, app application.Service) *ControllerV1 {
 	ctx := gctx.New()
 	c := &ControllerV1{
-		subscriptions:   make(map[string]pubsub.SubscribeFunc),
-		jsSubscriptions: make(map[string]pubsub.JsSubscribeFunc),
-		group:           errgroup.Group{},
-		natsClient: pkgnats.New(
+		logger:        logger,
+		subscriptions: make(map[string]nats.SubscribeFunc),
+		consumes:      make(map[string]nats.ConsumeFunc),
+		group:         errgroup.Group{},
+		natsClient: nats.New(
+			ctx,
+			logger,
 			g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
-			"Client For Subscriber",
+			nil,
 		),
 		app: app,
 	}
-	// 注册topic的处理函数
-	// 默认一个topic注册一个处理函数， topic支持通配符
-	// 注意：一个topic起一个协程， 如果对于统一topic但不同的具体subject，如果需要并行处理，也可以为具体的subject起一个处理协程
-	subs := g.Cfg().MustGet(ctx, "nats.subjects").Strings()
-	exsubs := utils.ExpandSubjectRange(subs[0])
-	for _, exsub := range exsubs {
-		c.RegisterSubscription(ctx, exsub, c.app.PointDataSet().HandleTopic1)
-	}
 
-	subjs := g.Cfg().MustGet(ctx, "nats.jsSubjects").Strings()
-	exsubjs := utils.ExpandSubjectRange(subjs[0])
-	for _, exsub := range exsubjs {
-		c.RegisterJsSubscription(ctx, exsub, c.app.PointDataSet().HandleTopic2)
-	}
 	return c
 }
 
-func (s *ControllerV1) Stop(ctx context.Context) {
-	s.natsClient.Close(ctx)
+func (c *ControllerV1) Stop(ctx context.Context) {
+	c.natsClient.Close(ctx)
 }
-func (s *ControllerV1) Topics() (topics []string) {
-	for topic := range s.Subscriptions() {
+func (c *ControllerV1) Topics() (topics []string) {
+	for topic := range c.Subscriptions() {
 		topics = append(topics, topic)
 	}
 	return
 }
-func (s *ControllerV1) JsTopics() (topics []string) {
-	for topic := range s.JsSubscriptions() {
+func (c *ControllerV1) StreamTopics() (topics []string) {
+	for topic := range c.Consumes() {
 		topics = append(topics, topic)
 	}
 	return
 }
 
 // 运行nats订阅客户端
-func (s *ControllerV1) Run(ctx context.Context) error {
-	if err := s.natsClient.Connect(ctx,
-		pkgnats.WithJsMgr(pkgnats.NewJsSub()),
-		pkgnats.WithSubMgr(pkgnats.NewSub()),
-	); err != nil {
-		return gerror.Wrapf(err, "run subscription manager fail")
+func (c *ControllerV1) Run(ctx context.Context) error {
+	// 注册topic的处理函数
+	// 默认一个topic注册一个处理函数， topic支持通配符
+	// 注意：一个topic起一个协程， 如果对于统一topic但不同的具体subject，如果需要并行处理，也可以为具体的subject起一个处理协程
+	subs := g.Cfg().MustGet(ctx, "nats.subjects").Strings()
+	exsubs := utils.ExpandSubjectRange(subs[0])
+	for _, exsub := range exsubs {
+		c.registerSubscribeFunc(ctx, exsub, c.app.PointDataSet().HandleMsg)
 	}
 
+	subjs := g.Cfg().MustGet(ctx, "nats.jsSubjects").Strings()
+	exsubjs := utils.ExpandSubjectRange(subjs[0])
+	for _, exsub := range exsubjs {
+		c.registerConsumeFunc(ctx, exsub, c.app.PointDataSet().HandleStream)
+	}
+	// 连接到nats服务端，用于接收消息
+	connSub, err := c.natsClient.NewConn(ctx, natsio.Name("mgrid sub client"))
+	if err != nil {
+		return err
+	}
+	defer connSub.Close(ctx)
+
 	// 使用协程并发订阅消息主题
-	for topic, handler := range s.Subscriptions() {
-		s.group.Go(func() error {
-			err := s.natsClient.Subscribe(ctx, topic, handler)
+	for topic, handler := range c.Subscriptions() {
+		c.group.Go(func() error {
+			err := c.natsClient.SubMsg(ctx, connSub, topic, nats.SubTypeSubAsync, handler)
 			if err != nil {
 				return gerror.Wrapf(err, "subscribe topic '%v' fail", topic)
 			}
-			g.Log().Debugf(ctx, "exit subscribe for topic '%v' ok", topic)
+			c.logger.Debugf(ctx, "exit subscribe for topic '%v' ok", topic)
 			return err
 		})
 	}
 
-	js, _ := s.natsClient.JetStream()
-	jsMgr := pkgnats.NewStreamManager(js)
-	consumer := g.Cfg().MustGet(ctx, "nats.consumerName").String()
-	stream := g.Cfg().MustGet(ctx, "nats.streamName").String()
-	if _, err := jsMgr.GetStream(ctx, stream); err == nil {
-		g.Log().Warningf(ctx, "stream '%v' is already created", stream)
-		if err := jsMgr.DeleteStream(ctx, stream); err != nil {
-			return err
-		}
-	}
-	if err := jsMgr.CreateStream(ctx, stream, s.JsTopics()); err != nil {
+	// 连接到nats服务端，用于消费流
+	connConsume, err := c.natsClient.NewConn(ctx, natsio.Name("mgrid consume client"))
+	if err != nil {
 		return err
 	}
-	for topic, handler := range s.JsSubscriptions() {
-		identity := []string{stream, consumer, topic}
-		s.group.Go(func() error {
-			g.Log().Debugf(ctx, "start jsSubscribe topic '%v' ...", topic)
-			err := s.natsClient.JsSubscribe(ctx, jsMgr, identity, pkgnats.SubTypeJSConsumeNext, handler)
+	defer connConsume.Close(ctx)
+
+	consumer := g.Cfg().MustGet(ctx, "nats.consumerName").String()
+	streamName := g.Cfg().MustGet(ctx, "nats.streamName").String()
+	if err := c.natsClient.CreateOrUpdateStream(ctx, connConsume, streamName, c.StreamTopics()); err != nil {
+		return err
+	}
+	for topic, handler := range c.Consumes() {
+		c.group.Go(func() error {
+			c.logger.Debug(ctx, "start consume stream", g.Map{"topic": topic})
+			err := c.natsClient.ConsumeStream(ctx, connConsume, streamName, consumer, topic, nats.SubTypeJSConsumeNext, handler)
 			if err != nil {
-				return gerror.Wrapf(err, "jsSubscribe topic '%v' fail", topic)
+				return gerror.Wrapf(err, "consume stream topic fail:%v", topic)
 			}
-			g.Log().Debugf(ctx, "exit jsSubscribe for topic '%v' ok", topic)
+			c.logger.Debug(ctx, "exit consume stream for topic ok", g.Map{"topic": topic})
 			return nil
 		})
 	}
 	// 阻塞等待协程退出：订阅连接断开后协程退出
-	err := s.group.Wait()
-	g.Log().Debugf(ctx, "all subscribe exited %v", err)
+	err = c.group.Wait()
+	c.logger.Infof(ctx, "all subscribe & consume exited %v", err)
 	return err
 }
 
 // 注册topic的处理函数
-func (s *ControllerV1) RegisterSubscription(ctx context.Context, topic string, handler pubsub.SubscribeFunc) {
-	_, exist := s.subscriptions[topic]
+func (c *ControllerV1) registerSubscribeFunc(ctx context.Context, topic string, handler nats.SubscribeFunc) {
+	_, exist := c.subscriptions[topic]
 	if exist {
-		g.Log().Warningf(ctx, "subscriber of topic '%v' is already registered handler", topic)
+		c.logger.Warningf(ctx, "subscriber of topic '%v' is already registered handler", topic)
 		return
 	}
-	s.subscriptions[topic] = handler
-	g.Log().Infof(ctx, "subscriber of topic '%v' register handler ok", topic)
+	c.subscriptions[topic] = handler
+	c.logger.Infof(ctx, "subscriber of topic '%v' register handler ok", topic)
 }
-func (s *ControllerV1) RegisterJsSubscription(ctx context.Context, topic string, handler pubsub.JsSubscribeFunc) {
-	_, exist := s.jsSubscriptions[topic]
+
+func (c *ControllerV1) registerConsumeFunc(ctx context.Context, topic string, handler nats.ConsumeFunc) {
+	_, exist := c.consumes[topic]
 	if exist {
-		g.Log().Warningf(ctx, "js consumer of topic '%v' is already registered handler", topic)
+		c.logger.Warningf(ctx, "stream consumer of topic '%v' is already registered handler", topic)
 		return
 	}
-	s.jsSubscriptions[topic] = handler
-	g.Log().Infof(ctx, "js consumer of topic '%v' register handler ok", topic)
+	c.consumes[topic] = handler
+	c.logger.Infof(ctx, "stream consumer of topic '%v' register handler ok", topic)
 }
 
 // 返回所有注册函数
-func (s *ControllerV1) Subscriptions() map[string]pubsub.SubscribeFunc {
-	return s.subscriptions
+func (c *ControllerV1) Subscriptions() map[string]nats.SubscribeFunc {
+	return c.subscriptions
 }
-func (s *ControllerV1) JsSubscriptions() map[string]pubsub.JsSubscribeFunc {
-	return s.jsSubscriptions
+func (c *ControllerV1) Consumes() map[string]nats.ConsumeFunc {
+	return c.consumes
 }

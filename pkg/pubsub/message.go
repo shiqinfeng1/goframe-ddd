@@ -11,7 +11,6 @@ type Message struct {
 	Value    []byte
 	MetaData any
 	Subject  string
-	Committer
 }
 
 func NewMessage() *Message {

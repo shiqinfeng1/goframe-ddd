@@ -7,14 +7,17 @@ package pointdata
 import (
 	"github.com/shiqinfeng1/goframe-ddd/api/mgrid/http/pointdata"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application"
+	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/server"
 )
 
 type ControllerV1 struct {
-	app application.Service
+	logger server.Logger
+	app    application.Service
 }
 
-func NewV1(app application.Service) pointdata.IPointdataV1 {
+func NewV1(logger server.Logger, app application.Service) pointdata.IPointdataV1 {
 	return &ControllerV1{
-		app: app,
+		logger: logger,
+		app:    app,
 	}
 }

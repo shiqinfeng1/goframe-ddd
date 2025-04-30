@@ -18,7 +18,7 @@ func main() {
 		g.Log().Panic(ctx, err)
 	}
 	defer cleanup1()
-	pubsubMgr, cleanup2, err := initSub()
+	pubsubMgr, cleanup2, err := initSubOrConsume()
 	if err != nil {
 		g.Log().Panic(ctx, err)
 	}
@@ -34,7 +34,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 		if err := pubsubMgr.Run(ctx); err != nil {
-			g.Log().Fatalf(ctx, "subscription error : %v", err)
+			g.Log().Fatalf(ctx, "pubsub run error : %v", err)
 		}
 		g.Log().Infof(ctx, "exit nats subscrib ok")
 	}()

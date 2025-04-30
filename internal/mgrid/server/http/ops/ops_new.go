@@ -7,16 +7,19 @@ package ops
 import (
 	"github.com/shiqinfeng1/goframe-ddd/api/mgrid/http/ops"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application"
+	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/server"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/dockerctl"
 )
 
 type ControllerV1 struct {
+	logger    server.Logger
 	app       application.Service
 	dockerOps dockerctl.DockerOps
 }
 
-func NewV1(app application.Service, dockerOps dockerctl.DockerOps) ops.IOpsV1 {
+func NewV1(logger server.Logger, app application.Service, dockerOps dockerctl.DockerOps) ops.IOpsV1 {
 	return &ControllerV1{
+		logger:    logger,
 		app:       app,
 		dockerOps: dockerOps,
 	}
