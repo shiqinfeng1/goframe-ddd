@@ -17,7 +17,7 @@ import (
 )
 
 // ProvideContext 提供 context.Context 实例
-func ProvideContext() context.Context {
+func ProvideCtx() context.Context {
 	return gctx.New()
 }
 
@@ -40,7 +40,7 @@ func initApp(ctx context.Context) (application.Service, error) {
 
 func initServer() (*ghttp.Server, func(), error) {
 	panic(wire.Build(
-		ProvideContext,
+		ProvideCtx,
 		dockercmd.WireProviderSet,
 		app,
 		http.WireProviderSet,
@@ -48,7 +48,7 @@ func initServer() (*ghttp.Server, func(), error) {
 }
 func initSubOrConsume() (*pubsub.ControllerV1, func(), error) {
 	panic(wire.Build(
-		ProvideContext,
+		ProvideCtx,
 		app,
 		pubsub.WireProviderSet,
 	))

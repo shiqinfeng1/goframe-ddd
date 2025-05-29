@@ -10,7 +10,7 @@ import (
 )
 
 type ConnFactory interface {
-	New(ctx context.Context, opts ...nats.Option) (*Conn, error)
+	New(ctx context.Context, name string, opts ...nats.Option) (*Conn, error)
 }
 type factory struct {
 	logger     pubsub.Logger
@@ -34,28 +34,42 @@ func NewFactory(
 		serverAddr: serverAddr,
 	}
 }
-func (f *factory) New(ctx context.Context, opts ...nats.Option) (*Conn, error) {
-	for i := range defaultRetryCount {
-		conn, err := f.connector.Connect(f.serverAddr, opts...)
-		if err != nil {
-			f.logger.Warningf(ctx, "[%v/%v]try to connect to NATS server at %v: %v", i+1, defaultRetryCount, f.serverAddr, err)
-			time.Sleep(defaultRetryTimeout)
-			continue
-		}
-		// 连接成功后，创建jetstream
-		js, err := conn.NewJetStream()
-		if err != nil {
-			conn.Close()
-			f.logger.Debugf(ctx, "[%v/%v]Failed to create jStream context: %v", i+1, defaultRetryCount, err)
-			time.Sleep(defaultRetryTimeout)
-			continue
-		}
-		f.logger.Infof(ctx, "Successfully connected to NATS server at %v by '%v'", f.serverAddr, conn.NatsConn().Opts.Name)
-		return &Conn{
-			conn:       conn,
-			jStream:    js,
-			serverAddr: f.serverAddr,
-		}, nil
+func (f *factory) New(ctx context.Context, name string, opts ...nats.Option) (*Conn, error) {
+	opts = append(opts,
+		nats.Name(name),
+		nats.DisconnectErrHandler(func(_ *nats.Conn, err error) {
+			f.logger.Infof(ctx, "nats client '%v' disconnected: %v", name, err)
+		}),
+		nats.ReconnectHandler(func(_ *nats.Conn) {
+			f.logger.Infof(ctx, "nats client '%v' reconnected", name)
+		}),
+		nats.ClosedHandler(func(_ *nats.Conn) {
+			f.logger.Infof(ctx, "nats client '%v' closed", name)
+		}),
+		nats.ErrorHandler(func(_ *nats.Conn, _ *nats.Subscription, err error) {
+			f.logger.Infof(ctx, "nats client '%v' occur error: %v", name, err)
+		}),
+	)
+
+	conn, err := f.connector.Connect(f.serverAddr, opts...)
+	for i := 0; i < defaultRetryCount && !conn.IsConnected(); i++ {
+		f.logger.Warningf(ctx, "[%v/%v]try to connect to NATS server at %v: %v", i+1, defaultRetryCount, f.serverAddr, err)
+		time.Sleep(defaultRetryTimeout)
 	}
-	return nil, gerror.New("connect to nats timeout")
+	if !conn.IsConnected() {
+		return nil, gerror.New("connect to nats timeout")
+	}
+
+	// 连接成功后，创建jetstream
+	js, err := conn.NewJetStream()
+	if err != nil {
+		conn.Close()
+		return nil, gerror.Wrap(err, "failed to create jStream context")
+	}
+	f.logger.Infof(ctx, "successfully connected to NATS server at %v by '%v'", f.serverAddr, conn.NatsConn().Opts.Name)
+	return &Conn{
+		conn:       conn,
+		jStream:    js,
+		serverAddr: f.serverAddr,
+	}, nil
 }

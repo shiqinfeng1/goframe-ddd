@@ -13,16 +13,21 @@ import (
 func main() {
 	ctx := gctx.New()
 	wg := sync.WaitGroup{}
+
+	// 初始化http服务
 	httpSrv, cleanup1, err := initServer()
 	if err != nil {
 		g.Log().Panic(ctx, err)
 	}
 	defer cleanup1()
+
+	// 初始化订阅发布服务
 	pubsubMgr, cleanup2, err := initSubOrConsume()
 	if err != nil {
 		g.Log().Panic(ctx, err)
 	}
 	defer cleanup2()
+
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -39,8 +44,8 @@ func main() {
 		g.Log().Infof(ctx, "exit nats subscrib ok")
 	}()
 
-	// grpc服务需要手动关闭
-	// submgr 手动关闭
+	// pubsubMgr 需手动关闭
+	// http服务本身能监听到信号，无需手动关闭
 	signalHandler := func(sig os.Signal) {
 		g.Log().Infof(ctx, "signal received: @@@@ '%v' @@@@, gracefully shutting down pubsub service", sig.String())
 		pubsubMgr.Stop(ctx)

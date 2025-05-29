@@ -5,7 +5,6 @@ import (
 
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
-	natsio "github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application/dto"
@@ -31,8 +30,9 @@ func (js *JetStreamMgr) DeleteStream(ctx context.Context, in *dto.DeleteStreamIn
 		js.logger,
 		g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
 		nil,
-	).New(ctx, natsio.Name("client for delete stream:"+in.Name))
+	).New(ctx, "client for delete stream:"+in.Name)
 	if err != nil {
+
 		return errors.ErrNatsConnectFail(err)
 	}
 	defer conn.Close(ctx)
@@ -53,7 +53,7 @@ func (js *JetStreamMgr) JetStreamInfo(ctx context.Context, in *dto.JetStreamInfo
 		js.logger,
 		g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
 		nil,
-	).New(ctx, natsio.Name("client for query stream:"+in.Name))
+	).New(ctx, "client for query stream:"+in.Name)
 	if err != nil {
 		return nil, errors.ErrNatsConnectFail(err)
 	}
@@ -92,7 +92,7 @@ func (js *JetStreamMgr) JetStreamList(ctx context.Context, in *dto.JetStreamList
 		js.logger,
 		g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
 		nil,
-	).New(ctx, natsio.Name("client for query streamlist"))
+	).New(ctx, "client for query streamlist")
 	if err != nil {
 		return nil, errors.ErrNatsConnectFail(err)
 	}

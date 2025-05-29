@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/nats-io/nats.go/jetstream"
@@ -127,6 +128,8 @@ func (sm *JetStreamWrapper) CreateConsumer(ctx context.Context, streamName, cons
 		AckPolicy:     jetstream.AckExplicitPolicy, //AckExplicitPolicy,
 		FilterSubject: subject,
 		DeliverPolicy: jetstream.DeliverNewPolicy,
+		AckWait:       30 * time.Second, // 业务处理消息的最长时间，如果该时间内没有回复ack，将重推送该消息
+		// MaxAckPending: 1000,                // 最多为回复ack的消息数量，如果到达上限，服务端将停止推送
 	})
 	if err != nil {
 		return nil, gerror.Wrapf(err, "failed to create consumer '%v' for stream '%v' of stream '%v'", consumerName, streamName, streamName)

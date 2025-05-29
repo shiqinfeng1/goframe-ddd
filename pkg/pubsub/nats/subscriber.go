@@ -9,22 +9,13 @@ import (
 )
 
 // 订阅器管理
-type Subscriber struct {
+type subscriber struct {
 	logger        pubsub.Logger
 	subscriptions map[string]*subscription
 	subMutex      sync.Mutex
 }
 
-func NewSubscriber(logger pubsub.Logger) *Subscriber {
-	sm := &Subscriber{
-		logger:        logger,
-		subscriptions: make(map[string]*subscription),
-		subMutex:      sync.Mutex{},
-	}
-	return sm
-}
-
-func (sm *Subscriber) AddSubscription(
+func (sm *subscriber) AddSubscription(
 	ctx context.Context,
 	conn *Conn,
 	topicName string,
@@ -43,7 +34,10 @@ func (sm *Subscriber) AddSubscription(
 	return nil
 }
 
-func (sm *Subscriber) Close(ctx context.Context) error {
+func (sm *subscriber) Close(ctx context.Context) error {
+	if sm == nil {
+		return nil
+	}
 	sm.subMutex.Lock()
 	defer sm.subMutex.Unlock()
 	for _, sub := range sm.subscriptions {
@@ -55,7 +49,7 @@ func (sm *Subscriber) Close(ctx context.Context) error {
 	return nil
 }
 
-func (sm *Subscriber) DeleteSub(ctx context.Context, topicName string) error {
+func (sm *subscriber) DeleteSubscription(ctx context.Context, topicName string) error {
 
 	sm.subMutex.Lock()
 	sub, exist := sm.subscriptions[topicName]
@@ -71,7 +65,7 @@ func (sm *Subscriber) DeleteSub(ctx context.Context, topicName string) error {
 	}
 	return nil
 }
-func (sm *Subscriber) StartSub(ctx context.Context, topicName string) error {
+func (sm *subscriber) Start(ctx context.Context, topicName string) error {
 
 	sm.subMutex.Lock()
 	sub, exist := sm.subscriptions[topicName]

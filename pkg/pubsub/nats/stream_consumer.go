@@ -5,13 +5,12 @@ import (
 	"sync"
 
 	"github.com/gogf/gf/v2/errors/gerror"
-	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
 )
 
 // 订阅器管理
-type StreamConsumer struct {
+type consumer struct {
 	logger        pubsub.Logger
 	subscriptions map[string]*streamConsume
 	streamMgr     *JetStreamWrapper
@@ -19,23 +18,7 @@ type StreamConsumer struct {
 	exitNotify    chan SubsKey // 同步模式下。订阅退出后，各个consume通知本consumer删除相关记录
 }
 
-func NewStreamConsumer(logger pubsub.Logger) *StreamConsumer {
-	sm := &StreamConsumer{
-		logger:        logger,
-		subscriptions: make(map[string]*streamConsume),
-		subMutex:      sync.Mutex{},
-		exitNotify:    make(chan SubsKey),
-	}
-	// 当订阅失败，或stream被删除后，需要删除相关资源
-	go func() {
-		for key := range sm.exitNotify {
-			sm.DeleteConsumer(gctx.New(), key)
-		}
-	}()
-	return sm
-}
-
-func (sm *StreamConsumer) AddConsume(
+func (sm *consumer) Add(
 	ctx context.Context,
 	st SubType,
 	sk SubsKey,
@@ -58,7 +41,10 @@ func (sm *StreamConsumer) AddConsume(
 	return nil
 }
 
-func (sm *StreamConsumer) Close(ctx context.Context) error {
+func (sm *consumer) Close(ctx context.Context) error {
+	if sm == nil {
+		return nil
+	}
 	sm.subMutex.Lock()
 	defer sm.subMutex.Unlock()
 	for _, sub := range sm.subscriptions {
@@ -74,7 +60,7 @@ func (sm *StreamConsumer) Close(ctx context.Context) error {
 	return nil
 }
 
-func (sm *StreamConsumer) DeleteConsumer(ctx context.Context, sk SubsKey) error {
+func (sm *consumer) Delete(ctx context.Context, sk SubsKey) error {
 
 	sm.subMutex.Lock()
 	sub, exist := sm.subscriptions[sk.String()]

@@ -34,7 +34,7 @@ func initApp(ctx context.Context) (application.Service, error) {
 }
 
 func initServer() (*ghttp.Server, func(), error) {
-	contextContext := ProvideContext()
+	contextContext := ProvideCtx()
 	logger := http.ProvideLogger()
 	applicationService, err := app(contextContext)
 	if err != nil {
@@ -51,12 +51,14 @@ func initServer() (*ghttp.Server, func(), error) {
 
 func initSubOrConsume() (*pubsub.ControllerV1, func(), error) {
 	logger := pubsub.ProvideLogger()
-	contextContext := ProvideContext()
+	contextContext := ProvideCtx()
 	applicationService, err := app(contextContext)
 	if err != nil {
 		return nil, nil, err
 	}
-	controllerV1 := pubsub.NewSubOrConsume(logger, applicationService)
+	string2 := pubsub.ProvideNatsServerAddr(contextContext)
+	connFactory := pubsub.ProvideConnFactory(logger, string2)
+	controllerV1 := pubsub.NewV1(logger, applicationService, string2, connFactory)
 	return controllerV1, func() {
 	}, nil
 }
@@ -64,7 +66,7 @@ func initSubOrConsume() (*pubsub.ControllerV1, func(), error) {
 // wire.go:
 
 // ProvideContext 提供 context.Context 实例
-func ProvideContext() context.Context {
+func ProvideCtx() context.Context {
 	return gctx.New()
 }
 
