@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/gogf/gf/v2/errors/gerror"
-	"github.com/gogf/gf/v2/frame/g"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application/dto"
@@ -16,28 +15,26 @@ import (
 type JetStreamMgr struct {
 	logger application.Logger
 	repo   repository.Repository
+	nc     *nats.Conn
 }
 
-func NeJetStreamService(_ context.Context, logger application.Logger, repo repository.Repository) application.JetStreamSrv {
-	return &JetStreamMgr{
+func NeJetStreamService(ctx context.Context, logger application.Logger, repo repository.Repository, ncfact nats.ConnFactory) application.JetStreamSrv {
+	jsm := &JetStreamMgr{
 		logger: logger,
 		repo:   repo,
 	}
+	var err error
+	jsm.nc, err = ncfact.New(ctx, "client for stream mgr")
+	if err != nil {
+		jsm.logger.Errorf(ctx, "new nats client fail:%v", err)
+		return nil
+	}
+	return jsm
 }
 
-func (js *JetStreamMgr) DeleteStream(ctx context.Context, in *dto.DeleteStreamIn) error {
-	conn, err := nats.NewFactory(
-		js.logger,
-		g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
-		nil,
-	).New(ctx, "client for delete stream:"+in.Name)
-	if err != nil {
+func (jsm *JetStreamMgr) DeleteStream(ctx context.Context, in *dto.DeleteStreamIn) error {
 
-		return errors.ErrNatsConnectFail(err)
-	}
-	defer conn.Close(ctx)
-
-	jstream, err := conn.JetStream()
+	jstream, err := jsm.nc.JetStream()
 	if err != nil {
 		return errors.ErrNatsConnectFail(err)
 	}
@@ -47,19 +44,9 @@ func (js *JetStreamMgr) DeleteStream(ctx context.Context, in *dto.DeleteStreamIn
 	return nil
 }
 
-func (js *JetStreamMgr) JetStreamInfo(ctx context.Context, in *dto.JetStreamInfoIn) (*dto.JetStreamInfoOut, error) {
+func (jsm *JetStreamMgr) JetStreamInfo(ctx context.Context, in *dto.JetStreamInfoIn) (*dto.JetStreamInfoOut, error) {
 
-	conn, err := nats.NewFactory(
-		js.logger,
-		g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
-		nil,
-	).New(ctx, "client for query stream:"+in.Name)
-	if err != nil {
-		return nil, errors.ErrNatsConnectFail(err)
-	}
-	defer conn.Close(ctx)
-
-	jstream, err := conn.JetStream()
+	jstream, err := jsm.nc.JetStream()
 	if err != nil {
 		return nil, errors.ErrNatsConnectFail(err)
 	}
@@ -86,19 +73,9 @@ func (js *JetStreamMgr) JetStreamInfo(ctx context.Context, in *dto.JetStreamInfo
 	}, nil
 }
 
-func (js *JetStreamMgr) JetStreamList(ctx context.Context, in *dto.JetStreamListIn) (*dto.JetStreamListOut, error) {
+func (jsm *JetStreamMgr) JetStreamList(ctx context.Context, in *dto.JetStreamListIn) (*dto.JetStreamListOut, error) {
 
-	conn, err := nats.NewFactory(
-		js.logger,
-		g.Cfg().MustGet(ctx, "nats.serverAddr").String(),
-		nil,
-	).New(ctx, "client for query streamlist")
-	if err != nil {
-		return nil, errors.ErrNatsConnectFail(err)
-	}
-	defer conn.Close(ctx)
-
-	jstream, err := conn.JetStream()
+	jstream, err := jsm.nc.JetStream()
 	if err != nil {
 		return nil, errors.ErrNatsConnectFail(err)
 	}

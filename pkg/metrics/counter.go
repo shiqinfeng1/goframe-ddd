@@ -5,6 +5,7 @@ import (
 
 	"github.com/gogf/gf/contrib/metric/otelmetric/v2"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/os/gcache"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/gmetric"
 	"go.opentelemetry.io/otel/exporters/prometheus"
@@ -91,7 +92,8 @@ var (
 			Buckets: []float64{.05, .075, .1, .125, .15, .2, .3, .5, .75, 1, 2, 3, 4, 5, 7.5, 10},
 		},
 	)
-	provider gmetric.Provider
+	provider   gmetric.Provider
+	labelCache = gcache.New()
 )
 
 func init() {
@@ -114,13 +116,21 @@ func Shutdown(ctx context.Context) {
 }
 
 func IncCnt(ctx context.Context, name, label, value string) {
-	// if c, ok := counter[name]; ok {
-	// 	c.Inc(ctx, gmetric.Option{
-	// 		Attributes: []gmetric.Attribute{
-	// 			gmetric.NewAttribute(label, value),
-	// 		},
-	// 	})
-	// }
+	v, err := labelCache.GetOrSet(ctx, value+label, gmetric.Option{
+		Attributes: []gmetric.Attribute{
+			gmetric.NewAttribute(label, value),
+		}}, 0)
+	if err != nil {
+		return
+	}
+	var opt gmetric.Option
+	if err := v.Scan(&opt); err != nil {
+		return
+	}
+
+	if c, ok := counter[name]; ok {
+		c.Inc(ctx, opt)
+	}
 }
 
 func RecordHistogram(ctx context.Context, t float64, labels ...string) {

@@ -10,7 +10,8 @@ import (
 	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub/nats"
 )
 
-var WireProviderSet = wire.NewSet(NewV1, ProvideLogger, ProvideConnFactory, ProvideNatsServerAddr)
+var WireProviderSet = wire.NewSet(NewV1, ProvideLogger)
+var WireProviderNatsFactory = wire.NewSet(ProvideLogger, ProvideNatsServerAddr, ProvideConnFactory)
 
 func ProvideLogger() server.Logger {
 	l := g.Log()

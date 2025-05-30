@@ -140,3 +140,5 @@ nats:
   streamName: "mgrid-stream"
   subjects: ["pubsub.station.1.IED.1~50.point.1~100"]
   jsSubjects: ["jetstream.station.1.>"]
+  kvbuckets: ["bucket1"]
+  objbuckets: ["bucket2"]

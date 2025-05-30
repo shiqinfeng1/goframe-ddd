@@ -28,8 +28,11 @@ func initApp(ctx context.Context) (application.Service, error) {
 	logger := application.ProvideLogger()
 	repository := repositories.NewPointmgrRepo()
 	pointDataSetSrv := service.NewPointDataSetService(ctx, logger, repository)
-	jetStreamSrv := service.NeJetStreamService(ctx, logger, repository)
-	applicationService := application.New(ctx, pointDataSetSrv, jetStreamSrv)
+	serverLogger := pubsub.ProvideLogger()
+	string2 := pubsub.ProvideNatsServerAddr(ctx)
+	connFactory := pubsub.ProvideConnFactory(serverLogger, string2)
+	jetStreamSrv := service.NeJetStreamService(ctx, logger, repository, connFactory)
+	applicationService := application.New(ctx, pointDataSetSrv, jetStreamSrv, connFactory)
 	return applicationService, nil
 }
 
@@ -56,9 +59,7 @@ func initSubOrConsume() (*pubsub.ControllerV1, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	string2 := pubsub.ProvideNatsServerAddr(contextContext)
-	connFactory := pubsub.ProvideConnFactory(logger, string2)
-	controllerV1 := pubsub.NewV1(logger, applicationService, string2, connFactory)
+	controllerV1 := pubsub.NewV1(logger, applicationService)
 	return controllerV1, func() {
 	}, nil
 }

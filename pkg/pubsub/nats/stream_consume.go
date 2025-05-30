@@ -32,7 +32,7 @@ func NewStreamConsume(
 	sk SubsKey,
 	c jetstream.Consumer,
 	handler ConsumeFunc,
-	en chan SubsKey) *streamConsume {
+	exit chan SubsKey) *streamConsume {
 
 	return &streamConsume{
 		logger:      l,
@@ -40,7 +40,7 @@ func NewStreamConsume(
 		subsKey:     sk,
 		consumer:    c,
 		handler:     handler,
-		exitNotify:  en,
+		exitNotify:  exit,
 	}
 }
 

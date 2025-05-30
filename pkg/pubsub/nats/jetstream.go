@@ -122,8 +122,8 @@ func genConsumerName(consumer, subject string) string {
 	return fmt.Sprintf("%s_%s", consumer, subject)
 }
 
-func (sm *JetStreamWrapper) CreateConsumer(ctx context.Context, streamName, consumerName, subject string) (jetstream.Consumer, error) {
-	cons, err := sm.js.CreateConsumer(ctx, streamName, jetstream.ConsumerConfig{
+func (sm *JetStreamWrapper) CreateOrUpdateConsumer(ctx context.Context, streamName, consumerName, subject string) (jetstream.Consumer, error) {
+	cons, err := sm.js.CreateOrUpdateConsumer(ctx, streamName, jetstream.ConsumerConfig{
 		Durable:       genConsumerName(consumerName, subject),
 		AckPolicy:     jetstream.AckExplicitPolicy, //AckExplicitPolicy,
 		FilterSubject: subject,

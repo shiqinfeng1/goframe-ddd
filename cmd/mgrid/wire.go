@@ -35,6 +35,7 @@ func initApp(ctx context.Context) (application.Service, error) {
 		repositories.WireProviderSet,
 		service.WireProviderSet,
 		application.WireProviderSet,
+		pubsub.WireProviderNatsFactory,
 	))
 }
 

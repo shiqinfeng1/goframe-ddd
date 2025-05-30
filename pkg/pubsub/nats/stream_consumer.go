@@ -24,9 +24,9 @@ func (sm *consumer) Add(
 	sk SubsKey,
 	c jetstream.Consumer,
 	handler ConsumeFunc,
-	en chan SubsKey) error {
+	exit chan SubsKey) error {
 
-	ssub := NewStreamConsume(sm.logger, st, sk, c, handler, en)
+	ssub := NewStreamConsume(sm.logger, st, sk, c, handler, exit)
 
 	sm.subMutex.Lock()
 	defer sm.subMutex.Unlock()

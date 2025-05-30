@@ -8,6 +8,7 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
 )
 
@@ -19,16 +20,15 @@ var defaultNatsOpts []nats.Option = []nats.Option{
 type Client struct {
 	logger     pubsub.Logger
 	natsOpts   []nats.Option
-	serverAddr string // nats服务地址
-	subscriber        // 管理消息订阅者
-	consumer          // 管理流的消费者
+	subscriber // 管理消息订阅者
+	consumer   // 管理流的消费者
+	watcher    // kv和object变化监听
 }
 
 // New 创建一个新的客户端
-func New(logger pubsub.Logger, srvAddr string) *Client {
+func New(logger pubsub.Logger) *Client {
 	c := &Client{
-		logger:     logger,
-		serverAddr: srvAddr,
+		logger: logger,
 		subscriber: subscriber{
 			logger:        logger,
 			subscriptions: make(map[string]*subscription),
@@ -39,6 +39,11 @@ func New(logger pubsub.Logger, srvAddr string) *Client {
 			subscriptions: make(map[string]*streamConsume),
 			subMutex:      sync.Mutex{},
 			exitNotify:    make(chan SubsKey),
+		},
+		watcher: watcher{
+			logger:      logger,
+			kvWatchers:  make(map[string]jetstream.KeyWatcher),
+			objWatchers: make(map[string]jetstream.ObjectWatcher),
 		},
 	}
 	// 当订阅失败，或stream被删除后，需要删除相关资源
@@ -110,7 +115,7 @@ func (c *Client) ConsumeStream(ctx context.Context, nc *Conn, streamName, consum
 	if err != nil {
 		return err
 	}
-	cons, err := js.CreateConsumer(ctx, streamName, consumerName, subject)
+	cons, err := js.CreateOrUpdateConsumer(ctx, streamName, consumerName, subject)
 	if err != nil {
 		return err
 	}
@@ -140,10 +145,17 @@ func (c *Client) DelConsumer(ctx context.Context, nc *Conn, streamName, consumer
 
 // Close closes the Client.
 func (c *Client) Close(ctx context.Context) error {
-	c.subscriber.Close(ctx)
-	g.Log().Infof(ctx, "nats client '%v' close sub ok", c.serverAddr)
-	c.consumer.Close(ctx)
-	g.Log().Infof(ctx, "nats client '%v' close stream consume ok", c.serverAddr)
-
+	if err := c.subscriber.Close(ctx); err != nil {
+		return err
+	}
+	g.Log().Infof(ctx, "nats client close sub ok")
+	if err := c.consumer.Close(ctx); err != nil {
+		return err
+	}
+	g.Log().Infof(ctx, "nats client  close stream consume ok")
+	if err := c.watcher.Stop(); err != nil {
+		return err
+	}
+	g.Log().Infof(ctx, "nats client close watcher ok")
 	return nil
 }

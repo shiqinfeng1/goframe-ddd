@@ -48,7 +48,9 @@ func main() {
 	// http服务本身能监听到信号，无需手动关闭
 	signalHandler := func(sig os.Signal) {
 		g.Log().Infof(ctx, "signal received: @@@@ '%v' @@@@, gracefully shutting down pubsub service", sig.String())
-		pubsubMgr.Stop(ctx)
+		if err := pubsubMgr.Stop(ctx); err != nil {
+			g.Log().Errorf(ctx, "gracefully shutting down pubsub service fail:%v", err)
+		}
 		g.Log().Infof(ctx, "gracefully shutting down pubsub service ok")
 	}
 	// 监听系统中断信号
