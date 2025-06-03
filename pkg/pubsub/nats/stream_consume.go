@@ -1,4 +1,4 @@
-package nats
+package natsclient
 
 import (
 	"context"
@@ -87,7 +87,7 @@ func (s *streamConsume) consumeNext(
 				if err != nil {
 					return err
 				}
-				time.Sleep(ConsumeMessageDelay)
+				time.Sleep(consumeMessageDelay)
 				s.logger.Warningf(ctx, "consumer '%v' subscribe messages again for topic '%s' of '%v' ok", s.subsKey.ConsumerName(), s.subsKey.TopicName(), s.subsKey.StreamName())
 				continue
 			}
@@ -101,7 +101,7 @@ func (s *streamConsume) consumeNext(
 				})
 			}()
 			if err := s.handler(ctx, &msg); err != nil {
-				time.Sleep(ConsumeMessageDelay)
+				time.Sleep(consumeMessageDelay)
 				return err
 			}
 			return nil

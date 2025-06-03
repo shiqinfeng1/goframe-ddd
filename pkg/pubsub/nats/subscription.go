@@ -1,4 +1,4 @@
-package nats
+package natsclient
 
 import (
 	"context"
@@ -68,11 +68,11 @@ func (s *subscription) subscribeAsync(
 		err := func() error {
 			defer func() {
 				panic.Recovery(ctx, func(ctx context.Context, exception error) {
-					s.logger.Errorf(ctx, "panic in handler:%v", exception)
+					s.logger.Errorf(ctx, "panic in nats handler:%v", exception)
 				})
 			}()
 			if err := handler(ctx, msg); err != nil {
-				time.Sleep(ConsumeMessageDelay)
+				time.Sleep(consumeMessageDelay)
 				return err
 			}
 			return nil
@@ -80,7 +80,6 @@ func (s *subscription) subscribeAsync(
 		if err != nil {
 			s.logger.Errorf(ctx, "error in handler for topic '%s': %v", s.topicName, err)
 		}
-
 	})
 	if err != nil {
 		return err

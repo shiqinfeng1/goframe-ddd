@@ -1,8 +1,7 @@
-package nats
+package natsclient
 
 import (
 	"context"
-	"sync"
 
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
@@ -32,12 +31,10 @@ func New(logger pubsub.Logger) *Client {
 		subscriber: subscriber{
 			logger:        logger,
 			subscriptions: make(map[string]*subscription),
-			subMutex:      sync.Mutex{},
 		},
 		consumer: consumer{
 			logger:        logger,
 			subscriptions: make(map[string]*streamConsume),
-			subMutex:      sync.Mutex{},
 			exitNotify:    make(chan SubsKey),
 		},
 		watcher: watcher{

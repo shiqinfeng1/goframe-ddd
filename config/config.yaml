@@ -142,3 +142,6 @@ nats:
   jsSubjects: ["jetstream.station.1.>"]
   kvbuckets: ["bucket1"]
   objbuckets: ["bucket2"]
+
+mqtt:
+  topics: ["topic1","topic1"]

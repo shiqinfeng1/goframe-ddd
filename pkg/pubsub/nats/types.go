@@ -1,4 +1,4 @@
-package nats
+package natsclient
 
 import (
 	"context"
@@ -36,7 +36,7 @@ type SubscribeFunc func(ctx context.Context, msg *nats.Msg) error
 type SubType string
 
 const (
-	ConsumeMessageDelay = 100 * time.Millisecond
+	consumeMessageDelay = 100 * time.Millisecond
 
 	SubTypeJSConsumeNext  SubType = "js-next"
 	SubTypeJSConsumeFetch SubType = "js-fetch"

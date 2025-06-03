@@ -1,4 +1,4 @@
-package nats
+package natsclient
 
 import (
 	"context"
@@ -17,7 +17,7 @@ const (
 	defaultRetryCount   = 3
 )
 
-//go:generate mockgen -destination=mock_jetstream.go -package=nats github.com/nats-io/nats.go/jetstream JetStream,Stream,Consumer,Msg,MessageBatch
+//go:generate mockgen -destination=mock_jetstream.go -package=natsclient github.com/nats-io/nats.go/jetstream JetStream,Stream,Consumer,Msg,MessageBatch
 
 type Conn struct {
 	conn       natsConn

@@ -3,13 +3,13 @@ package application
 import (
 	"context"
 
-	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub/nats"
+	natsclient "github.com/shiqinfeng1/goframe-ddd/pkg/pubsub/nats"
 )
 
 type backend struct {
 	pointDataSet PointDataSetSrv
 	jetStream    JetStreamSrv
-	ncfact       nats.ConnFactory
+	ncfact       natsclient.Factory
 }
 
 func (s *backend) PointDataSet() PointDataSetSrv {
@@ -18,12 +18,12 @@ func (s *backend) PointDataSet() PointDataSetSrv {
 func (s *backend) JetStream() JetStreamSrv {
 	return s.jetStream
 }
-func (s *backend) NatsConnFact() nats.ConnFactory {
+func (s *backend) NatsConnFact() natsclient.Factory {
 	return s.ncfact
 }
 
 // New 一个DDD的应用层
-func New(ctx context.Context, pdsSrv PointDataSetSrv, jsSrv JetStreamSrv, ncfact nats.ConnFactory) Service {
+func New(ctx context.Context, pdsSrv PointDataSetSrv, jsSrv JetStreamSrv, ncfact natsclient.Factory) Service {
 	return &backend{
 		pointDataSet: pdsSrv,
 		jetStream:    jsSrv,

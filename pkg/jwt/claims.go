@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/shellhub-io/shellhub/pkg/uuid"
+	"github.com/rs/xid"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/authorizer"
 )
 
@@ -60,7 +60,7 @@ func EncodeUserClaims(claims authorizer.UserClaims, privateKey *rsa.PrivateKey) 
 		Kind:       kindUserClaims,
 		UserClaims: claims,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ID:        uuid.Generate(),
+			ID:        xid.New().String(),
 			Issuer:    "", // TODO: how can we get the correct issuer?
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now),
@@ -84,7 +84,7 @@ func EncodeDeviceClaims(claims authorizer.DeviceClaims, privateKey *rsa.PrivateK
 		Kind:         kindDeviceClaims,
 		DeviceClaims: claims,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ID:        uuid.Generate(),
+			ID:        xid.New().String(),
 			Issuer:    "", // TODO: how can we get the correct issuer?
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now),

@@ -1,4 +1,4 @@
-package nats
+package natsclient
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/shiqinfeng1/goframe-ddd/pkg/metrics"
 )
 
-//go:generate mockgen -destination=mock_jetstream.go -package=nats github.com/nats-io/nats.go/jetstream  KeyValue,ObjectStore,JetStream,KeyValueEntry
+//go:generate mockgen -destination=mock_jetstream.go -package=natsclient github.com/nats-io/nats.go/jetstream  KeyValue,ObjectStore,JetStream,KeyValueEntry
 
 type Configs struct {
 	Server string

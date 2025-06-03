@@ -7,6 +7,7 @@ type Logger interface {
 	Debugf(ctx context.Context, format string, v ...any)
 	Infof(ctx context.Context, format string, v ...any)
 	Warningf(ctx context.Context, format string, v ...any)
+	Fatalf(ctx context.Context, format string, v ...any)
 
 	Error(ctx context.Context, v ...any)
 	Debug(ctx context.Context, v ...any)

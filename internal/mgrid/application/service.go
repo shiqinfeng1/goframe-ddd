@@ -22,5 +22,5 @@ type PointDataSetSrv interface {
 type Service interface {
 	PointDataSet() PointDataSetSrv
 	JetStream() JetStreamSrv
-	NatsConnFact() nats.ConnFactory
+	NatsConnFact() natsclient.Factory
 }

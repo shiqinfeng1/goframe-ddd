@@ -20,8 +20,8 @@ func ProvideLogger() server.Logger {
 	l.SetHandlers(logging.LoggingJsonHandler)
 	return l
 }
-func ProvideConnFactory(logger server.Logger, natsAddr string) nats.ConnFactory {
-	return nats.NewFactory(logger, natsAddr, nil)
+func ProvideConnFactory(logger server.Logger, natsAddr string) natsclient.Factory {
+	return natsclient.NewFactory(logger, natsAddr, nil)
 }
 
 func ProvideNatsServerAddr(ctx context.Context) string {

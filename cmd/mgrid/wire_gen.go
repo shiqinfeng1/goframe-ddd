@@ -30,9 +30,9 @@ func initApp(ctx context.Context) (application.Service, error) {
 	pointDataSetSrv := service.NewPointDataSetService(ctx, logger, repository)
 	serverLogger := pubsub.ProvideLogger()
 	string2 := pubsub.ProvideNatsServerAddr(ctx)
-	connFactory := pubsub.ProvideConnFactory(serverLogger, string2)
-	jetStreamSrv := service.NeJetStreamService(ctx, logger, repository, connFactory)
-	applicationService := application.New(ctx, pointDataSetSrv, jetStreamSrv, connFactory)
+	factory := pubsub.ProvideConnFactory(serverLogger, string2)
+	jetStreamSrv := service.NeJetStreamService(ctx, logger, repository, factory)
+	applicationService := application.New(ctx, pointDataSetSrv, jetStreamSrv, factory)
 	return applicationService, nil
 }
 

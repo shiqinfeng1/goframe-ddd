@@ -1,4 +1,4 @@
-package nats
+package natsclient
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
 )
 
-type ConnFactory interface {
+type Factory interface {
 	New(ctx context.Context, name string, opts ...nats.Option) (*Conn, error)
 }
 type factory struct {
@@ -22,7 +22,7 @@ func NewFactory(
 	logger pubsub.Logger,
 	serverAddr string,
 	natsConnector Connector,
-) ConnFactory {
+) Factory {
 	// 设置连接器
 	if natsConnector == nil {
 		natsConnector = &defaultConnector{}

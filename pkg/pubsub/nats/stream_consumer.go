@@ -1,8 +1,7 @@
-package nats
+package natsclient
 
 import (
 	"context"
-	"sync"
 
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/nats-io/nats.go/jetstream"
@@ -14,7 +13,6 @@ type consumer struct {
 	logger        pubsub.Logger
 	subscriptions map[string]*streamConsume
 	streamMgr     *JetStreamWrapper
-	subMutex      sync.Mutex
 	exitNotify    chan SubsKey // 同步模式下。订阅退出后，各个consume通知本consumer删除相关记录
 }
 
@@ -28,8 +26,6 @@ func (sm *consumer) Add(
 
 	ssub := NewStreamConsume(sm.logger, st, sk, c, handler, exit)
 
-	sm.subMutex.Lock()
-	defer sm.subMutex.Unlock()
 	if _, exist := sm.subscriptions[sk.String()]; exist {
 		return gerror.Newf("stream '%v' topic '%v' is already be consumed by '%v'", sk.StreamName(), sk.TopicName(), sk.ConsumerName())
 	}
@@ -45,8 +41,6 @@ func (sm *consumer) Close(ctx context.Context) error {
 	if sm == nil {
 		return nil
 	}
-	sm.subMutex.Lock()
-	defer sm.subMutex.Unlock()
 	for _, sub := range sm.subscriptions {
 		if err := sm.streamMgr.DeleteConsumer(ctx, sub.subsKey.StreamName(), sub.subsKey.ConsumerName(), sub.subsKey.TopicName()); err != nil {
 			return err
@@ -62,14 +56,11 @@ func (sm *consumer) Close(ctx context.Context) error {
 
 func (sm *consumer) Delete(ctx context.Context, sk SubsKey) error {
 
-	sm.subMutex.Lock()
 	sub, exist := sm.subscriptions[sk.String()]
 	if !exist {
-		sm.subMutex.Unlock()
 		return gerror.Newf("not found subscription of '%v'", sk)
 	}
 	sm.subscriptions = nil
-	sm.subMutex.Unlock()
 
 	if err := sm.streamMgr.DeleteConsumer(ctx, sk.StreamName(), sk.ConsumerName(), sk.TopicName()); err != nil {
 		return err

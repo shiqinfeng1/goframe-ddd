@@ -1,5 +1,5 @@
 // Package nats connector.go
-package nats
+package natsclient
 
 import (
 	"github.com/gogf/gf/v2/errors/gerror"

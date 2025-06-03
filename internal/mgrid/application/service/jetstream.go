@@ -15,10 +15,10 @@ import (
 type JetStreamMgr struct {
 	logger application.Logger
 	repo   repository.Repository
-	nc     *nats.Conn
+	nc     *natsclient.Conn
 }
 
-func NeJetStreamService(ctx context.Context, logger application.Logger, repo repository.Repository, ncfact nats.ConnFactory) application.JetStreamSrv {
+func NeJetStreamService(ctx context.Context, logger application.Logger, repo repository.Repository, ncfact natsclient.Factory) application.JetStreamSrv {
 	jsm := &JetStreamMgr{
 		logger: logger,
 		repo:   repo,
