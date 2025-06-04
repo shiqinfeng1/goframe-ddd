@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/gogf/gf/v2/errors/gerror"
+	"github.com/nats-io/nats.go"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
 )
 
@@ -18,7 +19,7 @@ func (sm *subscriber) AddSubscription(
 	conn *Conn,
 	topicName string,
 	subTyp SubType,
-	handler SubscribeFunc) error {
+	handler func(ctx context.Context, msg *nats.Msg) error) error {
 
 	sub := NewSubscription(sm.logger, subTyp, topicName, conn, handler)
 

@@ -1,8 +1,8 @@
 package health
 
 const (
-	StatusUp   = "UP"
-	StatusDown = "DOWN"
+	UP   = "UP"
+	DOWN = "DOWN"
 )
 
 type Health struct {

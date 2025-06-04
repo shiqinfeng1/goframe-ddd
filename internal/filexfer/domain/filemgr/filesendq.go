@@ -7,7 +7,7 @@ import (
 	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
-	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/domain/service"
+	"github.com/shiqinfeng1/goframe-ddd/internal/filexfer/domain/service"
 )
 
 // FileTransferMgr 表示文件发送队列

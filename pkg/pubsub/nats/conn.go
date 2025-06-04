@@ -7,7 +7,6 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
-	"github.com/shiqinfeng1/goframe-ddd/pkg/health"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/metrics"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
 )
@@ -103,33 +102,4 @@ func (c *Conn) validateJetStream(ctx context.Context, subject string) error {
 		return pubsub.ErrJetStreamNotConfigured
 	}
 	return nil
-}
-
-// 返回nats客户端和服务端之间连接的健康状态
-func (c *Conn) Health() *health.Health {
-	if c.conn == nil {
-		return &health.Health{
-			Status: health.StatusDown,
-		}
-	}
-
-	if c.IsConnected() {
-		return &health.Health{
-			Status: health.StatusUp,
-			Details: map[string]any{
-				"server": c.serverAddr,
-			},
-		}
-	}
-	c.JetStream()
-	return &health.Health{
-		Status: health.StatusDown,
-		Details: map[string]any{
-			"server": c.serverAddr,
-		},
-	}
-}
-
-func (c *Conn) IsConnected() bool {
-	return c.conn.IsConnected()
 }

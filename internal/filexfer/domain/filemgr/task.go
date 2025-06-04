@@ -14,7 +14,7 @@ import (
 	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/rs/xid"
-	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/domain/service"
+	"github.com/shiqinfeng1/goframe-ddd/internal/filexfer/domain/service"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/session"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/utils"
 	"github.com/xtaci/smux"

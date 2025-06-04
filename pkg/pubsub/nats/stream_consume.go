@@ -21,7 +21,7 @@ type streamConsume struct {
 	consumeType SubType
 	subsKey     SubsKey
 	consumer    jetstream.Consumer
-	handler     ConsumeFunc
+	handler     func(ctx context.Context, msg *jetstream.Msg) error
 	close       closer
 	exitNotify  chan SubsKey
 }
@@ -31,7 +31,7 @@ func NewStreamConsume(
 	st SubType,
 	sk SubsKey,
 	c jetstream.Consumer,
-	handler ConsumeFunc,
+	handler func(ctx context.Context, msg *jetstream.Msg) error,
 	exit chan SubsKey) *streamConsume {
 
 	return &streamConsume{
@@ -58,7 +58,7 @@ func (s *streamConsume) Stop(ctx context.Context) error {
 
 func (s *streamConsume) start(ctx context.Context) error {
 	switch s.consumeType {
-	case SubTypeJSConsumeNext:
+	case JSNEXT:
 		return s.consumeNext(ctx)
 	}
 	return nil

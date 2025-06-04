@@ -30,30 +30,30 @@ func NewSubsKey(t, s, c string) SubsKey {
 	return []string{t, s, c}
 }
 
-type ConsumeFunc func(ctx context.Context, msg *jetstream.Msg) error
-type SubscribeFunc func(ctx context.Context, msg *nats.Msg) error
+type ConsumeFunc func(ctx context.Context, msg *jetstream.Msg) ([]byte, error)
+type SubscribeFunc func(ctx context.Context, msg *nats.Msg) ([]byte, error)
 
 type SubType string
 
 const (
 	consumeMessageDelay = 100 * time.Millisecond
 
-	SubTypeJSConsumeNext  SubType = "js-next"
-	SubTypeJSConsumeFetch SubType = "js-fetch"
-	SubTypeSubAsync       SubType = "sub-async"
-	SubTypeSubSync        SubType = "sub-sync"
+	JSNEXT   SubType = "js-next"
+	JSFETCH  SubType = "js-fetch"
+	SUBASYNC SubType = "sub-async"
+	SUBSYNC  SubType = "sub-sync"
 )
 
 func (s SubType) IsMsg() bool {
 	switch s {
-	case SubTypeSubAsync, SubTypeSubSync:
+	case SUBASYNC, SUBSYNC:
 		return true
 	}
 	return false
 }
 func (s SubType) IsStream() bool {
 	switch s {
-	case SubTypeJSConsumeNext, SubTypeJSConsumeFetch:
+	case JSNEXT, JSFETCH:
 		return true
 	}
 	return false

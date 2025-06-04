@@ -7,7 +7,7 @@ import (
 	"github.com/shiqinfeng1/goframe-ddd/pkg/logging"
 )
 
-var WireProviderSet = wire.NewSet(NewHttpServer, ProvideLogger)
+var WireProviderSet = wire.NewSet(NewServer, ProvideLogger)
 
 func ProvideLogger() server.Logger {
 	l := g.Log()

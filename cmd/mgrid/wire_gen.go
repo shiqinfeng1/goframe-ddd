@@ -29,8 +29,7 @@ func initApp(ctx context.Context) (application.Service, error) {
 	repository := repositories.NewPointmgrRepo()
 	pointDataSetSrv := service.NewPointDataSetService(ctx, logger, repository)
 	serverLogger := pubsub.ProvideLogger()
-	string2 := pubsub.ProvideNatsServerAddr(ctx)
-	factory := pubsub.ProvideConnFactory(serverLogger, string2)
+	factory := pubsub.ProvideConnFactory(serverLogger)
 	jetStreamSrv := service.NeJetStreamService(ctx, logger, repository, factory)
 	applicationService := application.New(ctx, pointDataSetSrv, jetStreamSrv, factory)
 	return applicationService, nil
@@ -47,7 +46,7 @@ func initServer() (*ghttp.Server, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	server := http.NewHttpServer(contextContext, logger, applicationService, dockerOps)
+	server := http.NewServer(contextContext, logger, applicationService, dockerOps)
 	return server, func() {
 	}, nil
 }
@@ -75,7 +74,7 @@ var appSrv application.Service
 
 func app(ctx context.Context) (application.Service, error) {
 	if appSrv == nil {
-		return initApp(ctx)
+		appSrv, _ = initApp(ctx)
 	}
 	return appSrv, nil
 }

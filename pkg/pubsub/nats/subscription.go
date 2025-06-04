@@ -16,7 +16,7 @@ type subscription struct {
 	topicName string
 	conn      *Conn
 	sub       *nats.Subscription
-	handler   SubscribeFunc
+	handler   func(ctx context.Context, msg *nats.Msg) error
 	exit      chan struct{}
 }
 
@@ -25,7 +25,7 @@ func NewSubscription(
 	stype SubType,
 	tn string,
 	c *Conn,
-	handler SubscribeFunc) *subscription {
+	handler func(ctx context.Context, msg *nats.Msg) error) *subscription {
 
 	return &subscription{
 		logger:    l,
@@ -51,7 +51,7 @@ func (s *subscription) Stop(ctx context.Context) error {
 }
 func (s *subscription) Start(ctx context.Context) error {
 	switch s.stype {
-	case SubTypeSubAsync:
+	case SUBASYNC:
 		return s.subscribeAsync(ctx, s.handler)
 	}
 	return nil
@@ -60,7 +60,7 @@ func (s *subscription) Start(ctx context.Context) error {
 // 订阅指定的topic的消息
 func (s *subscription) subscribeAsync(
 	ctx context.Context,
-	handler SubscribeFunc,
+	handler func(ctx context.Context, msg *nats.Msg) error,
 ) error {
 	sub, err := s.conn.SubMsg(ctx, s.topicName, func(msg *nats.Msg) {
 		metrics.IncCnt(ctx, metrics.NatsSubscribeTotalCount, "topic", s.topicName)

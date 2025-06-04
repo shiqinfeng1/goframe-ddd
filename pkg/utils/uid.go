@@ -14,10 +14,6 @@ func UidIsValid(uid string) bool {
 	if len(suid) < 2 {
 		return false
 	}
-	// // 检查xid
-	// if _, err := xid.FromString(suid[len(suid)-1]); err != nil {
-	// 	return false
-	// }
 	// 检查mac
 	if _, err := net.ParseMAC(suid[len(suid)-1]); err != nil {
 		return false
@@ -30,14 +26,14 @@ func GenUIDForHost() (string, error) {
 	// 获取主机名
 	hostname, err := os.Hostname()
 	if err != nil {
-		return "", err
+		return "nohostname", err
 	}
 
 	// 获取第一个非空的 MAC 地址
 	var macAddr string
 	ifaces, err := net.Interfaces()
 	if err != nil {
-		return "", err
+		return hostname + "-nointf", err
 	}
 	for _, i := range ifaces {
 		if i.Flags&net.FlagUp != 0 && i.Flags&net.FlagLoopback == 0 {
@@ -63,7 +59,7 @@ func GenUIDForHost() (string, error) {
 		}
 	}
 	if macAddr == "" {
-		return "", fmt.Errorf("未找到有效的 MAC 地址")
+		return hostname + "-nomac", fmt.Errorf("未找到有效的 MAC 地址")
 	}
 
 	// 组合信息

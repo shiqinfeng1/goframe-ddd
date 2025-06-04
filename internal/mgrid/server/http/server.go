@@ -13,7 +13,7 @@ import (
 	"github.com/shiqinfeng1/goframe-ddd/pkg/dockerctl"
 )
 
-func NewHttpServer(ctx context.Context, logger server.Logger, app application.Service, dockerOps dockerctl.DockerOps) *ghttp.Server {
+func NewServer(ctx context.Context, logger server.Logger, app application.Service, dockerOps dockerctl.DockerOps) *ghttp.Server {
 	// 启动http服务
 	s := g.Server()
 	if g.Cfg().MustGet(ctx, "pprof").Bool() {

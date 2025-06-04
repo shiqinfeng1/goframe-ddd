@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/gogf/gf/v2/errors/gerror"
+	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/nats-io/nats.go"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
 )
@@ -20,7 +22,6 @@ type factory struct {
 
 func NewFactory(
 	logger pubsub.Logger,
-	serverAddr string,
 	natsConnector Connector,
 ) Factory {
 	// 设置连接器
@@ -31,7 +32,7 @@ func NewFactory(
 	return &factory{
 		logger:     logger,
 		connector:  natsConnector,
-		serverAddr: serverAddr,
+		serverAddr: g.Cfg().MustGet(gctx.New(), "nats.serverUrl").String(),
 	}
 }
 func (f *factory) New(ctx context.Context, name string, opts ...nats.Option) (*Conn, error) {

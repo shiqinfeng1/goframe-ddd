@@ -25,7 +25,7 @@ var appSrv application.Service
 
 func app(ctx context.Context) (application.Service, error) {
 	if appSrv == nil {
-		return initApp(ctx)
+		appSrv, _ = initApp(ctx)
 	}
 	return appSrv, nil
 }

@@ -21,7 +21,7 @@ func (sm *consumer) Add(
 	st SubType,
 	sk SubsKey,
 	c jetstream.Consumer,
-	handler ConsumeFunc,
+	handler func(ctx context.Context, msg *jetstream.Msg) error,
 	exit chan SubsKey) error {
 
 	ssub := NewStreamConsume(sm.logger, st, sk, c, handler, exit)

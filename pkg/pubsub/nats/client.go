@@ -11,12 +11,25 @@ import (
 	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
 )
 
+type Config struct {
+	ServerUrl    string   `json:"serverUrl"`
+	ConsumerName string   `json:"consumerName"`
+	StreamName   string   `json:"streamName"`
+	Subject1     string   `json:"subject1"`
+	Subject2     string   `json:"subject2"`
+	JsSubject1   string   `json:"jsSubject1"`
+	JsSubject2   string   `json:"jsSubject2"`
+	KvBuckets    []string `json:"kvBuckets"`
+	ObjBuckets   []string `json:"objBuckets"`
+}
+
 var defaultNatsOpts []nats.Option = []nats.Option{
 	nats.NoEcho(),
 }
 
 // Client represents a Client for NATS jStream operations.
 type Client struct {
+	cfg        *Config
 	logger     pubsub.Logger
 	natsOpts   []nats.Option
 	subscriber // 管理消息订阅者
@@ -25,8 +38,9 @@ type Client struct {
 }
 
 // New 创建一个新的客户端
-func New(logger pubsub.Logger) *Client {
+func New(cfg *Config, logger pubsub.Logger) *Client {
 	c := &Client{
+		cfg:    cfg,
 		logger: logger,
 		subscriber: subscriber{
 			logger:        logger,
@@ -56,7 +70,7 @@ func New(logger pubsub.Logger) *Client {
 }
 
 // 订阅消息
-func (c *Client) SubMsg(ctx context.Context, nc *Conn, subject string, stype SubType, handler SubscribeFunc) error {
+func (c *Client) SubMsg(ctx context.Context, nc *Conn, subject string, stype SubType, handler func(ctx context.Context, msg *nats.Msg) error) error {
 	if err := c.subscriber.AddSubscription(ctx, nc, subject, stype, handler); err != nil {
 		return gerror.Wrap(err, "add subscription fail")
 	}
@@ -107,17 +121,17 @@ func (c *Client) DeleteStream(ctx context.Context, nc *Conn, streamName string) 
 }
 
 // 流消费
-func (c *Client) ConsumeStream(ctx context.Context, nc *Conn, streamName, consumerName, subject string, stype SubType, handler ConsumeFunc) error {
+func (c *Client) ConsumeStream(ctx context.Context, nc *Conn, sn, cn, subject string, stype SubType, handler func(ctx context.Context, msg *jetstream.Msg) error) error {
 	js, err := c.jstream(nc)
 	if err != nil {
 		return err
 	}
-	cons, err := js.CreateOrUpdateConsumer(ctx, streamName, consumerName, subject)
+	cons, err := js.CreateOrUpdateConsumer(ctx, sn, cn, subject)
 	if err != nil {
 		return err
 	}
 	//
-	skey := NewSubsKey(subject, streamName, consumerName)
+	skey := NewSubsKey(subject, sn, cn)
 	if err := c.consumer.Add(ctx, stype, skey, cons, handler, c.exitNotify); err != nil {
 		return gerror.Wrap(err, "add consume fail")
 	}
@@ -125,15 +139,15 @@ func (c *Client) ConsumeStream(ctx context.Context, nc *Conn, streamName, consum
 }
 
 // 删除流消费
-func (c *Client) DelConsumer(ctx context.Context, nc *Conn, streamName, consumerName, subject string, stype SubType, handler ConsumeFunc) error {
+func (c *Client) DelConsumer(ctx context.Context, nc *Conn, sn, cn, subject string, stype SubType, handler ConsumeFunc) error {
 	js, err := c.jstream(nc)
 	if err != nil {
 		return err
 	}
-	if err := js.DeleteConsumer(ctx, streamName, consumerName, subject); err != nil {
+	if err := js.DeleteConsumer(ctx, sn, cn, subject); err != nil {
 		return err
 	}
-	skey := NewSubsKey(subject, streamName, consumerName)
+	skey := NewSubsKey(subject, sn, cn)
 	if err := c.consumer.Delete(ctx, skey); err != nil {
 		return gerror.Wrap(err, "add consume fail")
 	}

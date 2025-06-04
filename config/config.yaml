@@ -135,13 +135,21 @@ remotelogin:
 pprof: true   # 开启性能分析
 
 nats:
-  serverAddr: "nats://127.0.0.1:4222"
+  serverUrl: "nats://127.0.0.1:4222"
   consumerName: "mgrid-consumer"
   streamName: "mgrid-stream"
-  subjects: ["pubsub.station.1.IED.1~50.point.1~100"]
-  jsSubjects: ["jetstream.station.1.>"]
-  kvbuckets: ["bucket1"]
-  objbuckets: ["bucket2"]
+  subject1: "pubsub.station1.*.IED.*.point.*"
+  subject2: "pubsub.station2.*.IED.*.point.*"
+  jsSubject1: "jetstream.station.1.>"
+  jsSubject2: "jetstream.station.2.>"
+  kvBuckets: ["kvbucket1","kvbucket2"]
+  objBuckets: ["objbucket1","objbucket2"]
 
 mqtt:
-  topics: ["topic1","topic1"]
+  brokerUrl: "tcp://127.0.0.1:1883"
+  clientId: "mgrid-client"
+  username: "admin"
+  password: "password"
+  qos: 1
+  topic1: "topic1"
+  topic2: "topic2"
