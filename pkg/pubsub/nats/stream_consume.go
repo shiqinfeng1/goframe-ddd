@@ -8,8 +8,8 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/metrics"
-	"github.com/shiqinfeng1/goframe-ddd/pkg/panic"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/recover"
 )
 
 type closer struct {
@@ -96,7 +96,7 @@ func (s *streamConsume) consumeNext(
 		}
 		err = func() error {
 			defer func() {
-				panic.Recovery(ctx, func(ctx context.Context, exception error) {
+				recover.Recovery(ctx, func(ctx context.Context, exception error) {
 					s.logger.Errorf(ctx, "panic in handler:%v", exception)
 				})
 			}()

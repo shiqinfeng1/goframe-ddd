@@ -67,6 +67,10 @@ install.go-mod-outdated:
 install.mockgen:
 	@$(GO) install go.uber.org/mock/mockgen@latest
 
+.PHONY: install.mockery
+install.mockery:
+	@$(GO) install github.com/vektra/mockery/v2@latest
+
 # .PHONY: install.gotests
 # install.gotests:
 # 	@$(GO) install github.com/cweill/gotests/gotests@latest

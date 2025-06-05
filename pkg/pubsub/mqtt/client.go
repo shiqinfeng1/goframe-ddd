@@ -7,9 +7,9 @@ import (
 
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/os/gfile"
-	"github.com/shiqinfeng1/goframe-ddd/pkg/panic"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
-	"github.com/shiqinfeng1/goframe-ddd/pkg/utils"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/recover"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/uid"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
@@ -38,7 +38,7 @@ type Client struct {
 type SubscribeFunc func(ctx context.Context, msg *mqtt.Message) ([]byte, error)
 
 func New(ctx context.Context, cfg *Config, logger pubsub.Logger) (*Client, error) {
-	uid, _ := utils.GenUIDForHost()
+	uid, _ := uid.NewClientIDWithDefault()
 	cfg.ClientID = "go-mgrid-" + uid
 
 	if cfg.BrokerUrl == "" {
@@ -105,7 +105,7 @@ func (c *Client) Subscribe(ctx context.Context, topic string, handler func(ctx c
 	}
 	cb := func(mc mqtt.Client, msg mqtt.Message) {
 		defer func() {
-			panic.Recovery(ctx, func(ctx context.Context, exception error) {
+			recover.Recovery(ctx, func(ctx context.Context, exception error) {
 				c.logger.Errorf(ctx, "panic in mqtt handler: %v", exception)
 			})
 		}()

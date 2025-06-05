@@ -7,21 +7,21 @@ import (
 
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/util/gconv"
-	"github.com/shiqinfeng1/goframe-ddd/pkg/utils"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/uid"
 )
 
 var MyClientID string
 
 func clientIdFromBytes(_ context.Context, data []byte) string {
 	raw := gconv.String(data)
-	if !utils.UidIsValid(raw) {
+	if !uid.ClientIDIsValid(raw) {
 		return ""
 	}
 	return raw
 }
 
 func handshakeBody(_ context.Context) ([]byte, error) {
-	uid, err := utils.GenUIDForHost()
+	uid, err := uid.NewClientIDWithDefault()
 	if err != nil {
 		return nil, gerror.Wrap(err, "get uid fail")
 	}

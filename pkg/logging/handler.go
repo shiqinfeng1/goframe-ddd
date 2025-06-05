@@ -17,7 +17,7 @@ type JsonOutputsForLogger struct {
 	Msg     []any  `json:"msg"`
 }
 
-var LoggingJsonHandler glog.Handler = func(ctx context.Context, in *glog.HandlerInput) {
+var JsonHandler glog.Handler = func(ctx context.Context, in *glog.HandlerInput) {
 	jsonForLogger := JsonOutputsForLogger{
 		Time:    in.TimeFormat,
 		Level:   gstr.Trim(in.LevelFormat, "[]"),

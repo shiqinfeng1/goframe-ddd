@@ -1,0 +1,13 @@
+dir: '{{ replaceAll .InterfaceDirRelative "internal" "internal_" }}/mocks'
+mockname: "{{.InterfaceName}}"
+outpkg: "mocks"
+filename: "{{.InterfaceName | snakecase }}.go"
+with-expecter: True
+all: True
+resolve-type-alias: false
+disable-version-string: true
+issue-845-fix: true
+packages:
+  github.com/shiqinfeng1/goframe-ddd/pkg/uid:
+    config:
+      recursive: True

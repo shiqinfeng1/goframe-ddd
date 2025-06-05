@@ -6,8 +6,8 @@ import (
 
 	"github.com/nats-io/nats.go"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/metrics"
-	"github.com/shiqinfeng1/goframe-ddd/pkg/panic"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/recover"
 )
 
 type subscription struct {
@@ -67,7 +67,7 @@ func (s *subscription) subscribeAsync(
 
 		err := func() error {
 			defer func() {
-				panic.Recovery(ctx, func(ctx context.Context, exception error) {
+				recover.Recovery(ctx, func(ctx context.Context, exception error) {
 					s.logger.Errorf(ctx, "panic in nats handler:%v", exception)
 				})
 			}()

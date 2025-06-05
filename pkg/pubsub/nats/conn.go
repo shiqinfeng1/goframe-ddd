@@ -16,8 +16,6 @@ const (
 	defaultRetryCount   = 3
 )
 
-//go:generate mockgen -destination=mock_jetstream.go -package=natsclient github.com/nats-io/nats.go/jetstream JetStream,Stream,Consumer,Msg,MessageBatch
-
 type Conn struct {
 	conn       natsConn
 	jStream    jetstream.JetStream

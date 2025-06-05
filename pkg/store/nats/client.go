@@ -10,8 +10,6 @@ import (
 	"github.com/shiqinfeng1/goframe-ddd/pkg/metrics"
 )
 
-//go:generate mockgen -destination=mock_jetstream.go -package=natsclient github.com/nats-io/nats.go/jetstream  KeyValue,ObjectStore,JetStream,KeyValueEntry
-
 type Configs struct {
 	Server string
 	Bucket string
@@ -40,7 +38,7 @@ func (c *Client) sendOperationStats(ctx context.Context, start time.Time, method
 
 	g.Log().Debug(ctx, &Log{
 		Type:     methodType,
-		Duration: duration.Microseconds(),
+		Duration: duration.Milliseconds(),
 		Key:      key,
 		Value:    c.configs.Bucket,
 	})

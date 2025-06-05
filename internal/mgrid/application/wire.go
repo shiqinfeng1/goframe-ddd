@@ -12,6 +12,6 @@ func ProvideLogger() Logger {
 	l := g.Log()
 	l.SetPrefix("app")
 	l.SetAsync(true)
-	l.SetHandlers(logging.LoggingJsonHandler)
+	l.SetHandlers(logging.JsonHandler)
 	return l
 }

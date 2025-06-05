@@ -5,9 +5,9 @@ import (
 
 	"github.com/gogf/gf/contrib/metric/otelmetric/v2"
 	"github.com/gogf/gf/v2/frame/g"
-	"github.com/gogf/gf/v2/os/gcache"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/gmetric"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/cache"
 	"go.opentelemetry.io/otel/exporters/prometheus"
 )
 
@@ -93,7 +93,7 @@ var (
 		},
 	)
 	provider   gmetric.Provider
-	labelCache = gcache.New()
+	labelCache = cache.KV()
 )
 
 func init() {

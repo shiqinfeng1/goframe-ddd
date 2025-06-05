@@ -10,7 +10,7 @@ else
 endif
 
 .PHONY: gen.run
-gen.run: gen.clean gen.pb gen.ctrl gen.generate gen.wire
+gen.run: gen.clean gen.pb gen.ctrl gen.generate gen.wire gen.mock
 
 .PHONY: gen.pb
 gen.pb: tools.verify.gf tools.verify.protoc tools.verify.protoc-gen-go tools.verify.protoc-gen-go-grpc
@@ -53,4 +53,10 @@ gen.clean:
 
 .PHONY: gen.generate
 gen.generate:
+	@echo "===========> Running go generate ./..."
 	@go generate ./...
+
+.PHONY: gen.mock
+gen.mock: tools.verify.mockery
+	@echo "===========> Running mockery"
+	@mockery

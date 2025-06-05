@@ -13,9 +13,9 @@ var WireProviderNatsFactory = wire.NewSet(ProvideLogger, ProvideConnFactory)
 
 func ProvideLogger() server.Logger {
 	l := g.Log()
-	l.SetPrefix("pubsub")
+	l.SetPrefix("eventServer")
 	l.SetAsync(true)
-	l.SetHandlers(logging.LoggingJsonHandler)
+	l.SetHandlers(logging.JsonHandler)
 	return l
 }
 func ProvideConnFactory(logger server.Logger) natsclient.Factory {

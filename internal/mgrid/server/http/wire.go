@@ -11,8 +11,8 @@ var WireProviderSet = wire.NewSet(NewServer, ProvideLogger)
 
 func ProvideLogger() server.Logger {
 	l := g.Log()
-	l.SetPrefix("http-serevr")
+	l.SetPrefix("httpSerever")
 	l.SetAsync(true)
-	l.SetHandlers(logging.LoggingJsonHandler)
+	l.SetHandlers(logging.JsonHandler)
 	return l
 }
