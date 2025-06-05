@@ -477,7 +477,8 @@ function release::check_github_token() {
 # https://github.com/github-release/github-release
 function release::github_release() {
   # create a github release
-  log::info "create a new github release with tag ${APP_GIT_VERSION}"
+  log::info "\n create a new github release ..."
+  log::info "github-release release --user ${APP_GITHUB_ORG} --repo ${APP_GITHUB_REPO} --tag ${APP_GIT_VERSION} --description '' --pre-release"
   github-release release \
     --user ${APP_GITHUB_ORG} \
     --repo ${APP_GITHUB_REPO} \
