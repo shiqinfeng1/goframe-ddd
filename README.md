@@ -19,7 +19,7 @@
 1. 克隆源码
 
 ```bash
-$git clone https://github.com/shiqinfeng1/goframe-ddd.git
+$ git clone https://github.com/shiqinfeng1/goframe-ddd.git
 ```
 
 1. 编译
@@ -27,13 +27,13 @@ $git clone https://github.com/shiqinfeng1/goframe-ddd.git
 首次运行时执行：
 
 ```bash
-$make tools
+$ make tools
 ```
 
 项目根目录下执行:
 
 ```bash
-$make
+$ make
 ```
 
 构建后的二进制文件保存在 `_output/platforms/<OS>/<ARCH>/` 目录下。
