@@ -4,7 +4,9 @@ import (
 	"context"
 	"path/filepath"
 
+	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/gogf/gf/v2/util/gconv"
 
@@ -15,17 +17,17 @@ import (
 
 func (c *ControllerV1) StartSendFile(ctx context.Context, req *v1.StartSendFileReq) (res *v1.StartSendFileRes, err error) {
 	res = &v1.StartSendFileRes{}
-
+	lang := ghttp.RequestFromCtx(ctx).GetCtxVar("lang").String()
 	if g.Cfg().MustGet(ctx, "sessionmgr.isCloud").Bool() {
 		if req.NodeId == "" {
-			return res, errors.ErrInvalidNodeId
+			return res, errors.ErrInvalidNodeId(lang)
 		}
 	} else {
 		req.NodeId = ""
 	}
 	for _, v := range req.FilePath {
 		if !filepath.IsAbs(v) {
-			return res, errors.ErrNotAbsFilePath(v)
+			return res, gerror.Wrap(errors.ErrNotAbsFilePath(lang), v)
 		}
 		// 发送文件夹
 		if gfile.IsDir(v) {
@@ -37,7 +39,7 @@ func (c *ControllerV1) StartSendFile(ctx context.Context, req *v1.StartSendFileR
 				return ""
 			})
 			if len(files) == 0 {
-				return res, errors.ErrEmptyDir(v)
+				return res, gerror.Wrap(errors.ErrEmptyDir(lang), v)
 			}
 			c.app.StartSendFile(ctx, &dto.StartSendFileInput{
 				BaseName: gfile.Basename(v),
@@ -50,7 +52,7 @@ func (c *ControllerV1) StartSendFile(ctx context.Context, req *v1.StartSendFileR
 				files = append(files, v)
 			}
 			if len(files) == 0 {
-				return res, errors.ErrInvalidFiles(gconv.String(req.FilePath))
+				return res, gerror.Wrap(errors.ErrInvalidFiles(lang), gconv.String(req.FilePath))
 			}
 			c.app.StartSendFile(ctx, &dto.StartSendFileInput{
 				BaseName: gfile.Basename(v),

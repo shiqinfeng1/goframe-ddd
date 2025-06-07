@@ -28,13 +28,13 @@ func NewJetStreamWrapper(logger pubsub.Logger, js jetstream.JetStream) *JetStrea
 
 func (sm *JetStreamWrapper) validateStream(_ context.Context, name string, subjects []string) error {
 	if !sm.js.Conn().IsConnected() {
-		return pubsub.ErrClientNotConnected
+		return gerror.New("nats not connected")
 	}
 	if len(subjects) == 0 {
-		return pubsub.ErrSubjectsNotProvided
+		return gerror.New("subjects is nil")
 	}
 	if name == "" {
-		return pubsub.ErrStreamNotProvided
+		return gerror.New("stream name is nil")
 	}
 	return nil
 }
@@ -54,10 +54,9 @@ func (sm *JetStreamWrapper) CreateOrUpdateStream(ctx context.Context, name strin
 
 	_, err := sm.js.CreateOrUpdateStream(ctx, jsCfg)
 	if err != nil {
-		return gerror.Wrapf(err, "failed to create stream")
+		return gerror.Wrapf(err, "create or update stream fail")
 	}
 	sm.logger.Debugf(ctx, "creating or updating stream %s ok of subkects:%+v", name, subjects)
-
 	return nil
 }
 
@@ -70,8 +69,8 @@ func (sm *JetStreamWrapper) CreateStream(ctx context.Context, name string, subje
 	jsCfg := jetstream.StreamConfig{
 		Name:       name,
 		Subjects:   subjects,
-		Storage:    jetstream.FileStorage, // 默认文件存储
-		MaxMsgSize: 10 * 1024 * 1024,
+		Storage:    jetstream.FileStorage,    // 默认文件存储
+		MaxMsgSize: 10 * 1024 * 1024,         // 10M
 		Retention:  jetstream.InterestPolicy, // 如果有多个消费者订阅了相同的主题，每个消费者都可能接收到相同的消息
 	}
 	_, err := sm.js.CreateStream(ctx, jsCfg)
@@ -85,7 +84,7 @@ func (sm *JetStreamWrapper) CreateStream(ctx context.Context, name string, subje
 
 // DeleteStream deletes a jStream stream.
 func (sm *JetStreamWrapper) DeleteStream(ctx context.Context, name string) error {
-	sm.logger.Debugf(ctx, "deleting stream '%s'", name)
+	sm.logger.Debugf(ctx, "deleteing stream '%s'", name)
 
 	err := sm.js.DeleteStream(ctx, name)
 	if err != nil {
@@ -108,7 +107,10 @@ func (sm *JetStreamWrapper) GetStream(ctx context.Context, name string) (jetstre
 		}
 		return nil, gerror.Wrapf(err, "failed to get stream %s", name)
 	}
-	info, _ := stream.Info(ctx)
+	info, err := stream.Info(ctx)
+	if err != nil {
+		return nil, gerror.Wrap(err, "get stream info fail")
+	}
 	sm.logger.Debugf(ctx, "getting stream info ok: %+v", info)
 
 	return stream, nil

@@ -1,0 +1,22 @@
+[auth]
+    refreshTokenFail = "refresh token failed"
+    sendVCodeFail = "send verifycode failed"
+    resetPwdFail = "reset password failed"
+    registerUserFail = "register user failed"
+    loginFail = "login failed"
+    logoutFail = "logout failed"
+[file]
+    notAbsFilePath = "not absolute file path"
+    emptyDir = "dirctory is empty"
+    invalidFiles = "file is invalid"
+    invalidNodeId = "nodeid is invalid"
+    over4GSize = "filesize is over 4G"
+[nats]
+    connectFail = "connect to nats server failed"
+    getStreamInfoFail = "get nats stream info failed"
+    getStreamListFail = "get nats stream list failed"
+    getDeleteStreamFail = "delete nats stream failed"
+[ops]
+    queryImageFail = "query image info failed"
+    upgradeAppFail = "upgrade app version failed"
+    upgradeImageFail = "upgrade image failed"

@@ -11,7 +11,5 @@ import (
 )
 
 type IPointdataV1 interface {
-	GetStreamList(ctx context.Context, req *v1.GetStreamListReq) (res *v1.GetStreamListRes, err error)
-	GetStreamInfo(ctx context.Context, req *v1.GetStreamInfoReq) (res *v1.GetStreamInfoRes, err error)
-	DeleteStream(ctx context.Context, req *v1.DeleteStreamReq) (res *v1.DeleteStreamRes, err error)
+	GetPointData(ctx context.Context, req *v1.GetPointDataReq) (res *v1.GetPointDataRes, err error)
 }

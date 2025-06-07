@@ -1,0 +1,22 @@
+[auth]
+    refreshTokenFail = "token刷新失败"
+    sendVCodeFail = "发送验证码失败"
+    resetPwdFail = "重置密码失败"
+    registerUserFail = "注册用户失败"
+    loginFail = "登录失败"
+    logoutFail = "退出登录失败"
+[file]
+    notAbsFilePath = "文件路径不是绝对路径"
+    emptyDir = "目录为空"
+    invalidFiles = "无效的文件"
+    invalidNodeId = "无效的节点ID"
+    over4GSize = "文件尺寸大于4G"
+[nats]
+    connectFail = "nats服务端连接失败"
+    getStreamInfoFail = "nats流信息查询失败"
+    getStreamListFail = "nats流列表查询失败"
+    getDeleteStreamFail = "nats流删除失败"
+[ops]
+    queryImageFail = "镜像信息查询失败"
+    upgradeAppFail = "升级app程序失败"
+    upgradeImageFail = "升级镜像失败"

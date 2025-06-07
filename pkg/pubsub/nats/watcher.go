@@ -29,14 +29,19 @@ type ChangeEvent struct {
 	Deleted bool
 }
 
-func defaultProcessEvent(ctx context.Context, nc *Conn, event ChangeEvent) {
+func defaultProcessEvent(ctx context.Context, nc *Conn, event ChangeEvent) error {
 	eventBytes, _ := json.Marshal(event)
 	if event.Type == KV {
-		nc.PubMsg(ctx, "notify.change.kv", eventBytes)
+		if err := nc.PubMsg(ctx, "notify.change.kv", eventBytes); err != nil {
+			return err
+		}
 	}
 	if event.Type == OBJECT {
-		nc.PubMsg(ctx, "notify.change.object", eventBytes)
+		if err := nc.PubMsg(ctx, "notify.change.object", eventBytes); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func (w *watcher) Stop() error {
@@ -53,7 +58,7 @@ func (w *watcher) Stop() error {
 	w.cancel()
 	return nil
 }
-func (w *watcher) StartWatch(ctx context.Context, nc *Conn, kvbkts, objbkts []string, handler func(context.Context, *Conn, ChangeEvent)) error {
+func (w *watcher) StartWatch(ctx context.Context, nc *Conn, kvbkts, objbkts []string, handler func(context.Context, *Conn, ChangeEvent) error) error {
 	if handler == nil {
 		handler = defaultProcessEvent
 	}
@@ -81,7 +86,9 @@ func (w *watcher) StartWatch(ctx context.Context, nc *Conn, kvbkts, objbkts []st
 			case <-ctx.Done():
 				return
 			case event := <-events:
-				handler(ctx, nc, event)
+				if err := handler(ctx, nc, event); err != nil {
+					w.logger.Errorf(ctx, "watch handle fail:%v", err)
+				}
 			}
 		}
 	}()

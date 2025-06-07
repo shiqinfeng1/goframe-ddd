@@ -3,8 +3,6 @@ package natsclient
 import (
 	"context"
 
-	"github.com/gogf/gf/v2/errors/gerror"
-	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
@@ -12,15 +10,15 @@ import (
 )
 
 type Config struct {
-	ServerUrl    string   `json:"serverUrl"`
-	ConsumerName string   `json:"consumerName"`
-	StreamName   string   `json:"streamName"`
-	Subject1     string   `json:"subject1"`
-	Subject2     string   `json:"subject2"`
-	JsSubject1   string   `json:"jsSubject1"`
-	JsSubject2   string   `json:"jsSubject2"`
-	KvBuckets    []string `json:"kvBuckets"`
-	ObjBuckets   []string `json:"objBuckets"`
+	ServerUrl    string   `json:"serverUrl" yaml:"serverUrl"`
+	ConsumerName string   `json:"consumerName" yaml:"consumerName"`
+	StreamName   string   `json:"streamName" yaml:"streamName"`
+	Subject1     string   `json:"subject1" yaml:"subject1"`
+	Subject2     string   `json:"subject2" yaml:"subject2"`
+	JSSubject1   string   `json:"jsSubject1" yaml:"jsSubject1"`
+	JSSubject2   string   `json:"jsSubject2" yaml:"jsSubject2"`
+	KVBuckets    []string `json:"kvBuckets" yaml:"kvBuckets"`
+	ObjBuckets   []string `json:"objBuckets" yaml:"objBuckets"`
 }
 
 var defaultNatsOpts []nats.Option = []nats.Option{
@@ -63,7 +61,7 @@ func New(cfg *Config, logger pubsub.Logger) *Client {
 		for key := range c.consumer.exitNotify {
 			c.consumer.Delete(ctx, key)
 		}
-		c.logger.Debugf(ctx, "exit stream consumer ok")
+		c.logger.Infof(ctx, "exit stream consumer ok")
 	}()
 	c.natsOpts = append(c.natsOpts, defaultNatsOpts...)
 	return c
@@ -72,7 +70,7 @@ func New(cfg *Config, logger pubsub.Logger) *Client {
 // 订阅消息
 func (c *Client) SubMsg(ctx context.Context, nc *Conn, subject string, stype SubType, handler func(ctx context.Context, msg *nats.Msg) error) error {
 	if err := c.subscriber.AddSubscription(ctx, nc, subject, stype, handler); err != nil {
-		return gerror.Wrap(err, "add subscription fail")
+		return err
 	}
 	return nil
 }
@@ -130,10 +128,10 @@ func (c *Client) ConsumeStream(ctx context.Context, nc *Conn, sn, cn, subject st
 	if err != nil {
 		return err
 	}
-	//
+
 	skey := NewSubsKey(subject, sn, cn)
 	if err := c.consumer.Add(ctx, stype, skey, cons, handler, c.exitNotify); err != nil {
-		return gerror.Wrap(err, "add consume fail")
+		return err
 	}
 	return nil
 }
@@ -149,7 +147,7 @@ func (c *Client) DelConsumer(ctx context.Context, nc *Conn, sn, cn, subject stri
 	}
 	skey := NewSubsKey(subject, sn, cn)
 	if err := c.consumer.Delete(ctx, skey); err != nil {
-		return gerror.Wrap(err, "add consume fail")
+		return err
 	}
 	return nil
 }
@@ -159,14 +157,14 @@ func (c *Client) Close(ctx context.Context) error {
 	if err := c.subscriber.Close(ctx); err != nil {
 		return err
 	}
-	g.Log().Infof(ctx, "nats client close sub ok")
+	c.logger.Infof(ctx, "nats client close sub ok")
 	if err := c.consumer.Close(ctx); err != nil {
 		return err
 	}
-	g.Log().Infof(ctx, "nats client  close stream consume ok")
+	c.logger.Infof(ctx, "nats client  close stream consume ok")
 	if err := c.watcher.Stop(); err != nil {
 		return err
 	}
-	g.Log().Infof(ctx, "nats client close watcher ok")
+	c.logger.Infof(ctx, "nats client close watcher ok")
 	return nil
 }

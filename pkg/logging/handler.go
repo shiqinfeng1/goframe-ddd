@@ -17,6 +17,7 @@ type JsonOutputsForLogger struct {
 	Msg     []any  `json:"msg"`
 }
 
+// 将g.Log()默认的日志输出转换为json格式
 var JsonHandler glog.Handler = func(ctx context.Context, in *glog.HandlerInput) {
 	jsonForLogger := JsonOutputsForLogger{
 		Time:    in.TimeFormat,

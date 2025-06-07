@@ -7,13 +7,18 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application"
+	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application/service"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/server"
+	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/server/http/auth"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/server/http/ops"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/server/http/pointdata"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/dockerctl"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/locale"
 )
 
 func NewServer(ctx context.Context, logger server.Logger, app application.Service, dockerOps dockerctl.DockerOps) *ghttp.Server {
+	// 初始化i18n
+	g.I18n().SetPath("config/i18n")
 	// 启动http服务
 	s := g.Server()
 	if g.Cfg().MustGet(ctx, "pprof").Bool() {
@@ -34,11 +39,14 @@ func NewServer(ctx context.Context, logger server.Logger, app application.Servic
 	s.BindHandler("/metrics", otelmetric.PrometheusHandler)
 
 	// 业务api接口注册
-	s.Group("/mgrid", func(g *ghttp.RouterGroup) {
+	s.Group("/mgrid/v1", func(g *ghttp.RouterGroup) {
+		g.Middleware(locale.Locale)
+		g.Middleware(service.Auth)
 		g.Middleware(ghttp.MiddlewareHandlerResponse)
 		g.Bind(
 			pointdata.NewV1(logger, app),
 			ops.NewV1(logger, app, dockerOps),
+			auth.NewV1(logger, app),
 		)
 	})
 

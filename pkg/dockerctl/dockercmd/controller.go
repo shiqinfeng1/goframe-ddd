@@ -2,7 +2,6 @@ package dockercmd
 
 import (
 	"context"
-	"log"
 
 	"github.com/gogf/gf/v2/net/gclient"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/dockerctl"
@@ -34,11 +33,11 @@ func (ctl *DockerController) ComposeImages(ctx context.Context) ([]string, error
 	return reoptags, nil
 }
 func (ctl *DockerController) ComposeUp(ctx context.Context, version string) error {
+	// 访问宿主机上的watcher守护进程，进行版本升级
 	r, err := gclient.New().Post(ctx, "http://host.docker.internal:31083/image/upgrade/"+version)
 	if err != nil {
 		return err
 	}
 	defer r.Close()
-	log.Println("docker upgrade image version:", r.ReadAllString())
 	return nil
 }

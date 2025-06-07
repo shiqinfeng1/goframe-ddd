@@ -7,61 +7,54 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application/dto"
-	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/domain/repository"
-	"github.com/shiqinfeng1/goframe-ddd/pkg/errors"
-	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub/nats"
+	natsclient "github.com/shiqinfeng1/goframe-ddd/pkg/pubsub/nats"
 )
 
-type JetStreamMgr struct {
+type jetstreamService struct {
 	logger application.Logger
-	repo   repository.Repository
 	nc     *natsclient.Conn
 }
 
-func NeJetStreamService(ctx context.Context, logger application.Logger, repo repository.Repository, ncfact natsclient.Factory) application.JetStreamSrv {
-	jsm := &JetStreamMgr{
+func NewJetstreamService(ctx context.Context, logger application.Logger, ncfact natsclient.Factory) application.JetstreamService {
+	jsm := &jetstreamService{
 		logger: logger,
-		repo:   repo,
 	}
 	var err error
 	jsm.nc, err = ncfact.New(ctx, "client for stream mgr")
 	if err != nil {
-		jsm.logger.Errorf(ctx, "new nats client fail:%v", err)
+		logger.Errorf(ctx, "new nats client fail:%v", err)
 		return nil
 	}
 	return jsm
 }
 
-func (jsm *JetStreamMgr) DeleteStream(ctx context.Context, in *dto.DeleteStreamIn) error {
+func (jsm *jetstreamService) DeleteStream(ctx context.Context, in *dto.DeleteStreamIn) error {
 
 	jstream, err := jsm.nc.JetStream()
 	if err != nil {
-		return errors.ErrNatsConnectFail(err)
+		return err
 	}
 	if err := jstream.DeleteStream(ctx, in.Name); err != nil {
-		return errors.ErrNatsDeleteStreamFail(err)
+		return gerror.Wrapf(err, "delete stream fail: name=%v", in.Name)
 	}
 	return nil
 }
 
-func (jsm *JetStreamMgr) JetStreamInfo(ctx context.Context, in *dto.JetStreamInfoIn) (*dto.JetStreamInfoOut, error) {
+func (jsm *jetstreamService) JetStreamInfo(ctx context.Context, in *dto.JetStreamInfoIn) (*dto.JetStreamInfoOut, error) {
 
 	jstream, err := jsm.nc.JetStream()
 	if err != nil {
-		return nil, errors.ErrNatsConnectFail(err)
+		return nil, err
 	}
 
 	// 获取 Stream 信息
 	stream, err := jstream.Stream(ctx, in.Name)
 	if err != nil {
-		if gerror.Is(err, jetstream.ErrStreamNotFound) {
-			return nil, errors.ErrNatsNotFooundStream(in.Name)
-		}
-		return nil, errors.ErrNatsStreamFail(err)
+		return nil, gerror.Wrapf(err, "get stream fail: name=%v", in.Name)
 	}
 	si, err := stream.Info(ctx)
 	if err != nil {
-		return nil, errors.ErrNatsStreamFail(err)
+		return nil, gerror.Wrapf(err, "get stream info fail: name=%v", in.Name)
 	}
 	var cis []*jetstream.ConsumerInfo
 	for consumer := range stream.ListConsumers(ctx).Info() {
@@ -73,11 +66,11 @@ func (jsm *JetStreamMgr) JetStreamInfo(ctx context.Context, in *dto.JetStreamInf
 	}, nil
 }
 
-func (jsm *JetStreamMgr) JetStreamList(ctx context.Context, in *dto.JetStreamListIn) (*dto.JetStreamListOut, error) {
+func (jsm *jetstreamService) JetStreamList(ctx context.Context, in *dto.JetStreamListIn) (*dto.JetStreamListOut, error) {
 
 	jstream, err := jsm.nc.JetStream()
 	if err != nil {
-		return nil, errors.ErrNatsConnectFail(err)
+		return nil, err
 	}
 
 	// 获取 Stream 信息

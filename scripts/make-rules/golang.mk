@@ -80,6 +80,7 @@ go.build.%:
 	@echo "===========> Copy binary $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)/$(COMMAND)$(GO_OUT_EXT) --> deployments/artifacts/$(COMMAND)$(GO_OUT_EXT)"
 	@rm -f deployments/artifacts/$(COMMAND)$(GO_OUT_EXT)
 	@cp $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)/$(COMMAND)$(GO_OUT_EXT) deployments/artifacts/$(COMMAND)$(GO_OUT_EXT)
+	@cp -r config deployments/artifacts
 
 # 编译当前平台的bin
 .PHONY: go.build

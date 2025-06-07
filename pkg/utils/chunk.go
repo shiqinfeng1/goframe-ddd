@@ -13,7 +13,7 @@ const (
 func SplitFile(size int64) ([]int64, []int, error) {
 	// 检查文件大小是否超过 4GB
 	if size > 4*GB {
-		return nil, nil, errors.ErrOver4GSize
+		return nil, nil, errors.ErrOver4GSize("en")
 	}
 
 	var chunkSize int

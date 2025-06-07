@@ -51,7 +51,11 @@ func (w *natsConnWrapper) NewJetStream() (jetstream.JetStream, error) {
 	if w.conn == nil {
 		return nil, gerror.New("invalid nats conn")
 	}
-	return jetstream.New(w.conn)
+	js, err := jetstream.New(w.conn)
+	if err != nil {
+		return nil, gerror.Wrap(err, "new jetstream fail")
+	}
+	return js, nil
 }
 
 type defaultConnector struct{}
@@ -59,7 +63,7 @@ type defaultConnector struct{}
 func (*defaultConnector) Connect(serverURL string, opts ...nats.Option) (natsConn, error) {
 	nc, err := nats.Connect(serverURL, opts...)
 	if err != nil {
-		return nil, err
+		return nil, gerror.Wrap(err, "nats connect fail")
 	}
 	return &natsConnWrapper{conn: nc}, nil
 }

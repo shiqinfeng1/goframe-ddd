@@ -1,19 +1,23 @@
-package pointdata
+package ops
 
 import (
 	"context"
 
-	v1 "github.com/shiqinfeng1/goframe-ddd/api/mgrid/http/pointdata/v1"
+	"github.com/gogf/gf/v2/net/ghttp"
+	v1 "github.com/shiqinfeng1/goframe-ddd/api/mgrid/http/ops/v1"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application/dto"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/errors"
 )
 
 func (c *ControllerV1) GetStreamInfo(ctx context.Context, req *v1.GetStreamInfoReq) (res *v1.GetStreamInfoRes, err error) {
+	lang := ghttp.RequestFromCtx(ctx).GetCtxVar("lang").String()
 	in := &dto.JetStreamInfoIn{
 		Name: req.StreamName,
 	}
 	streams, err := c.app.JetStream().JetStreamInfo(ctx, in)
 	if err != nil {
-		return &v1.GetStreamInfoRes{}, err
+		c.logger.Error(ctx, err)
+		return nil, errors.ErrNatsGetStreamInfoFail(lang)
 	}
 	si := &dto.StreamInfo{
 		Name:      streams.StreamInfo.Config.Name,
@@ -44,14 +48,21 @@ func (c *ControllerV1) GetStreamInfo(ctx context.Context, req *v1.GetStreamInfoR
 	return res, nil
 }
 func (c *ControllerV1) DeleteStream(ctx context.Context, req *v1.DeleteStreamReq) (res *v1.DeleteStreamRes, err error) {
+	lang := ghttp.RequestFromCtx(ctx).GetCtxVar("lang").String()
 	res = &v1.DeleteStreamRes{}
 	err = c.app.JetStream().DeleteStream(ctx, &dto.DeleteStreamIn{Name: req.StreamName})
+	if err != nil {
+		c.logger.Error(ctx, err)
+		return nil, errors.ErrNatsDeleteStreamFail(lang)
+	}
 	return
 }
 func (c *ControllerV1) GetStreamList(ctx context.Context, req *v1.GetStreamListReq) (res *v1.GetStreamListRes, err error) {
+	lang := ghttp.RequestFromCtx(ctx).GetCtxVar("lang").String()
 	streams, err := c.app.JetStream().JetStreamList(ctx, &dto.JetStreamListIn{})
 	if err != nil {
-		return &v1.GetStreamListRes{}, err
+		c.logger.Error(ctx, err)
+		return nil, errors.ErrNatsGetStreamListFail(lang)
 	}
 	var cis []*dto.StreamInfo
 	for _, si := range streams.Streams {

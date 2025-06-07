@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/nats-io/nats.go"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/metrics"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
@@ -39,10 +40,10 @@ func NewSubscription(
 func (s *subscription) Stop(ctx context.Context) error {
 	if s.sub != nil {
 		if err := s.sub.Drain(); err != nil {
-			return err
+			return gerror.Wrap(err, "nats drain fail")
 		}
 		if err := s.sub.Unsubscribe(); err != nil {
-			return err
+			return gerror.Wrap(err, "nats unsub fail")
 		}
 	}
 	close(s.exit)
@@ -53,6 +54,7 @@ func (s *subscription) Start(ctx context.Context) error {
 	switch s.stype {
 	case SUBASYNC:
 		return s.subscribeAsync(ctx, s.handler)
+	case SUBSYNC:
 	}
 	return nil
 }
@@ -63,7 +65,7 @@ func (s *subscription) subscribeAsync(
 	handler func(ctx context.Context, msg *nats.Msg) error,
 ) error {
 	sub, err := s.conn.SubMsg(ctx, s.topicName, func(msg *nats.Msg) {
-		metrics.IncCnt(ctx, metrics.NatsSubscribeTotalCount, "topic", s.topicName)
+		metrics.Inc(ctx, metrics.NatsSubscribeTotalCount, "topic", s.topicName)
 
 		err := func() error {
 			defer func() {

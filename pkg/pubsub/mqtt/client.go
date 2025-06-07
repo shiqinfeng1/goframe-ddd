@@ -2,7 +2,6 @@ package mqttclient
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/gogf/gf/v2/errors/gerror"
@@ -16,10 +15,12 @@ import (
 
 const (
 	subMessageDelay = 100 * time.Millisecond
+	tokenWaitDelay  = 2 * time.Second
 )
 
 type Config struct {
 	ClientID  string
+	Store     string `json:"store"`
 	Topic1    string `json:"topic1"`
 	Topic2    string `json:"topic2"`
 	BrokerUrl string `json:"brokerUrl"`
@@ -45,8 +46,8 @@ func New(ctx context.Context, cfg *Config, logger pubsub.Logger) (*Client, error
 		return nil, gerror.New("mqtt broker url is empty")
 	}
 	// 创建文件存储（断链时缓存消息）
-	store := mqtt.NewFileStore("./mqtt_store")
-	if err := gfile.Mkdir("./mqtt_store"); err != nil {
+	store := mqtt.NewFileStore(cfg.Store)
+	if err := gfile.Mkdir(cfg.Store); err != nil {
 		return nil, gerror.Wrap(err, "init mqtt store fail")
 	}
 	opts := mqtt.NewClientOptions()
@@ -65,19 +66,19 @@ func New(ctx context.Context, cfg *Config, logger pubsub.Logger) (*Client, error
 
 	opts.SetOnConnectHandler(func(client mqtt.Client) {
 		optsr := client.OptionsReader()
-		logger.Infof(ctx, "connect to mqtt broker ok: addr=%v clientId=%v", fmt.Sprintf("%v", optsr.Servers()), optsr.ClientID())
+		logger.Infof(ctx, "connect to mqtt broker ok: addr=%v clientId=%v", optsr.Servers(), optsr.ClientID())
 	})
 	opts.SetConnectionLostHandler(func(client mqtt.Client, err error) {
 		logger.Warningf(ctx, "mqtt broker connect lost:  %v", err)
 	})
 	opts.SetReconnectingHandler(func(client mqtt.Client, opts *mqtt.ClientOptions) {
 		optsr := client.OptionsReader()
-		logger.Warningf(ctx, "reconnect to mqtt broker: addr=%v clientId=%v", fmt.Sprintf("%v", optsr.Servers()), optsr.ClientID())
+		logger.Warningf(ctx, "reconnect to mqtt broker: addr=%v clientId=%v", optsr.Servers(), optsr.ClientID())
 	})
 
 	c := mqtt.NewClient(opts)
-	if token := c.Connect(); token.WaitTimeout(3*time.Second) && token.Error() != nil {
-		return nil, token.Error()
+	if token := c.Connect(); token.WaitTimeout(tokenWaitDelay) && token.Error() != nil {
+		return nil, gerror.Wrap(token.Error(), "connect mqtt broker fail")
 	}
 
 	return &Client{
@@ -93,8 +94,8 @@ func (c *Client) Publish(topic string, message []byte) error {
 		return nil
 	}
 	token := c.mqttc.Publish(topic, byte(c.cfg.Qos), false, message)
-	if token.WaitTimeout(1*time.Second) && token.Error() != nil {
-		return token.Error()
+	if token.WaitTimeout(tokenWaitDelay) && token.Error() != nil {
+		return gerror.Wrap(token.Error(), "publish to mqtt fail")
 	}
 	return nil
 }
@@ -110,17 +111,17 @@ func (c *Client) Subscribe(ctx context.Context, topic string, handler func(ctx c
 			})
 		}()
 		if err := handler(ctx, &msg); err != nil {
-			c.logger.Errorf(ctx, "mqtt handler: %v", err)
+			c.logger.Errorf(ctx, "mqtt handler fail: %v", err)
 			time.Sleep(subMessageDelay)
 			return
 		}
 	}
 
-	if token := c.mqttc.Subscribe(topic, byte(c.cfg.Qos), cb); token.Wait() && token.Error() != nil {
-		return gerror.Wrap(token.Error(), "mqtt sub fail")
+	if token := c.mqttc.Subscribe(topic, byte(c.cfg.Qos), cb); token.WaitTimeout(tokenWaitDelay) && token.Error() != nil {
+		return gerror.Wrap(token.Error(), "mqtt subsribe fail")
 	}
 	c.topics = append(c.topics, topic)
-	c.logger.Infof(ctx, "mqtt sub success. topic=%v")
+	c.logger.Infof(ctx, "mqtt subsribe success. topic=%v", topic)
 	return nil
 }
 
@@ -131,7 +132,7 @@ func (c *Client) Close(ctx context.Context) error {
 	// 取消订阅
 	for _, topic := range c.topics {
 		if token := c.mqttc.Unsubscribe(topic); token.Wait() && token.Error() != nil {
-			return gerror.Wrap(token.Error(), "mqtt unsub fail")
+			return gerror.Wrap(token.Error(), "mqtt unsubscribe fail")
 		}
 	}
 

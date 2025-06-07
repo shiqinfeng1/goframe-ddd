@@ -26,12 +26,15 @@ import (
 
 func initApp(ctx context.Context) (application.Service, error) {
 	logger := application.ProvideLogger()
-	repository := repositories.NewPointmgrRepo()
-	pointDataSetSrv := service.NewPointDataSetService(ctx, logger, repository)
+	pointdataRepository := repositories.NewPointdataRepo()
+	pointdataService := service.NewPointdataService(ctx, logger, pointdataRepository)
+	userRepository := repositories.NewUserRepo()
+	tokenRepository := repositories.NewTokenRepo()
+	authService := service.NewAuthService(ctx, logger, userRepository, tokenRepository)
 	serverLogger := pubsub.ProvideLogger()
 	factory := pubsub.ProvideConnFactory(serverLogger)
-	jetStreamSrv := service.NeJetStreamService(ctx, logger, repository, factory)
-	applicationService := application.New(ctx, pointDataSetSrv, jetStreamSrv, factory)
+	jetstreamService := service.NewJetstreamService(ctx, logger, factory)
+	applicationService := application.New(ctx, pointdataService, authService, jetstreamService, factory)
 	return applicationService, nil
 }
 

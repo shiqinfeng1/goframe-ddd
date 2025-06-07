@@ -8,7 +8,6 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/metrics"
-	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
 )
 
 const (
@@ -24,18 +23,13 @@ type Conn struct {
 
 func (c *Conn) JetStream() (jetstream.JetStream, error) {
 	if !c.conn.IsConnected() {
-		return nil, pubsub.ErrClientNotConnected
+		return nil, gerror.New("nats not connected")
 	}
 	if c.jStream != nil {
 		return c.jStream, nil
 	}
-	js, err := jetstream.New(c.conn.NatsConn())
-	if err != nil {
-		return nil, pubsub.ErrJetStreamCreationFailed
-	}
-	c.jStream = js
+	c.jStream, _ = jetstream.New(c.conn.NatsConn())
 	return c.jStream, nil
-
 }
 
 func (c *Conn) Close(_ context.Context) {
@@ -45,31 +39,28 @@ func (c *Conn) Close(_ context.Context) {
 }
 
 func (c *Conn) SubMsg(ctx context.Context, subject string, handler func(msg *nats.Msg)) (*nats.Subscription, error) {
-	metrics.IncCnt(ctx, metrics.NatsPublishTotalCount, "subject", subject)
 	if err := c.validateConn(ctx, subject); err != nil {
 		return nil, err
 	}
 	subs, err := c.conn.NatsConn().Subscribe(subject, handler)
 	if err != nil {
-		return nil, gerror.Wrap(err, "subscribe msg fail")
+		return nil, gerror.Wrapf(err, "subscribe subject=%v fail", subject)
 	}
-	metrics.IncCnt(ctx, metrics.NatsPublishSuccessCount, "subject", subject)
 	return subs, nil
 }
 func (c *Conn) PubMsg(ctx context.Context, subject string, message []byte) error {
-	metrics.IncCnt(ctx, metrics.NatsPublishTotalCount, "subject", subject)
+	metrics.Inc(ctx, metrics.NatsPublishTotalCount, "subject", subject)
 	if err := c.validateConn(ctx, subject); err != nil {
 		return err
 	}
 	if err := c.conn.NatsConn().Publish(subject, message); err != nil {
-		return err
+		return gerror.Wrapf(err, "publish subject=%v fail", subject)
 	}
-	metrics.IncCnt(ctx, metrics.NatsPublishSuccessCount, "subject", subject)
+	metrics.Inc(ctx, metrics.NatsPublishSuccessCount, "subject", subject)
 	return nil
 }
 func (c *Conn) PubStream(ctx context.Context, subject string, message []byte) error {
-	metrics.IncCnt(ctx, metrics.NatsJsPublishTotalCount, "subject", subject)
-
+	metrics.Inc(ctx, metrics.NatsJsPublishTotalCount, "subject", subject)
 	if err := c.validateJetStream(ctx, subject); err != nil {
 		return err
 	}
@@ -78,17 +69,16 @@ func (c *Conn) PubStream(ctx context.Context, subject string, message []byte) er
 	if err != nil {
 		return err
 	}
-
-	metrics.IncCnt(ctx, metrics.NatsJsPublishSuccessCount, "subject", subject)
+	metrics.Inc(ctx, metrics.NatsJsPublishSuccessCount, "subject", subject)
 
 	return nil
 }
 func (c *Conn) validateConn(_ context.Context, subject string) error {
 	if !c.conn.IsConnected() {
-		return pubsub.ErrClientNotConnected
+		return gerror.New("nats not connected")
 	}
 	if subject == "" {
-		return pubsub.ErrSubjectNotProvided
+		return gerror.New("subject is nil")
 	}
 	return nil
 }
@@ -97,7 +87,7 @@ func (c *Conn) validateJetStream(ctx context.Context, subject string) error {
 		return err
 	}
 	if c.jStream == nil {
-		return pubsub.ErrJetStreamNotConfigured
+		return gerror.New("jetstream not configed")
 	}
 	return nil
 }

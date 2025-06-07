@@ -115,7 +115,7 @@ func Shutdown(ctx context.Context) {
 	provider.Shutdown(ctx)
 }
 
-func IncCnt(ctx context.Context, name, label, value string) {
+func Inc(ctx context.Context, name, label, value string) {
 	v, err := labelCache.GetOrSet(ctx, value+label, gmetric.Option{
 		Attributes: []gmetric.Attribute{
 			gmetric.NewAttribute(label, value),

@@ -10,43 +10,45 @@ import (
 
 // Connect establishes a connection to NATS-KV and registers metrics using the provided configuration when the client is created.
 func (c *Client) Connect(ctx context.Context) {
-	g.Log().Debugf(ctx, "connecting to NATS-KV Store at %v with bucket %q", c.configs.Server, c.configs.Bucket)
+	g.Log().Debugf(ctx, "connecting to NATS-KV/OBJ Store at %v", c.cfg.Server)
 
-	nc, err := nats.Connect(c.configs.Server)
+	nc, err := nats.Connect(c.cfg.Server)
 	if err != nil {
-		g.Log().Errorf(ctx, "error while connecting to NATS: %v", err)
+		c.logger.Errorf(ctx, "error while connecting to NATS: %v", err)
 		return
 	}
 	c.conn = nc
-	g.Log().Debug(ctx, "connection to NATS successful")
+	c.logger.Debugf(ctx, "connection to NATS successful")
 
 	js, err := jetstream.New(nc)
 	if err != nil {
-		g.Log().Errorf(ctx, "error while initializing JetStream: %v", err)
+		c.logger.Errorf(ctx, "error while initializing JetStream: %v", err)
 		return
 	}
 	c.js = js
-	g.Log().Debug(ctx, "jetStream initialized successfully")
-
-	kv, err := js.CreateOrUpdateKeyValue(ctx, jetstream.KeyValueConfig{
-		Bucket: c.configs.Bucket,
-	})
-	if err != nil {
-		g.Log().Errorf(ctx, "error while creating/accessing KV bucket: %v", err)
-		return
+	c.logger.Debugf(ctx, "jetStream initialized successfully")
+	for _, bucket := range c.cfg.KVBuckets {
+		kv, err := js.CreateOrUpdateKeyValue(ctx, jetstream.KeyValueConfig{
+			Bucket: bucket,
+		})
+		if err != nil {
+			c.logger.Errorf(ctx, "error while creating/accessing KV bucket: %v", err)
+			return
+		}
+		c.kv[bucket] = kv
 	}
-	c.kv = kv
-	g.Log().Infof(ctx, "successfully connected to NATS-KV Store at %s:%s ", c.configs.Server, c.configs.Bucket)
-
-	obj, err := js.CreateOrUpdateObjectStore(ctx, jetstream.ObjectStoreConfig{
-		Bucket: c.configs.Bucket,
-	})
-	if err != nil {
-		g.Log().Errorf(ctx, "error while creating/accessing object bucket: %v", err)
-		return
+	c.logger.Infof(ctx, "successfully connected to NATS-KV Store at %s:%s ", c.cfg.Server, c.cfg.KVBuckets)
+	for _, bucket := range c.cfg.ObjBuckets {
+		obj, err := js.CreateOrUpdateObjectStore(ctx, jetstream.ObjectStoreConfig{
+			Bucket: bucket,
+		})
+		if err != nil {
+			c.logger.Errorf(ctx, "error while creating/accessing KV bucket: %v", err)
+			return
+		}
+		c.obj[bucket] = obj
 	}
-	c.obj = obj
-	g.Log().Infof(ctx, "successfully connected to NATS-object Store at %s:%s ", c.configs.Server, c.configs.Bucket)
+	c.logger.Infof(ctx, "successfully connected to NATS-object Store at %s:%s ", c.cfg.Server, c.cfg.ObjBuckets)
 }
 
 func (c *Client) Close(ctx context.Context) {

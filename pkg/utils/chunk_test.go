@@ -92,7 +92,7 @@ func TestSplitFile(t *testing.T) {
 			size:            5 * GB,
 			expectedSizes:   nil,
 			expectedOffsets: nil,
-			expectedErr:     errors.ErrOver4GSize,
+			expectedErr:     errors.ErrOver4GSize("en"),
 		},
 	}
 

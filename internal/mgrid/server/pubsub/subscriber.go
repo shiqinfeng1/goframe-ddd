@@ -172,8 +172,8 @@ func (c *ControllerV1) Run(ctx context.Context) error {
 		return err
 	}
 	defer connConsume.Close(ctx)
-	c.attachConsumeHandler(ctx, connConsume, c.cfg.Nats.JsSubject1, c.app.PointDataSet().HandleStream)
-	c.attachConsumeHandler(ctx, connConsume, c.cfg.Nats.JsSubject2, c.app.PointDataSet().HandleStream)
+	c.attachConsumeHandler(ctx, connConsume, c.cfg.Nats.JSSubject1, c.app.PointDataSet().HandleStream)
+	c.attachConsumeHandler(ctx, connConsume, c.cfg.Nats.JSSubject2, c.app.PointDataSet().HandleStream)
 
 	// 连接到nats服务端，用于监听值变化
 	connWatch, err := c.app.NatsConnFact().New(ctx, "go-mgrid watch client")

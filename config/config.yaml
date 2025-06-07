@@ -134,6 +134,20 @@ remotelogin:
   
 pprof: true   # 开启性能分析
 
+jwt:
+  accessSecret: "your_access_secret_32bytes"
+  refreshSecret: "your_refresh_secret_32bytes"
+  accessExpire: "2h"    # Access Token有效期
+  refreshExpire: "7d"  # Refresh Token有效期
+
+password:
+  hashCost: 12      # bcrypt 哈希计算成本
+  minLength: 8      # 密码最小长度
+  maxLength: 64     # 密码最大长度
+  requireMixed: true # 需要大小写混合
+  requireNumber: true # 需要数字
+  requireSpecial: true # 需要特殊字符
+
 nats:
   serverUrl: "nats://127.0.0.1:4222"
   consumerName: "mgrid-consumer"
@@ -147,9 +161,14 @@ nats:
 
 mqtt:
   brokerUrl: "tcp://127.0.0.1:1883"
-  clientId: "mgrid-client"
+  store: "./data/mqtt-store"
   username: "admin"
   password: "password"
   qos: 1
   topic1: "topic1"
   topic2: "topic2"
+
+store:
+  server: "nats://127.0.0.1:4222"
+  kvBuckets: ["kvbucket1","kvbucket2"]
+  objBuckets: ["objbucket1","objbucket2"]

@@ -65,7 +65,7 @@ func (f *factory) New(ctx context.Context, name string, opts ...nats.Option) (*C
 	js, err := conn.NewJetStream()
 	if err != nil {
 		conn.Close()
-		return nil, gerror.Wrap(err, "failed to create jStream context")
+		return nil, err
 	}
 	f.logger.Infof(ctx, "successfully connected to NATS server at %v by '%v'", f.serverAddr, conn.NatsConn().Opts.Name)
 	return &Conn{

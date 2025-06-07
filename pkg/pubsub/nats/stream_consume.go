@@ -49,9 +49,7 @@ func (s *streamConsume) Stop(ctx context.Context) error {
 		s.close.stop()
 	}
 	if s.close.cancel != nil {
-		if s.close.cancel != nil {
-			s.close.cancel()
-		}
+		s.close.cancel()
 	}
 	return nil
 }
@@ -60,6 +58,7 @@ func (s *streamConsume) start(ctx context.Context) error {
 	switch s.consumeType {
 	case JSNEXT:
 		return s.consumeNext(ctx)
+	case JSFETCH:
 	}
 	return nil
 }
@@ -67,7 +66,7 @@ func (s *streamConsume) start(ctx context.Context) error {
 func (s *streamConsume) consumeNext(
 	ctx context.Context,
 ) error {
-	metrics.IncCnt(ctx, metrics.NatsSubscribeTotalCount, "topic", s.subsKey.TopicName())
+	metrics.Inc(ctx, metrics.NatsSubscribeTotalCount, "topic", s.subsKey.TopicName())
 
 	iter, err := s.newMessageIter()
 	if err != nil {
@@ -127,5 +126,5 @@ func (s *streamConsume) newMessageIter() (jetstream.MessagesContext, error) {
 	s.close = closer{
 		stop: iter.Stop,
 	}
-	return iter, err
+	return iter, nil
 }

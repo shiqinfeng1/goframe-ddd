@@ -7,6 +7,6 @@ import (
 )
 
 func (c *ControllerV1) startWatch(ctx context.Context, nc *natsclient.Conn) error {
-	c.natsClient.StartWatch(ctx, nc, c.cfg.Nats.KvBuckets, c.cfg.Nats.ObjBuckets, nil)
+	c.natsClient.StartWatch(ctx, nc, c.cfg.Nats.KVBuckets, c.cfg.Nats.ObjBuckets, nil)
 	return nil
 }

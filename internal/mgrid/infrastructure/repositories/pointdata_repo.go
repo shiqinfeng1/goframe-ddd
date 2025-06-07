@@ -4,10 +4,10 @@ import (
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/domain/repository"
 )
 
-type pointmgrRepo struct {
+type pointdataRepo struct {
 }
 
 // NewTrainingRepo .
-func NewPointmgrRepo() repository.Repository {
-	return &pointmgrRepo{}
+func NewPointdataRepo() repository.PointdataRepository {
+	return &pointdataRepo{}
 }
