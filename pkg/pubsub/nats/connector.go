@@ -63,7 +63,7 @@ type defaultConnector struct{}
 func (*defaultConnector) Connect(serverURL string, opts ...nats.Option) (natsConn, error) {
 	nc, err := nats.Connect(serverURL, opts...)
 	if err != nil {
-		return nil, gerror.Wrap(err, "nats connect fail")
+		return nil, gerror.Wrap(err, "connect to nats fail")
 	}
 	return &natsConnWrapper{conn: nc}, nil
 }

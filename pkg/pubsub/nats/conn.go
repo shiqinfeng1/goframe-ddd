@@ -12,7 +12,6 @@ import (
 
 const (
 	defaultRetryTimeout = 3 * time.Second
-	defaultRetryCount   = 3
 )
 
 type Conn struct {

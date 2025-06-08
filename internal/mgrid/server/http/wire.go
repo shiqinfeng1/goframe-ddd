@@ -1,7 +1,10 @@
 package http
 
 import (
+	"context"
+
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/os/glog"
 	"github.com/google/wire"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/server"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/logging"
@@ -9,10 +12,10 @@ import (
 
 var WireProviderSet = wire.NewSet(NewServer, ProvideLogger)
 
-func ProvideLogger() server.Logger {
-	l := g.Log()
-	l.SetPrefix("httpSerever")
-	l.SetAsync(true)
-	l.SetHandlers(logging.JsonHandler)
+func ProvideLogger(ctx context.Context) server.Logger {
+	l := glog.New()
+	l.SetConfigWithMap(g.Cfg().MustGet(ctx, "logger").Map())
+	l.SetHandlers(logging.LoggingGrayLogHandler)
+	l.SetPrefix("[HTTP-SERVER]")
 	return l
 }

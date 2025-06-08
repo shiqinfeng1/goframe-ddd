@@ -2,7 +2,6 @@ package natsclient
 
 import (
 	"context"
-	"time"
 
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
@@ -39,24 +38,24 @@ func (f *factory) New(ctx context.Context, name string, opts ...nats.Option) (*C
 	opts = append(opts,
 		nats.Name(name),
 		nats.DisconnectErrHandler(func(_ *nats.Conn, err error) {
-			f.logger.Infof(ctx, "nats client '%v' disconnected: %v", name, err)
+			f.logger.Infof(ctx, "nats client disconnect CB: client '%v' disconnected: %v", name, err)
 		}),
 		nats.ReconnectHandler(func(_ *nats.Conn) {
-			f.logger.Infof(ctx, "nats client '%v' reconnected", name)
+			f.logger.Infof(ctx, "nats client reconnect CB: '%v' reconnected", name)
 		}),
 		nats.ClosedHandler(func(_ *nats.Conn) {
-			f.logger.Infof(ctx, "nats client '%v' closed", name)
+			f.logger.Infof(ctx, "nats client close CB: '%v' closed", name)
 		}),
 		nats.ErrorHandler(func(_ *nats.Conn, _ *nats.Subscription, err error) {
-			f.logger.Infof(ctx, "nats client '%v' occur error: %v", name, err)
+			f.logger.Infof(ctx, "nats client error CB: '%v' occur error: %v", name, err)
 		}),
 	)
 
 	conn, err := f.connector.Connect(f.serverAddr, opts...)
-	for i := 0; i < defaultRetryCount && !conn.IsConnected(); i++ {
-		f.logger.Warningf(ctx, "[%v/%v]try to connect to NATS server at %v: %v", i+1, defaultRetryCount, f.serverAddr, err)
-		time.Sleep(defaultRetryTimeout)
+	if err != nil {
+		return nil, err
 	}
+
 	if !conn.IsConnected() {
 		return nil, gerror.New("connect to nats timeout")
 	}

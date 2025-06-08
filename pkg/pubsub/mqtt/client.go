@@ -61,7 +61,7 @@ func New(ctx context.Context, cfg *Config, logger pubsub.Logger) (*Client, error
 	// 配置 QoS 1 相关参数
 	opts.SetAutoReconnect(true)                   // 启用自动重连
 	opts.SetMaxReconnectInterval(5 * time.Second) // 最大重连间隔
-	opts.SetConnectRetry(false)                   // 连接失败时重试
+	opts.SetConnectRetry(true)                    // 连接失败时重试
 	opts.SetCleanSession(true)                    // 保持会话状态，用于 QoS 1 消息确认
 
 	opts.SetOnConnectHandler(func(client mqtt.Client) {
@@ -89,8 +89,9 @@ func New(ctx context.Context, cfg *Config, logger pubsub.Logger) (*Client, error
 	}, nil
 }
 
-func (c *Client) Publish(topic string, message []byte) error {
-	if c == nil {
+func (c *Client) Publish(ctx context.Context, topic string, message []byte) error {
+	if c.mqttc == nil {
+		c.logger.Warningf(ctx, "publish to %v fail: mqtt client is nil", topic)
 		return nil
 	}
 	token := c.mqttc.Publish(topic, byte(c.cfg.Qos), false, message)
@@ -101,7 +102,8 @@ func (c *Client) Publish(topic string, message []byte) error {
 }
 
 func (c *Client) Subscribe(ctx context.Context, topic string, handler func(ctx context.Context, msg *mqtt.Message) error) error {
-	if c == nil {
+	if c.mqttc == nil {
+		c.logger.Warningf(ctx, "subscribe %v fail: mqtt client is nil", topic)
 		return nil
 	}
 	cb := func(mc mqtt.Client, msg mqtt.Message) {

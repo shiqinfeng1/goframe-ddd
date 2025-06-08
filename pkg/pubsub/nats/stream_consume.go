@@ -81,12 +81,12 @@ func (s *streamConsume) consumeNext(
 		msg, err := iter.Next()
 		if err != nil {
 			if errors.Is(err, jetstream.ErrMsgIteratorClosed) {
-				s.logger.Warningf(ctx, "consumer '%v' fetching messages for topic '%s' of '%v': %v", s.subsKey.ConsumerName(), s.subsKey.TopicName(), s.subsKey.StreamName(), err)
+				s.logger.Warningf(ctx, "consumer '%v' subscribe messages for topic '%s' of '%v' closed", s.subsKey.ConsumerName(), s.subsKey.TopicName(), s.subsKey.StreamName())
+				time.Sleep(consumeMessageDelay)
 				iter, err = s.newMessageIter()
 				if err != nil {
 					return err
 				}
-				time.Sleep(consumeMessageDelay)
 				s.logger.Warningf(ctx, "consumer '%v' subscribe messages again for topic '%s' of '%v' ok", s.subsKey.ConsumerName(), s.subsKey.TopicName(), s.subsKey.StreamName())
 				continue
 			}

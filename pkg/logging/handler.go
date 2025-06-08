@@ -6,8 +6,10 @@ import (
 
 	"github.com/gogf/gf/v2/os/glog"
 	"github.com/gogf/gf/v2/text/gstr"
+	gelf "github.com/robertkowalski/graylog-golang"
 )
 
+// glog.HandlerOutputJson
 // JsonOutputsForLogger is for JSON marshaling in sequence.
 type JsonOutputsForLogger struct {
 	Time    string `json:"ts"`
@@ -17,8 +19,19 @@ type JsonOutputsForLogger struct {
 	Msg     []any  `json:"msg"`
 }
 
-// 将g.Log()默认的日志输出转换为json格式
-var JsonHandler glog.Handler = func(ctx context.Context, in *glog.HandlerInput) {
+var grayLogClient = gelf.New(gelf.Config{
+	// GraylogHostname: "graylog-host.com",
+	// GraylogPort:     80,
+	Connection:      "wan",
+	MaxChunkSizeWan: 42,
+	MaxChunkSizeLan: 1337,
+})
+
+// LoggingGrayLogHandler is an example handler for logging content to remote GrayLog service.
+var LoggingGrayLogHandler glog.Handler = func(ctx context.Context, in *glog.HandlerInput) {
+	in.Next(ctx)
+
+	// 将日志输出转换为json格式
 	jsonForLogger := JsonOutputsForLogger{
 		Time:    in.TimeFormat,
 		Level:   gstr.Trim(in.LevelFormat, "[]"),
@@ -26,8 +39,9 @@ var JsonHandler glog.Handler = func(ctx context.Context, in *glog.HandlerInput) 
 		Scope:   in.Prefix,
 		Msg:     in.Values,
 	}
+
 	encoder := json.NewEncoder(in.Buffer)
 	encoder.SetEscapeHTML(false)
 	encoder.Encode(jsonForLogger)
-	in.Next(ctx)
+	grayLogClient.Log(in.Buffer.String())
 }

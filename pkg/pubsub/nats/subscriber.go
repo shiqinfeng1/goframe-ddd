@@ -3,6 +3,7 @@ package natsclient
 import (
 	"context"
 
+	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/nats-io/nats.go"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
@@ -11,7 +12,7 @@ import (
 // 订阅器管理
 type subscriber struct {
 	logger        pubsub.Logger
-	subscriptions map[string]*subscription
+	subscriptions *gmap.StrAnyMap //* subscription
 }
 
 func (sm *subscriber) AddSubscription(
@@ -23,10 +24,9 @@ func (sm *subscriber) AddSubscription(
 
 	sub := NewSubscription(sm.logger, subTyp, topicName, conn, handler)
 
-	if _, exist := sm.subscriptions[topicName]; exist {
+	if notexist := sm.subscriptions.SetIfNotExist(topicName, sub); !notexist {
 		return gerror.Newf("topic '%v' is already be subscribed", topicName)
 	}
-	sm.subscriptions[topicName] = sub
 	sm.logger.Infof(ctx, "create subscriber of topic '%v' ok", topicName)
 	return nil
 }
@@ -35,36 +35,38 @@ func (sm *subscriber) Close(ctx context.Context) error {
 	if sm == nil {
 		return nil
 	}
-	for _, sub := range sm.subscriptions {
+	sm.subscriptions.Iterator(func(key string, value interface{}) bool {
+		sub := value.(*subscription)
 		if err := sub.Stop(ctx); err != nil {
-			return err
+			sm.logger.Errorf(ctx, "stop subscriber of topic '%v' failed: %v", key, err)
 		}
-	}
-	sm.subscriptions = make(map[string]*subscription)
+		return true
+	})
+
+	sm.subscriptions.Clear()
 	return nil
 }
 
 func (sm *subscriber) DeleteSubscription(ctx context.Context, topicName string) error {
 
-	sub, exist := sm.subscriptions[topicName]
-	if !exist {
-		return gerror.Newf("not found subscription of topic '%v'", topicName)
+	sub := sm.subscriptions.Remove(topicName)
+	if sub == nil {
+		return gerror.New("not found subscription of topic")
 	}
-	sm.subscriptions = nil
 
-	if err := sub.Stop(ctx); err != nil {
+	if err := sub.(*subscription).Stop(ctx); err != nil {
 		return err
 	}
 	return nil
 }
 func (sm *subscriber) Start(ctx context.Context, topicName string) error {
 
-	sub, exist := sm.subscriptions[topicName]
-	if !exist {
+	sub := sm.subscriptions.Get(topicName)
+	if sub == nil {
 		return gerror.Newf("not found subscription of topic '%v'", topicName)
 	}
 
-	if err := sub.Start(ctx); err != nil {
+	if err := sub.(*subscription).Start(ctx); err != nil {
 		return err
 	}
 	return nil

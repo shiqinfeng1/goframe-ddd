@@ -3,16 +3,30 @@ package main
 import (
 	"os"
 	"sync"
+	"time"
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/gproc"
+	"github.com/nats-io/nats.go"
 	_ "go.uber.org/automaxprocs"
 )
 
 func main() {
 	ctx := gctx.New()
 	wg := sync.WaitGroup{}
+
+	for {
+		nc, err := nats.Connect(g.Cfg().MustGet(ctx, "nats.serverUrl").String())
+		if err != nil {
+			g.Log().Warningf(ctx, "connect nats server fail:%v", err)
+			time.Sleep(2 * time.Second)
+			continue
+		}
+		if nc.IsConnected() {
+			break
+		}
+	}
 
 	// 初始化http服务
 	httpSrv, cleanup1, err := initServer()
@@ -22,7 +36,7 @@ func main() {
 	defer cleanup1()
 
 	// 初始化订阅发布服务
-	pubsubMgr, cleanup2, err := initSubOrConsume()
+	pubsubSrv, cleanup2, err := initSubOrConsume()
 	if err != nil {
 		g.Log().Panic(ctx, err)
 	}
@@ -38,17 +52,17 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := pubsubMgr.Run(ctx); err != nil {
-			g.Log().Fatalf(ctx, "pubsub run error : %v", err)
+		if err := pubsubSrv.Run(ctx); err != nil {
+			g.Log().Error(ctx, err)
 		}
-		g.Log().Infof(ctx, "exit nats subscrib ok")
+		g.Log().Infof(ctx, "exit pubsub server ok")
 	}()
 
-	// pubsubMgr 需手动关闭
+	// pubsubSrv 需手动关闭
 	// http服务本身能监听到信号，无需手动关闭
 	signalHandler := func(sig os.Signal) {
-		g.Log().Infof(ctx, "signal received: @@@@ '%v' @@@@, gracefully shutting down pubsub service", sig.String())
-		if err := pubsubMgr.Stop(ctx); err != nil {
+		g.Log().Infof(ctx, "signal received:'%v'. gracefully shutting down pubsub service", sig.String())
+		if err := pubsubSrv.Stop(ctx); err != nil {
 			g.Log().Errorf(ctx, "gracefully shutting down pubsub service fail:%v", err)
 		}
 		g.Log().Infof(ctx, "gracefully shutting down pubsub service ok")

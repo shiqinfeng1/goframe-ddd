@@ -1,7 +1,10 @@
 package pubsub
 
 import (
+	"context"
+
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/os/glog"
 	"github.com/google/wire"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/server"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/logging"
@@ -11,11 +14,11 @@ import (
 var WireProviderSet = wire.NewSet(NewV1, ProvideLogger)
 var WireProviderNatsFactory = wire.NewSet(ProvideLogger, ProvideConnFactory)
 
-func ProvideLogger() server.Logger {
-	l := g.Log()
-	l.SetPrefix("eventServer")
-	l.SetAsync(true)
-	l.SetHandlers(logging.JsonHandler)
+func ProvideLogger(ctx context.Context) server.Logger {
+	l := glog.New()
+	l.SetConfigWithMap(g.Cfg().MustGet(ctx, "logger").Map())
+	l.SetHandlers(logging.LoggingGrayLogHandler)
+	l.SetPrefix("[EVENT-SERVER]")
 	return l
 }
 func ProvideConnFactory(logger server.Logger) natsclient.Factory {

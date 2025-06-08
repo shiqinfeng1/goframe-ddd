@@ -25,13 +25,13 @@ import (
 // Injectors from wire.go:
 
 func initApp(ctx context.Context) (application.Service, error) {
-	logger := application.ProvideLogger()
+	logger := application.ProvideLogger(ctx)
 	pointdataRepository := repositories.NewPointdataRepo()
 	pointdataService := service.NewPointdataService(ctx, logger, pointdataRepository)
 	userRepository := repositories.NewUserRepo()
 	tokenRepository := repositories.NewTokenRepo()
 	authService := service.NewAuthService(ctx, logger, userRepository, tokenRepository)
-	serverLogger := pubsub.ProvideLogger()
+	serverLogger := pubsub.ProvideLogger(ctx)
 	factory := pubsub.ProvideConnFactory(serverLogger)
 	jetstreamService := service.NewJetstreamService(ctx, logger, factory)
 	applicationService := application.New(ctx, pointdataService, authService, jetstreamService, factory)
@@ -40,7 +40,7 @@ func initApp(ctx context.Context) (application.Service, error) {
 
 func initServer() (*ghttp.Server, func(), error) {
 	contextContext := ProvideCtx()
-	logger := http.ProvideLogger()
+	logger := http.ProvideLogger(contextContext)
 	applicationService, err := app(contextContext)
 	if err != nil {
 		return nil, nil, err
@@ -55,8 +55,8 @@ func initServer() (*ghttp.Server, func(), error) {
 }
 
 func initSubOrConsume() (*pubsub.ControllerV1, func(), error) {
-	logger := pubsub.ProvideLogger()
 	contextContext := ProvideCtx()
+	logger := pubsub.ProvideLogger(contextContext)
 	applicationService, err := app(contextContext)
 	if err != nil {
 		return nil, nil, err

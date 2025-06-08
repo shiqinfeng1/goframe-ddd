@@ -19,6 +19,7 @@ require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/nats-io/nats.go v1.39.1
+	github.com/robertkowalski/graylog-golang v0.0.0-20151121031040-e5295cfa2827
 	github.com/rs/xid v1.6.0
 	github.com/stretchr/testify v1.10.0
 	github.com/xtaci/kcp-go v5.4.20+incompatible
@@ -173,6 +174,7 @@ require (
 	github.com/klauspost/cpuid/v2 v2.2.8 // indirect
 	github.com/klauspost/reedsolomon v1.12.4 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
+	github.com/lintianzhi/graylogd v0.0.0-20180503131252-dc68342f04dc // indirect
 	github.com/magiconair/properties v1.8.9 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect

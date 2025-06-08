@@ -56,7 +56,7 @@ func (sm *JetStreamWrapper) CreateOrUpdateStream(ctx context.Context, name strin
 	if err != nil {
 		return gerror.Wrapf(err, "create or update stream fail")
 	}
-	sm.logger.Debugf(ctx, "creating or updating stream %s ok of subkects:%+v", name, subjects)
+	sm.logger.Debugf(ctx, "create or update stream ok. stream-name=%v, subjects=%+v", name, subjects)
 	return nil
 }
 
@@ -134,8 +134,9 @@ func (sm *JetStreamWrapper) CreateOrUpdateConsumer(ctx context.Context, streamNa
 		// MaxAckPending: 1000,                // 最多为回复ack的消息数量，如果到达上限，服务端将停止推送
 	})
 	if err != nil {
-		return nil, gerror.Wrapf(err, "failed to create consumer '%v' for stream '%v' of stream '%v'", consumerName, streamName, streamName)
+		return nil, gerror.Wrapf(err, "failed to create consumer '%v' for subjetc '%v' of stream '%v'", consumerName, subject, streamName)
 	}
+	sm.logger.Debugf(ctx, "creating or updating consumer '%v' for stream '%v' of stream '%v' ok", consumerName, subject, streamName)
 	return cons, nil
 }
 

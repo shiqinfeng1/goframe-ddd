@@ -4,21 +4,23 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
 )
 
 type watcher struct {
 	logger      pubsub.Logger
-	kvWatchers  map[string]jetstream.KeyWatcher
-	objWatchers map[string]jetstream.ObjectWatcher
+	kvWatchers  *gmap.StrAnyMap // map[string]jetstream.KeyWatcher
+	objWatchers *gmap.StrAnyMap // map[string]jetstream.ObjectWatcher
 	cancel      context.CancelFunc
 }
 type eventType string
 
 var (
-	KV     eventType = "KV"
-	OBJECT eventType = "OBJECT"
+	KV        eventType = "KV"
+	OBJECT    eventType = "OBJECT"
+	WATCHFAIL eventType = "WATCHFAIL"
 )
 
 type ChangeEvent struct {
@@ -44,21 +46,26 @@ func defaultProcessEvent(ctx context.Context, nc *Conn, event ChangeEvent) error
 	return nil
 }
 
-func (w *watcher) Stop() error {
-	for _, w := range w.kvWatchers {
-		if err := w.Stop(); err != nil {
-			return err
+func (w *watcher) Stop(ctx context.Context) error {
+	w.kvWatchers.Iterator(func(key string, value interface{}) bool {
+		if err := value.(jetstream.KeyWatcher).Stop(); err != nil {
+			w.logger.Errorf(ctx, "stop kv watcher %v failed: %v", key, err)
 		}
-	}
-	for _, w := range w.objWatchers {
-		if err := w.Stop(); err != nil {
-			return err
+		return true
+	})
+	w.objWatchers.Iterator(func(key string, value interface{}) bool {
+		if err := value.(jetstream.ObjectWatcher).Stop(); err != nil {
+			w.logger.Errorf(ctx, "stop object watcher %v failed: %v", key, err)
 		}
-	}
+		return true
+	})
 	w.cancel()
 	return nil
 }
-func (w *watcher) StartWatch(ctx context.Context, nc *Conn, kvbkts, objbkts []string, handler func(context.Context, *Conn, ChangeEvent) error) error {
+func (w *watcher) StartWatch(
+	ctx context.Context,
+	nc *Conn, kvbkts, objbkts []string,
+	handler func(context.Context, *Conn, ChangeEvent) error) error {
 	if handler == nil {
 		handler = defaultProcessEvent
 	}
@@ -80,25 +87,47 @@ func (w *watcher) StartWatch(ctx context.Context, nc *Conn, kvbkts, objbkts []st
 	}
 
 	// 事件处理器
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case event := <-events:
-				if err := handler(ctx, nc, event); err != nil {
-					w.logger.Errorf(ctx, "watch handle fail:%v", err)
-				}
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case event := <-events:
+			if event.Type == WATCHFAIL {
+				w.logger.Errorf(ctx, "bucket %v %v:%v", event.Bucket, event.Key, string(event.Value))
+				continue
+			}
+			if err := handler(ctx, nc, event); err != nil {
+				w.logger.Errorf(ctx, "watch handle fail:%v", err)
 			}
 		}
-	}()
-	return nil
+	}
 }
 
 func (w *watcher) watchKV(ctx context.Context, js jetstream.JetStream, bucket string, events chan<- ChangeEvent) {
-	kv, _ := js.KeyValue(ctx, bucket)
-	watcher, _ := kv.WatchAll(ctx)
-	w.kvWatchers[bucket] = watcher
+	kv, err := js.KeyValue(ctx, bucket)
+	if err != nil {
+		events <- ChangeEvent{
+			Type:   WATCHFAIL,
+			Bucket: bucket,
+			Key:    "getkvfail",
+			Value:  []byte(err.Error()),
+		}
+		return
+	}
+	watcher, err := kv.WatchAll(ctx)
+	if err != nil {
+		events <- ChangeEvent{
+			Type:   WATCHFAIL,
+			Bucket: bucket,
+			Key:    "watchkvfail",
+			Value:  []byte(err.Error()),
+		}
+		return
+	}
+	if notexist := w.kvWatchers.SetIfNotExist(bucket, watcher); !notexist {
+		w.logger.Errorf(ctx, "kv watcher %v already exist", bucket)
+		return
+	}
 
 	for entry := range watcher.Updates() {
 		if entry != nil {
@@ -114,9 +143,30 @@ func (w *watcher) watchKV(ctx context.Context, js jetstream.JetStream, bucket st
 }
 
 func (w *watcher) watchObjects(ctx context.Context, js jetstream.JetStream, bucket string, events chan<- ChangeEvent) {
-	objStore, _ := js.ObjectStore(ctx, bucket)
-	watcher, _ := objStore.Watch(ctx)
-	w.objWatchers[bucket] = watcher
+	objStore, err := js.ObjectStore(ctx, bucket)
+	if err != nil {
+		events <- ChangeEvent{
+			Type:   WATCHFAIL,
+			Bucket: bucket,
+			Key:    "getobjfail",
+			Value:  []byte(err.Error()),
+		}
+		return
+	}
+	watcher, err := objStore.Watch(ctx)
+	if err != nil {
+		events <- ChangeEvent{
+			Type:   WATCHFAIL,
+			Bucket: bucket,
+			Key:    "watchobjfail",
+			Value:  []byte(err.Error()),
+		}
+		return
+	}
+	if notexist := w.objWatchers.SetIfNotExist(bucket, watcher); !notexist {
+		w.logger.Errorf(ctx, "obj watcher %v already exist", bucket)
+		return
+	}
 
 	for info := range watcher.Updates() {
 		if info != nil {

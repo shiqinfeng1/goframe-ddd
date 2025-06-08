@@ -35,7 +35,10 @@ func (c *Client) Connect(ctx context.Context) {
 			c.logger.Errorf(ctx, "error while creating/accessing KV bucket: %v", err)
 			return
 		}
-		c.kv[bucket] = kv
+		if notexist := c.kv.SetIfNotExist(bucket, kv); !notexist {
+			c.logger.Errorf(ctx, "KV bucket <%v> already exists", bucket)
+			return
+		}
 	}
 	c.logger.Infof(ctx, "successfully connected to NATS-KV Store at %s:%s ", c.cfg.Server, c.cfg.KVBuckets)
 	for _, bucket := range c.cfg.ObjBuckets {
@@ -46,7 +49,10 @@ func (c *Client) Connect(ctx context.Context) {
 			c.logger.Errorf(ctx, "error while creating/accessing KV bucket: %v", err)
 			return
 		}
-		c.obj[bucket] = obj
+		if notexist := c.obj.SetIfNotExist(bucket, obj); !notexist {
+			c.logger.Errorf(ctx, "OBJ bucket <%v> already exists", bucket)
+			return
+		}
 	}
 	c.logger.Infof(ctx, "successfully connected to NATS-object Store at %s:%s ", c.cfg.Server, c.cfg.ObjBuckets)
 }

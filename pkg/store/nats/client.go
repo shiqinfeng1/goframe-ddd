@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/nats-io/nats.go"
@@ -22,8 +23,8 @@ type Client struct {
 	logger store.Logger
 	conn   *nats.Conn
 	js     jetstream.JetStream
-	kv     map[string]jetstream.KeyValue
-	obj    map[string]jetstream.ObjectStore
+	kv     *gmap.StrAnyMap //map[string]jetstream.KeyValue
+	obj    *gmap.StrAnyMap //map[string]jetstream.ObjectStore
 	cfg    *Config
 }
 

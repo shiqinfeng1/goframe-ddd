@@ -22,7 +22,7 @@ func NewJetstreamService(ctx context.Context, logger application.Logger, ncfact 
 	var err error
 	jsm.nc, err = ncfact.New(ctx, "client for stream mgr")
 	if err != nil {
-		logger.Errorf(ctx, "new nats client fail:%v", err)
+		logger.Errorf(ctx, "%v", err)
 		return nil
 	}
 	return jsm

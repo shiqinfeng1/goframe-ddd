@@ -51,10 +51,9 @@ func NewV1(logger server.Logger, app application.Service) *ControllerV1 {
 	c.natsClient = natsclient.New(&c.cfg.Nats, logger)
 	// 允许连接云端失败
 	c.mqttClient = func() *mqttclient.Client {
-		ctx := gctx.New()
 		c, err := mqttclient.New(ctx, &c.cfg.Mqtt, logger)
 		if err != nil {
-			logger.Fatalf(ctx, "new mqtt client fail:%v", err)
+			logger.Warningf(ctx, "new mqtt client fail:%v", err)
 		}
 		return c
 	}()
@@ -83,29 +82,32 @@ func (c *ControllerV1) StreamTopics() (tpics []string) {
 // 注册topic的处理函数
 // 默认一个topic注册一个处理函数， topic支持通配符
 // 注意：一个topic起一个协程
-func (c *ControllerV1) attachSubscribeHandler(ctx context.Context, nc *natsclient.Conn, subject string, handler natsclient.SubscribeFunc) {
+func (c *ControllerV1) attachSubscribeHandler(
+	ctx context.Context,
+	nc *natsclient.Conn,
+	subject string,
+	handler natsclient.SubscribeFunc) error {
 	c.natsSubscriptions = append(c.natsSubscriptions, subject)
-	c.group.Go(func() error {
-		cb := func(ctx context.Context, msg *nats.Msg) error {
-			// 处理数据
-			out, err := handler(ctx, msg)
-			if err != nil {
-				return err
-			}
-			// 转发数据
-			// todo: 替换真正的主题
-			if err := c.mqttClient.Publish(subject, out); err != nil {
-				return err
-			}
-			return nil
-		}
-		err := c.natsClient.SubMsg(ctx, nc, subject, natsclient.SUBASYNC, cb)
+
+	cb := func(ctx context.Context, msg *nats.Msg) error {
+		// 处理数据
+		out, err := handler(ctx, msg)
 		if err != nil {
-			return gerror.Wrapf(err, "subscribe topic '%v' fail", subject)
+			return err
 		}
-		c.logger.Debugf(ctx, "exit subscribe for topic '%v' ok", subject)
+		// 转发数据
+		// todo: 替换真正的主题
+		if err := c.mqttClient.Publish(ctx, subject, out); err != nil {
+			return err
+		}
+		return nil
+	}
+	err := c.natsClient.SubMsg(ctx, nc, subject, natsclient.SUBASYNC, cb)
+	if err != nil {
 		return err
-	})
+	}
+	c.logger.Infof(ctx, "subscribe topic ok. topic:%v", subject)
+	return nil
 }
 func (c *ControllerV1) attachConsumeHandler(ctx context.Context, nc *natsclient.Conn, subject string, handler natsclient.ConsumeFunc) {
 	c.natsConsumes = append(c.natsConsumes, subject)
@@ -116,14 +118,14 @@ func (c *ControllerV1) attachConsumeHandler(ctx context.Context, nc *natsclient.
 	}
 	// 设置流的消费者
 	c.group.Go(func() error {
-		c.logger.Debug(ctx, "start consume stream", g.Map{"topic": subject})
+		c.logger.Debugf(ctx, "start consume stream. topic:%v", subject)
 		cb := func(ctx context.Context, msg *jetstream.Msg) error {
 			out, err := handler(ctx, msg)
 			if err != nil {
 				return err
 			}
 			// todo: 替换真正的主题
-			if err := c.mqttClient.Publish(subject, out); err != nil {
+			if err := c.mqttClient.Publish(ctx, subject, out); err != nil {
 				return err
 			}
 			return nil
@@ -158,16 +160,20 @@ func (c *ControllerV1) attachMqttHandler(ctx context.Context, connForward *natsc
 func (c *ControllerV1) Run(ctx context.Context) error {
 
 	// 连接到nats服务端，用于接收消息
-	connSub, err := c.app.NatsConnFact().New(ctx, "go-mgrid subscribe client")
+	connSub, err := c.app.NatsConnFact().New(ctx, "GoMgridSubscribeClient")
 	if err != nil {
 		return err
 	}
 	defer connSub.Close(ctx)
-	c.attachSubscribeHandler(ctx, connSub, c.cfg.Nats.Subject1, c.app.PointDataSet().HandleMsg)
-	c.attachSubscribeHandler(ctx, connSub, c.cfg.Nats.Subject2, c.app.PointDataSet().HandleMsg)
+	if err := c.attachSubscribeHandler(ctx, connSub, c.cfg.Nats.Subject1, c.app.PointDataSet().HandleMsg); err != nil {
+		return err
+	}
+	if err := c.attachSubscribeHandler(ctx, connSub, c.cfg.Nats.Subject2, c.app.PointDataSet().HandleMsg); err != nil {
+		return err
+	}
 
 	// 连接到nats服务端，用于消费流
-	connConsume, err := c.app.NatsConnFact().New(ctx, "go-mgrid consume client")
+	connConsume, err := c.app.NatsConnFact().New(ctx, "GoMgridConsumeClient")
 	if err != nil {
 		return err
 	}
@@ -176,27 +182,32 @@ func (c *ControllerV1) Run(ctx context.Context) error {
 	c.attachConsumeHandler(ctx, connConsume, c.cfg.Nats.JSSubject2, c.app.PointDataSet().HandleStream)
 
 	// 连接到nats服务端，用于监听值变化
-	connWatch, err := c.app.NatsConnFact().New(ctx, "go-mgrid watch client")
-	if err != nil {
-		return err
-	}
-	defer connWatch.Close(ctx)
-	if err := c.startWatch(ctx, connWatch); err != nil {
-		return err
-	}
+	c.group.Go(func() error {
+		connWatch, err := c.app.NatsConnFact().New(ctx, "GoMgridWatchClient")
+		if err != nil {
+			return err
+		}
+		defer connWatch.Close(ctx)
+		if err := c.startWatch(ctx, connWatch); err != nil {
+			c.logger.Errorf(ctx, "nats watch fail:%v", err)
+			return err
+		}
+		return nil
+	})
 
 	// 连接到nats服务端，用于转发云端消息给业务服务
-	connForward, err := c.app.NatsConnFact().New(ctx, "go-mgrid forward client")
+	connForward, err := c.app.NatsConnFact().New(ctx, "GoMgridForwardClient")
 	if err != nil {
 		return err
 	}
 	defer connForward.Close(ctx)
 	if err := c.attachMqttHandler(ctx, connForward, c.cfg.Mqtt.Topic1, c.app.PointDataSet().HandleMqttMsg); err != nil {
-		return err
+		c.logger.Warningf(ctx, "attach mqtt handler fail:%v", err)
 	}
 	if err := c.attachMqttHandler(ctx, connForward, c.cfg.Mqtt.Topic2, c.app.PointDataSet().HandleMqttMsg); err != nil {
-		return err
+		c.logger.Warningf(ctx, "attach mqtt handler fail:%v", err)
 	}
+
 	// 阻塞等待协程退出：订阅连接断开后协程退出
 	err = c.group.Wait()
 	c.logger.Infof(ctx, "all subscribe & consume exited %v", err)

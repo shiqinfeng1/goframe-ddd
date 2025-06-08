@@ -3,6 +3,7 @@ package natsclient
 import (
 	"context"
 
+	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
@@ -42,17 +43,17 @@ func New(cfg *Config, logger pubsub.Logger) *Client {
 		logger: logger,
 		subscriber: subscriber{
 			logger:        logger,
-			subscriptions: make(map[string]*subscription),
+			subscriptions: gmap.NewStrAnyMap(true),
 		},
 		consumer: consumer{
 			logger:        logger,
-			subscriptions: make(map[string]*streamConsume),
+			subscriptions: gmap.NewStrAnyMap(true),
 			exitNotify:    make(chan SubsKey),
 		},
 		watcher: watcher{
 			logger:      logger,
-			kvWatchers:  make(map[string]jetstream.KeyWatcher),
-			objWatchers: make(map[string]jetstream.ObjectWatcher),
+			kvWatchers:  gmap.NewStrAnyMap(true),
+			objWatchers: gmap.NewStrAnyMap(true),
 		},
 	}
 	// 当订阅失败，或stream被删除后，需要删除相关资源
@@ -154,6 +155,9 @@ func (c *Client) DelConsumer(ctx context.Context, nc *Conn, sn, cn, subject stri
 
 // Close closes the Client.
 func (c *Client) Close(ctx context.Context) error {
+	if c == nil {
+		return nil
+	}
 	if err := c.subscriber.Close(ctx); err != nil {
 		return err
 	}
@@ -162,7 +166,7 @@ func (c *Client) Close(ctx context.Context) error {
 		return err
 	}
 	c.logger.Infof(ctx, "nats client  close stream consume ok")
-	if err := c.watcher.Stop(); err != nil {
+	if err := c.watcher.Stop(ctx); err != nil {
 		return err
 	}
 	c.logger.Infof(ctx, "nats client close watcher ok")
