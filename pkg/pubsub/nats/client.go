@@ -161,11 +161,11 @@ func (c *Client) Close(ctx context.Context) error {
 	if err := c.subscriber.Close(ctx); err != nil {
 		return err
 	}
-	c.logger.Infof(ctx, "nats client close sub ok")
+	c.logger.Infof(ctx, "nats client close subscribe ok")
 	if err := c.consumer.Close(ctx); err != nil {
 		return err
 	}
-	c.logger.Infof(ctx, "nats client  close stream consume ok")
+	c.logger.Infof(ctx, "nats client close stream consume ok")
 	if err := c.watcher.Stop(ctx); err != nil {
 		return err
 	}

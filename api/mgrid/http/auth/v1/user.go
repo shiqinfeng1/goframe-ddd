@@ -4,8 +4,8 @@ import "github.com/gogf/gf/v2/frame/g"
 
 type SendVerifyCodeReq struct {
 	g.Meta      `path:"/auth/password/sendVerifyCode" tags:"认证管理" method:"post" summary:"发送验证码"`
-	Email       string `p:"email"  dc:"邮箱"`
-	MobilePhone string `p:"mobile_phone"  dc:"手机号"`
+	Email       string `p:"email" dc:"邮箱"`
+	MobilePhone string `p:"mobile_phone" dc:"手机号"`
 }
 type SendVerifyCodeRes struct {
 	g.Meta `status:"200"`

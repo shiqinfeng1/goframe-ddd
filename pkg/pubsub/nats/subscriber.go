@@ -36,7 +36,11 @@ func (sm *subscriber) Close(ctx context.Context) error {
 		return nil
 	}
 	sm.subscriptions.Iterator(func(key string, value interface{}) bool {
-		sub := value.(*subscription)
+		sub, ok := value.(*subscription)
+		if !ok {
+			sm.logger.Errorf(ctx, "invalid subscription type: %v", key)
+			return true
+		}
 		if err := sub.Stop(ctx); err != nil {
 			sm.logger.Errorf(ctx, "stop subscriber of topic '%v' failed: %v", key, err)
 		}

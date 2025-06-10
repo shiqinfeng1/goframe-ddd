@@ -126,6 +126,7 @@ func genConsumerName(consumer, subject string) string {
 
 func (sm *JetStreamWrapper) CreateOrUpdateConsumer(ctx context.Context, streamName, consumerName, subject string) (jetstream.Consumer, error) {
 	cons, err := sm.js.CreateOrUpdateConsumer(ctx, streamName, jetstream.ConsumerConfig{
+		Name:          genConsumerName(consumerName, subject),
 		Durable:       genConsumerName(consumerName, subject),
 		AckPolicy:     jetstream.AckExplicitPolicy, //AckExplicitPolicy,
 		FilterSubject: subject,
@@ -134,16 +135,20 @@ func (sm *JetStreamWrapper) CreateOrUpdateConsumer(ctx context.Context, streamNa
 		// MaxAckPending: 1000,                // 最多为回复ack的消息数量，如果到达上限，服务端将停止推送
 	})
 	if err != nil {
-		return nil, gerror.Wrapf(err, "failed to create consumer '%v' for subjetc '%v' of stream '%v'", consumerName, subject, streamName)
+		return nil, gerror.Wrapf(err, "create or update consumer fail. stream-name=%v, consumer-name=%v, subject=%v", streamName, consumerName, subject)
 	}
-	sm.logger.Debugf(ctx, "creating or updating consumer '%v' for stream '%v' of stream '%v' ok", consumerName, subject, streamName)
+	sm.logger.Debugf(ctx, "creating or updating consumer ok. stream-name=%v, consumer-name=%v, subject=%v", streamName, consumerName, subject)
 	return cons, nil
 }
 
 func (sm *JetStreamWrapper) DeleteConsumer(ctx context.Context, streamName, consumerName, subject string) error {
+	if !sm.js.Conn().IsConnected() {
+		return gerror.Newf("delete consumer fail: nats not connected")
+	}
 	err := sm.js.DeleteConsumer(ctx, streamName, genConsumerName(consumerName, subject))
 	if err != nil {
-		return gerror.Wrapf(err, "failed to delete consumer for stream %v", streamName)
+		return gerror.Wrapf(err, "delete consumer fail. stream-name=%v, consumer-name=%v, subject=%v", streamName, consumerName, subject)
 	}
+	sm.logger.Debugf(ctx, "deleting consumer ok. stream-name=%v, consumer-name=%v, subject=%v", streamName, consumerName, subject)
 	return nil
 }

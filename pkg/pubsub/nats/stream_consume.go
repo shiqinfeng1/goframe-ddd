@@ -14,7 +14,7 @@ import (
 
 type closer struct {
 	cancel context.CancelFunc
-	stop   func()
+	drain  func()
 }
 type streamConsume struct {
 	logger      pubsub.Logger
@@ -45,8 +45,8 @@ func NewStreamConsume(
 }
 
 func (s *streamConsume) Stop(ctx context.Context) error {
-	if s.close.stop != nil {
-		s.close.stop()
+	if s.close.drain != nil {
+		s.close.drain()
 	}
 	if s.close.cancel != nil {
 		s.close.cancel()
@@ -75,23 +75,22 @@ func (s *streamConsume) consumeNext(
 	defer func() {
 		s.exitNotify <- s.subsKey
 	}()
-	s.logger.Infof(ctx, "consumer '%v' ready to consume msg for '%v' of '%v'", s.subsKey.ConsumerName(), s.subsKey.TopicName(), s.subsKey.StreamName())
+	s.logger.Infof(ctx, "[consumeNext]start consume. stream-name=%v, consumer=%v, subject=%v", s.subsKey.StreamName(), s.subsKey.ConsumerName(), s.subsKey.TopicName())
 	// 获取主题对应的消息队列缓存
 	for {
 		msg, err := iter.Next()
 		if err != nil {
 			if errors.Is(err, jetstream.ErrMsgIteratorClosed) {
-				s.logger.Warningf(ctx, "consumer '%v' subscribe messages for topic '%s' of '%v' closed", s.subsKey.ConsumerName(), s.subsKey.TopicName(), s.subsKey.StreamName())
-				time.Sleep(consumeMessageDelay)
-				iter, err = s.newMessageIter()
-				if err != nil {
-					return err
-				}
-				s.logger.Warningf(ctx, "consumer '%v' subscribe messages again for topic '%s' of '%v' ok", s.subsKey.ConsumerName(), s.subsKey.TopicName(), s.subsKey.StreamName())
-				continue
+				s.logger.Warningf(ctx, "[consumeNext]msg iter closed. stream-name=%v, consumer=%v, subject=%v", s.subsKey.StreamName(), s.subsKey.ConsumerName(), msg.Subject())
+				return nil
 			}
-			s.logger.Warningf(ctx, "consumer '%v' fetching messages for topic '%s' of '%v' fail: %v", s.subsKey.ConsumerName(), s.subsKey.TopicName(), s.subsKey.StreamName(), err)
-			return nil
+			s.logger.Warningf(ctx, "[consumeNext]get next msg fail. stream-name=%v, consumer=%v, subject=%v: %v", s.subsKey.StreamName(), s.subsKey.ConsumerName(), msg.Subject(), err)
+			time.Sleep(consumeMessageDelay)
+			iter, err = s.newMessageIter()
+			if err != nil {
+				return err
+			}
+			continue
 		}
 		err = func() error {
 			defer func() {
@@ -106,12 +105,12 @@ func (s *streamConsume) consumeNext(
 			return nil
 		}()
 		if err != nil {
-			s.logger.Errorf(ctx, "consumer '%v' error in handler for subject '%s': %v", s.subsKey.ConsumerName(), msg.Subject(), err)
+			s.logger.Errorf(ctx, "[consumeNext]handler fail. stream-name=%v, consumer=%v, subject=%v: %v", s.subsKey.StreamName(), s.subsKey.ConsumerName(), msg.Subject(), err)
 			continue
 		}
 		// 处理完成
 		if err := msg.Ack(); err != nil {
-			s.logger.Errorf(ctx, "consumer '%v' ack fail for subject '%s': %v", s.subsKey.ConsumerName(), msg.Subject(), err)
+			s.logger.Errorf(ctx, "[consumeNext]ack fail. stream-name=%v, consumer=%v, subject=%v: %v", s.subsKey.StreamName(), s.subsKey.ConsumerName(), msg.Subject(), err)
 		}
 	}
 }
@@ -124,7 +123,7 @@ func (s *streamConsume) newMessageIter() (jetstream.MessagesContext, error) {
 	}
 	// 注册订阅者
 	s.close = closer{
-		stop: iter.Stop,
+		drain: iter.Drain, // drain 保证本地缓存中的消息被处理完之后才会关闭iter
 	}
 	return iter, nil
 }

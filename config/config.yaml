@@ -149,7 +149,7 @@ password:
   requireSpecial: true # 需要特殊字符
 
 nats:
-  serverUrl: "nats://127.0.0.1:4222"
+  serverUrl: "nats://nats-server:4222"
   consumerName: "mgrid-consumer"
   streamName: "mgrid-stream"
   subject1: "pubsub.station1.*.IED.*.point.*"
@@ -160,7 +160,7 @@ nats:
   objBuckets: ["objbucket1","objbucket2"]
 
 mqtt:
-  brokerUrl: "tcp://127.0.0.1:1883"
+  brokerUrl: "tcp://mqtt-server:1883"
   store: "./data/mqtt-store"
   username: "admin"
   password: "password"
@@ -169,6 +169,6 @@ mqtt:
   topic2: "topic2"
 
 store:
-  server: "nats://127.0.0.1:4222"
+  server: "nats://nats-server:4222"
   kvBuckets: ["kvbucket1","kvbucket2"]
   objBuckets: ["objbucket1","objbucket2"]

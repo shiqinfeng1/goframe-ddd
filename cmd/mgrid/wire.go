@@ -47,7 +47,7 @@ func initServer() (*ghttp.Server, func(), error) {
 		http.WireProviderSet,
 	))
 }
-func initSubOrConsume() (*pubsub.ControllerV1, func(), error) {
+func initSubAndConsume() (*pubsub.ControllerV1, func(), error) {
 	panic(wire.Build(
 		ProvideCtx,
 		app,

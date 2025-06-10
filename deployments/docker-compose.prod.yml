@@ -1,29 +1,22 @@
 services:
-  mgrid-runtime:
-    image: "runtime-infrastructure:latest"
-    container_name: mgrid-runtime
+  mgrid-server:
+    image: "gcr.io/distroless/base-debian12:debug"
+    container_name: mgrid-server
     restart: unless-stopped
+    entrypoint: ["/app/mgrid", "--config", "/app/config/config.yaml"]
     volumes: 
       # 运行数据挂载到宿主机独立存储空间中，防止占满系统存储空间
       - ./running/log-mgrid:/app/log
-      - ./running/log-supervisor:/var/log/supervisor
-      - ./running/log-nats:/var/log/nats
       - ./running/data-mgrid:/app/data
-      - ./running/data-nats:/var/lib/nats     
       # 映射程序和配置
-      - ./artifacts/supervisord.conf:/etc/supervisor/supervisord.conf
-      - ./artifacts/nats-server.conf:/etc/nats/nats-server.conf
       - ./artifacts/config:/app/config
       - ./artifacts/mgrid:/app/mgrid
+      - ./artifacts/nats:/app/nats
+      - ./artifacts/testnats:/app/testnats
       # 映射docker.sock及compose相关文件 (可选，在容器内通过sdk操作容器时使用)
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./docker-compose.yml:/app/docker-compose.yml
     working_dir: /app
-    networks:
-      - mgrid_network
     ports:
-      - "4222:4222"  # nats服务端口
-      - "8222:8222"  # nats运维监控端口
       - "31080-31082:31080-31082" # http业务服务端口 grpc服务端口 文件传输服务端口 宿主机监听dockercompose服务
     extra_hosts:
       - "host.docker.internal:host-gateway"  # 容器内访问宿主机服务
@@ -54,6 +47,28 @@ services:
       nofile:
         soft: 100000   #进程默认可以打开的最大文件描述符数量
         hard: 200000   #进程可以通过系统调用临时提高软限制，但不能超过硬限制
+    networks:
+      - mgrid-network  # 显式指定网络
+  
+  nats-server:
+    image: nats-for-mgrid:latest
+    container_name: nats-server
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    volumes: 
+      # 运行数据挂载到宿主机独立存储空间中，防止占满系统存储空间
+      - ./running/log-nats:/var/log/nats
+      - ./running/data-nats:/data
+      - ./artifacts/nats-server.conf:/etc/nats/nats-server.conf
+    # command: ["-c", "/etc/nats/nats-server.conf"]  # 指定配置文件路径
+    ports:
+      - "4222:4222"  # nats服务端口
+      - "8222:8222"  # nats运维监控端口
+      - "6222:6222"  
+    networks:
+      - mgrid-network  # 显式指定网络
+  
   nats-box:
     image: natsio/nats-box:latest
     container_name: nats-box
@@ -61,11 +76,8 @@ services:
     stdin_open: true
     tty: true
     networks:
-      - mgrid_network
-# 定义自定义网络
+      - mgrid-network  # 显式指定网络
 networks:
-  mgrid_network:
-    driver: bridge
-    # ipam:
-    #   config:
-    #     - subnet: 172.28.0.0/16
+  mgrid-network:
+    external: true
+    name: mgrid_network

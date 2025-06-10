@@ -4,6 +4,9 @@ set -o errexit
 set +o nounset
 set -o pipefail
 
+# 定义网络名称
+NETWORK_NAME="mgrid_network"
+
 # 设置统一的密码，方便记忆
 readonly PASSWORD=${PASSWORD:-'123456'}
 readonly APP_WATCHER_HOST=${APP_WATCHER_HOST:-'127.0.0.1'}
@@ -88,15 +91,60 @@ function watcher::status()
       log::info "watcher is runnnng at ':${APP_WATCHER_PORT}'"
       return 0
     fi
-    echo "111"
   elif which nc &> /dev/null; then
     if nc -z -w 2 127.0.0.1 ${} &>/dev/null; then
       log::info "watcher is runnnng at ':${APP_WATCHER_PORT}'"
       return 0
     fi
-    echo "222"
   fi
   log::error "cannot access watcher port(:${APP_WATCHER_PORT}), watcher maybe not startup"
+}
+function app::down::all()
+{
+  docker compose -f docker-compose.prod.yml down mgrid-server &>/dev/null
+  docker compose -f docker-compose.prod.yml down nats-server nats-box  &>/dev/null
+  if docker network inspect "$NETWORK_NAME" &>/dev/null; then
+    log::info "remove network: $NETWORK_NAME"
+    docker network remove "$NETWORK_NAME"
+  fi
+}
+function app::up::nats()
+{
+  if ! docker network inspect "$NETWORK_NAME" &>/dev/null; then
+    log::info "create network: $NETWORK_NAME"
+    docker network create "$NETWORK_NAME"
+  fi
+  sudo mkdir -p ./running/data-nats
+  sudo chown -R 1000:1000 ./running/data-nats
+  sudo chmod -R 755 ./running/data-nats
+  docker compose -f docker-compose.prod.yml up -d nats-server nats-box
+}
+function app::restart::nats()
+{
+  docker compose -f docker-compose.prod.yml down nats-server nats-box
+  docker compose -f docker-compose.prod.yml up -d nats-server nats-box
+}
+function app::down::nats()
+{
+  docker compose -f docker-compose.prod.yml down nats-server nats-box
+}
+
+function app::up::mgrid()
+{
+  if ! docker network inspect "$NETWORK_NAME" &>/dev/null; then
+    log::info "create network: $NETWORK_NAME"
+    docker network create "$NETWORK_NAME"
+  fi
+   docker compose -f docker-compose.prod.yml up -d mgrid-server
+}
+function app::restart::mgrid()
+{
+  docker compose -f docker-compose.prod.yml down mgrid-server
+  docker compose -f docker-compose.prod.yml up -d mgrid-server
+}
+function app::down::mgrid()
+{
+  docker compose -f docker-compose.prod.yml down mgrid-server
 }
 
 if [[ "$1" = startup ]];then
@@ -130,5 +178,9 @@ if [[ "$1" = composeimages ]];then
 fi
 
 if [[ "$*" =~ watcher:: ]];then
+  eval $*
+fi
+
+if [[ "$*" =~ app:: ]];then
   eval $*
 fi

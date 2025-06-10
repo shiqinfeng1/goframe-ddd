@@ -16,10 +16,13 @@ func main() {
 	ctx := gctx.New()
 	wg := sync.WaitGroup{}
 
+	// 检查nats消息中间件是否运行
+	// 若未运行，则等待
+	g.Log().Infof(ctx, "start mgrid server ...")
 	for {
 		nc, err := nats.Connect(g.Cfg().MustGet(ctx, "nats.serverUrl").String())
 		if err != nil {
-			g.Log().Warningf(ctx, "connect nats server fail:%v", err)
+			g.Log().Warningf(ctx, "wait 2s... connect nats server(%v) fail:%v", g.Cfg().MustGet(ctx, "nats.serverUrl").String(), err)
 			time.Sleep(2 * time.Second)
 			continue
 		}
@@ -36,7 +39,7 @@ func main() {
 	defer cleanup1()
 
 	// 初始化订阅发布服务
-	pubsubSrv, cleanup2, err := initSubOrConsume()
+	pubsubSrv, cleanup2, err := initSubAndConsume()
 	if err != nil {
 		g.Log().Panic(ctx, err)
 	}

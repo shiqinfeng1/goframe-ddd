@@ -1,0 +1,9 @@
+# Dockerfile
+
+FROM nats:alpine
+
+# 创建具有特定UID的用户
+RUN mkdir -p /var/lib/nats && \
+    chown -R 1000:1000 /var/lib/nats
+
+USER 1000

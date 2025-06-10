@@ -134,7 +134,7 @@ func (c *ControllerV1) attachConsumeHandler(ctx context.Context, nc *natsclient.
 		if err != nil {
 			return gerror.Wrapf(err, "consume stream topic fail:%v", subject)
 		}
-		c.logger.Debug(ctx, "exit consume stream for topic ok", g.Map{"topic": subject})
+		c.logger.Infof(ctx, "[goroutine]exit consume stream for topic ok. topic:%v", subject)
 		return nil
 	})
 }
@@ -192,6 +192,7 @@ func (c *ControllerV1) Run(ctx context.Context) error {
 			c.logger.Errorf(ctx, "nats watch fail:%v", err)
 			return err
 		}
+		c.logger.Infof(ctx, "[goroutine]exit nats watch ok")
 		return nil
 	})
 

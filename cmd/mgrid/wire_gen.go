@@ -54,7 +54,7 @@ func initServer() (*ghttp.Server, func(), error) {
 	}, nil
 }
 
-func initSubOrConsume() (*pubsub.ControllerV1, func(), error) {
+func initSubAndConsume() (*pubsub.ControllerV1, func(), error) {
 	contextContext := ProvideCtx()
 	logger := pubsub.ProvideLogger(contextContext)
 	applicationService, err := app(contextContext)

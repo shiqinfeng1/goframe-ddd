@@ -64,9 +64,9 @@ build.multiarch:
 	@$(MAKE) go.build.multiarch
 
 ## image: Build docker images for host arch.
-.PHONY: image
-image:
-	@$(MAKE) image.build
+.PHONY: image-nats
+image-nats:
+	docker build  -t nats-for-mgrid -f Dockerfile-nats .
 
 ## image.multiarch: Build docker images for multiple platforms. See option PLATFORMS.
 .PHONY: image.multiarch

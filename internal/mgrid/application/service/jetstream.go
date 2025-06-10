@@ -20,7 +20,7 @@ func NewJetstreamService(ctx context.Context, logger application.Logger, ncfact 
 		logger: logger,
 	}
 	var err error
-	jsm.nc, err = ncfact.New(ctx, "client for stream mgr")
+	jsm.nc, err = ncfact.New(ctx, "GoMgridStreamMgrClient")
 	if err != nil {
 		logger.Errorf(ctx, "%v", err)
 		return nil

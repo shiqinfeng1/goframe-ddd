@@ -28,12 +28,13 @@ func (sm *consumer) Add(
 	ssub := NewStreamConsume(sm.logger, st, sk, c, handler, exit)
 
 	if notexist := sm.subscriptions.SetIfNotExist(sk.String(), ssub); !notexist {
-		return gerror.Newf("stream '%v' topic '%v' is already be consumed by '%v'", sk.StreamName(), sk.TopicName(), sk.ConsumerName())
+		return gerror.Newf("subscription already exists. stream-name=%v, topic-name=%v, consumer-name=%v", sk.StreamName(), sk.TopicName(), sk.ConsumerName())
 	}
+	sm.logger.Infof(ctx, "add consumer ok. stream-name=%v, topic-name=%v, consumer-name=%v", sk.StreamName(), sk.TopicName(), sk.ConsumerName())
+	// 开始主动拉取消息
 	if err := ssub.start(ctx); err != nil {
 		return err
 	}
-	sm.logger.Infof(ctx, "stream '%v' create consumer '%v' of topic '%v' ok", sk.StreamName(), sk.ConsumerName(), sk.TopicName())
 	return nil
 }
 
@@ -42,18 +43,25 @@ func (sm *consumer) Close(ctx context.Context) error {
 		return nil
 	}
 	sm.subscriptions.Iterator(func(key string, value interface{}) bool {
-		sub := value.(*streamConsume)
+		sub, ok := value.(*streamConsume)
+		if !ok {
+			sm.logger.Errorf(ctx, "invalid subscription type: %v", key)
+			return true
+		}
+		sm.logger.Infof(ctx, "step2. key=%v sub.subsKey=%v", key, sub.subsKey)
 		if err := sm.streamMgr.DeleteConsumer(ctx, sub.subsKey.StreamName(), sub.subsKey.ConsumerName(), sub.subsKey.TopicName()); err != nil {
-			sm.logger.Errorf(ctx, "delete cunsumer <%v> for topic <%v> of stream <%v> failed: %v", sub.subsKey.ConsumerName(), sub.subsKey.TopicName(), sub.subsKey.StreamName(), err)
+			sm.logger.Errorf(ctx, "%v", err)
 		}
 		if err := sub.Stop(ctx); err != nil {
-			sm.logger.Errorf(ctx, "stop cunsumer <%v> for topic <%v> of stream <%v> failed: %v", sub.subsKey.ConsumerName(), sub.subsKey.TopicName(), sub.subsKey.StreamName(), err)
+			sm.logger.Errorf(ctx, "%v", err)
 		}
 		return true
 	})
 
 	sm.subscriptions.Clear()
 	close(sm.exitNotify)
+	sm.logger.Infof(ctx, "close consumer ok.")
+
 	return nil
 }
 
@@ -69,6 +77,6 @@ func (sm *consumer) Delete(ctx context.Context, sk SubsKey) error {
 	if err := sub.(*streamConsume).Stop(ctx); err != nil {
 		return err
 	}
-	sm.logger.Infof(ctx, "delete cunsumer <%v> for topic <%v> of stream <%v> ok", sk.ConsumerName(), sk.TopicName(), sk.StreamName())
+	sm.logger.Infof(ctx, "delete cunsumer ok. stream-name=%v, topic-name=%v, consumer-name=%v", sk.StreamName(), sk.TopicName(), sk.ConsumerName())
 	return nil
 }
