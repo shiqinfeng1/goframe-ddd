@@ -39,11 +39,11 @@ func NewAsyncSubscriber(logger pubsub.Logger, f Factory) (*AsyncSubscriber, erro
 	}, nil
 }
 
-func (s *AsyncSubscriber) Subscribe(subject string, handler func(ctx context.Context, msg *nats.Msg) error) error {
+func (s *AsyncSubscriber) Subscribe(subject string, handler func(context.Context, *nats.Msg) error) error {
 	sub, err := s.nc.Subscribe(subject, func(msg *nats.Msg) {
 		err := func() error {
 			defer recovery.Recovery(s.ctx, func(ctx context.Context, exception error) {
-				s.logger.Errorf(ctx, "async subscriber: panic in nats handler: \n%v", exception)
+				s.logger.Errorf(ctx, "async subscriber: panic in handler: \n%v", exception)
 			})
 			if err := handler(s.ctx, msg); err != nil {
 				time.Sleep(consumeMessageDelay)
@@ -72,19 +72,16 @@ func (s *AsyncSubscriber) Run() {
 func (s *AsyncSubscriber) Shutdown() {
 	s.logger.Infof(s.ctx, "async subscriber: starting shutdown...")
 
-	// 取消上下文
-	s.cancel()
-
 	// 取消所有订阅
 	for _, sub := range s.subs {
 		if err := sub.Drain(); err != nil {
-			s.logger.Infof(s.ctx, "async subscriber: error drain: %v", err)
+			s.logger.Errorf(s.ctx, "async subscriber: error drain: %v", err)
 		}
 		if err := sub.Unsubscribe(); err != nil {
-			s.logger.Infof(s.ctx, "async subscriber: error unsubscribing: %v", err)
+			s.logger.Errorf(s.ctx, "async subscriber: error unsubscribing: %v", err)
 		}
 	}
-	// 关闭连接
 	s.nc.Close()
 	s.logger.Infof(s.ctx, "async subscriber: shutdown complete")
+	s.cancel()
 }

@@ -22,7 +22,6 @@ type SyncConsumer struct {
 	msgIters map[string]map[string]jetstream.MessagesContext // stream:consumer:
 	ctx      context.Context
 	cancel   context.CancelFunc
-	errChan  chan error
 }
 
 func NewSyncConsumer(logger pubsub.Logger, f Factory) (*SyncConsumer, error) {
@@ -45,7 +44,6 @@ func NewSyncConsumer(logger pubsub.Logger, f Factory) (*SyncConsumer, error) {
 		msgIters: make(map[string]map[string]jetstream.MessagesContext),
 		ctx:      ctx,
 		cancel:   cancel,
-		errChan:  make(chan error, 100),
 	}, nil
 }
 
@@ -76,11 +74,11 @@ func (s *SyncConsumer) processMessages(iter jetstream.MessagesContext, handler f
 		msg, err := iter.Next()
 		if err != nil {
 			if errors.Is(err, jetstream.ErrMsgIteratorClosed) {
-				s.errChan <- err
+				s.logger.Warningf(s.ctx, "sync consumer: iter is closed:%v", err)
 				return
 			}
 			time.Sleep(consumeMessageDelay)
-			s.errChan <- err
+			s.logger.Warningf(s.ctx, "sync consumer: get next stream msg fail:%v", err)
 			continue
 		}
 		err = func() error {
@@ -94,21 +92,16 @@ func (s *SyncConsumer) processMessages(iter jetstream.MessagesContext, handler f
 			return nil
 		}()
 		if err != nil {
-			s.errChan <- err
+			s.logger.Errorf(s.ctx, "sync consumer: handler fail: %v", err)
 			continue
 		}
 		// 处理完成
 		if err := msg.Ack(); err != nil {
-			s.errChan <- err
+			s.logger.Errorf(s.ctx, "sync consumer: ack fail: %v", err)
 		}
 	}
 }
 func (s *SyncConsumer) Run() {
-	go func() {
-		for err := range s.errChan {
-			s.logger.Errorf(s.ctx, "sync consumer error: %v", err)
-		}
-	}()
 	s.logger.Infof(s.ctx, "sync comsuner start running...")
 	<-s.ctx.Done()
 }
@@ -121,10 +114,10 @@ func (s *SyncConsumer) Shutdown() {
 		for consumer, iter := range v {
 			iter.Drain()
 			s.js.DeleteConsumer(s.ctx, stream, consumer)
+			s.logger.Infof(s.ctx, "delete consumer ok. stream=%v consumer=%v", stream, consumer)
 		}
 	}
-	s.cancel()
-	close(s.errChan)
 	s.nc.Close()
 	s.logger.Infof(s.ctx, "sync consumer: shutdown complete")
+	s.cancel()
 }

@@ -1,0 +1,19 @@
+FROM gcr.io/distroless/base-debian12:debug AS base
+
+# 从完整 Debian 镜像复制 shell
+FROM debian:12-slim AS tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /deps/lib/x86_64-linux-gnu 
+RUN mkdir -p /deps/usr/lib/x86_64-linux-gnu
+
+# 复制 curl 及其依赖的共享库
+RUN for lib in $(ldd /bin/curl | grep -o '/lib[^ ]*' | sort -u); do \
+        cp --parents "$lib" /deps; \
+    done
+# 合并镜像
+FROM base
+COPY --from=tools /bin/curl /bin/curl
+COPY --from=tools /deps /

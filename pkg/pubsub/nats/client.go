@@ -83,14 +83,14 @@ func (c *Client) NewSyncConsumer(logger pubsub.Logger, f Factory) (*SyncConsumer
 
 // 取消异步订阅
 func (c *Client) ShutdownSubscribe() {
+	if c.SyncConsumer != nil {
+		c.SyncConsumer.Shutdown()
+	}
 	if c.AsyncSubscribe != nil {
 		c.AsyncSubscribe.Shutdown()
 	}
 	if c.SyncSubscribe != nil {
 		c.SyncSubscribe.Shutdown()
-	}
-	if c.SyncConsumer != nil {
-		c.SyncConsumer.Shutdown()
 	}
 }
 

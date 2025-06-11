@@ -67,7 +67,9 @@ build.multiarch:
 .PHONY: image-nats
 image-nats:
 	docker build  -t nats-for-mgrid -f Dockerfile-nats .
-
+.PHONY: image-mgrid
+image-mgrid:
+	docker build  -t debian12-for-mgrid -f Dockerfile-mgrid .
 .PHONY: image-arm
 image-arm:
 	docker build -f Dockerfile --build-arg TARGET=./cmd/mgrid --build-arg COMMIT=$(GIT_COMMIT)  --build-arg VERSION=$(VERSION) --build-arg CC=aarch64-linux-gnu-gcc --build-arg GOARCH=arm64 --target production \

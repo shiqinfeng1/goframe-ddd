@@ -198,20 +198,19 @@ func (c *ControllerV1) attachMqttHandler(connForward *nats.Conn, topic string, h
 	if err := c.mqttClient.Subscribe(c.ctx, topic, cb); err != nil {
 		return err
 	}
+	c.logger.Infof(c.ctx, "register mqtt handler ok. topic=%v", topic)
 	return nil
 }
-func (c *ControllerV1) watchKey() error {
+func (c *ControllerV1) watchKey() {
 	connWatch, err := c.app.NatsConnFact().New(c.ctx, "GoMgridWatchClient")
 	if err != nil {
-		return err
+		c.logger.Fatal(c.ctx, err)
 	}
 	defer connWatch.Close()
 	if err := c.startWatch(c.ctx, connWatch); err != nil {
-		c.logger.Errorf(c.ctx, "nats watch fail:%v", err)
-		return err
+		c.logger.Fatalf(c.ctx, "nats watch fail:%v", err)
 	}
 	c.logger.Infof(c.ctx, "[goroutine]exit nats watch ok")
-	return nil
 }
 func (c *ControllerV1) registerMqttHandler() error {
 	// 连接到nats服务端，用于转发云端消息给业务服务
@@ -232,18 +231,19 @@ func (c *ControllerV1) registerMqttHandler() error {
 
 // 运行nats订阅客户端
 func (c *ControllerV1) Run() error {
-	routine := func(f func() error) error {
+	routine := func(f func()) {
 		c.group.Add(1)
 		defer recovery.Recovery(c.ctx, func(ctx context.Context, exception error) {
 			c.group.Done()
-			c.logger.Errorf(c.ctx, "panic in controller:\n%v", exception)
+			c.logger.Errorf(ctx, "panic in controller:\n%v", exception)
 		})
-		return f()
+		f()
+		c.group.Done()
 	}
-	go routine(func() error { c.asyncSubscribe(c.app.NatsConnFact()); return nil })
-	go routine(func() error { c.syncSubscribe(c.app.NatsConnFact()); return nil })
-	go routine(func() error { c.syncConsume(c.app.NatsConnFact()); return nil })
-	go routine(func() error { return c.watchKey() })
+	go routine(func() { c.asyncSubscribe(c.app.NatsConnFact()) })
+	go routine(func() { c.syncSubscribe(c.app.NatsConnFact()) })
+	go routine(func() { c.syncConsume(c.app.NatsConnFact()) })
+	go routine(func() { c.watchKey() })
 	if err := c.registerMqttHandler(); err != nil {
 		return err
 	}

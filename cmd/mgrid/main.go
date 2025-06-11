@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"sync"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/gproc"
 	"github.com/nats-io/nats.go"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/recovery"
 	_ "go.uber.org/automaxprocs"
 )
 
@@ -63,11 +65,17 @@ func main() {
 	// pubsubSrv 需手动关闭
 	// http服务本身能监听到信号，无需手动关闭
 	signalHandler := func(sig os.Signal) {
+		defer recovery.Recovery(ctx, func(ctx context.Context, exception error) {
+			g.Log().Errorf(ctx, "panic in shutdown:\n%v", exception)
+		})
 		g.Log().Infof(ctx, "signal received:'%v'. gracefully shutting down pubsub service", sig.String())
 		if err := pubsubSrv.Stop(); err != nil {
 			g.Log().Errorf(ctx, "gracefully shutting down pubsub service fail:%v", err)
 		}
 		g.Log().Infof(ctx, "gracefully shutting down pubsub service ok")
+
+		httpSrv.Shutdown()
+		g.Log().Infof(ctx, "gracefully shutting down http service ok")
 	}
 	// 监听系统中断信号
 	gproc.AddSigHandlerShutdown(

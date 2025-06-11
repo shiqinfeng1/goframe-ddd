@@ -13,12 +13,11 @@ import (
 // 订阅器管理
 
 type SyncSubscriber struct {
-	logger  pubsub.Logger
-	nc      *nats.Conn
-	subs    []*nats.Subscription
-	ctx     context.Context
-	cancel  context.CancelFunc
-	errChan chan error
+	logger pubsub.Logger
+	nc     *nats.Conn
+	subs   []*nats.Subscription
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 func NewSyncSubscriber(logger pubsub.Logger, f Factory) (*SyncSubscriber, error) {
@@ -33,11 +32,10 @@ func NewSyncSubscriber(logger pubsub.Logger, f Factory) (*SyncSubscriber, error)
 	}
 
 	return &SyncSubscriber{
-		logger:  logger,
-		nc:      nc,
-		ctx:     ctx,
-		cancel:  cancel,
-		errChan: make(chan error, 100),
+		logger: logger,
+		nc:     nc,
+		ctx:    ctx,
+		cancel: cancel,
 	}, nil
 }
 
@@ -62,7 +60,7 @@ func (s *SyncSubscriber) processMessages(sub *nats.Subscription, handler func(ct
 			if err == nats.ErrTimeout {
 				continue
 			}
-			s.errChan <- err
+			s.logger.Warningf(s.ctx, "sync subscriber: get next msg fail: %v", err)
 			return
 		}
 		err = func() error {
@@ -81,33 +79,23 @@ func (s *SyncSubscriber) processMessages(sub *nats.Subscription, handler func(ct
 	}
 }
 func (s *SyncSubscriber) Run() {
-	go func() {
-		for err := range s.errChan {
-			s.logger.Errorf(s.ctx, "sync subscriber error: %v", err)
-		}
-	}()
 	s.logger.Infof(s.ctx, "sync subscribe start running...")
 	<-s.ctx.Done()
 }
 
 func (s *SyncSubscriber) Shutdown() {
-	s.logger.Infof(s.ctx, "async subscriber: starting shutdown...")
-
-	// 取消上下
-	s.cancel()
+	s.logger.Infof(s.ctx, "sync subscriber: starting shutdown...")
 
 	// 取消所有订阅
 	for _, sub := range s.subs {
 		if err := sub.Drain(); err != nil {
-			s.logger.Infof(s.ctx, "sync subscriber: error drain: %v", err)
+			s.logger.Errorf(s.ctx, "sync subscriber: error drain: %v", err)
 		}
 		if err := sub.Unsubscribe(); err != nil {
-			s.logger.Infof(s.ctx, "sync subscriber: error unsubscribing: %v", err)
+			s.logger.Errorf(s.ctx, "sync subscriber: error unsubscribing: %v", err)
 		}
 	}
-	// 关闭错误通道
-	close(s.errChan)
-	// 关闭连接
 	s.nc.Close()
-	s.logger.Infof(s.ctx, "async subscriber: shutdown complete")
+	s.logger.Infof(s.ctx, "sync subscriber: shutdown complete")
+	s.cancel()
 }

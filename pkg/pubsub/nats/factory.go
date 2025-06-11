@@ -30,16 +30,16 @@ func (f *factory) New(ctx context.Context, name string, opts ...nats.Option) (*n
 	opts = append(opts,
 		nats.Name(name),
 		nats.DisconnectErrHandler(func(_ *nats.Conn, err error) {
-			f.logger.Infof(ctx, "nats client disconnect CB: client '%v' disconnected: %v", name, err)
+			f.logger.Infof(gctx.New(), "nats client disconnect CB: client '%v' disconnected: %v", name, err)
 		}),
 		nats.ReconnectHandler(func(_ *nats.Conn) {
-			f.logger.Infof(ctx, "nats client reconnect CB: '%v' reconnected", name)
+			f.logger.Infof(gctx.New(), "nats client reconnect CB: '%v' reconnected", name)
 		}),
 		nats.ClosedHandler(func(_ *nats.Conn) {
-			f.logger.Infof(ctx, "nats client close CB: '%v' closed", name)
+			f.logger.Infof(gctx.New(), "nats client close CB: '%v' closed", name)
 		}),
 		nats.ErrorHandler(func(_ *nats.Conn, _ *nats.Subscription, err error) {
-			f.logger.Infof(ctx, "nats client error CB: '%v' occur error: %v", name, err)
+			f.logger.Infof(gctx.New(), "nats client error CB: '%v' occur error: %v", name, err)
 		}),
 	)
 

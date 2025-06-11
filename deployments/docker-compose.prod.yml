@@ -1,6 +1,6 @@
 services:
   mgrid-server:
-    image: "gcr.io/distroless/base-debian12:debug"
+    image: "debian12-for-mgrid:latest"
     container_name: mgrid-server
     restart: unless-stopped
     entrypoint: ["/app/mgrid","--config","/app/config/config.yaml"]
@@ -20,7 +20,17 @@ services:
       - "31080-31082:31080-31082" # http业务服务端口 grpc服务端口 文件传输服务端口 宿主机监听dockercompose服务
     extra_hosts:
       - "host.docker.internal:host-gateway"  # 容器内访问宿主机服务
-    stop_grace_period: 10s
+    # 设置优雅退出超时时间为 30 秒
+    stop_grace_period: 30s
+    # 可选：设置停止信号
+    stop_signal: SIGTERM
+    # 可选：设置健康检查
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:31080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     deploy:
       restart_policy:
         condition: always
@@ -29,11 +39,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    # healthcheck:
-    #   test: ["CMD", "curl", "-f", "http://localhost:31080/health"]
-    #   interval: 10s
-    #   timeout: 10s
-    #   retries: 3
     environment:
       - ENV_VARIABLE=value
     # security_opt:

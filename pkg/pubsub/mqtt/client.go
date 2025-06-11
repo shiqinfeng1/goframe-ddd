@@ -108,7 +108,7 @@ func (c *Client) Subscribe(ctx context.Context, topic string, handler func(ctx c
 	}
 	cb := func(mc mqtt.Client, msg mqtt.Message) {
 		defer recovery.Recovery(ctx, func(ctx context.Context, exception error) {
-			c.logger.Errorf(ctx, "panic in mqtt handler: \n%v", exception)
+			c.logger.Errorf(ctx, "panic in mqtt handler: %v", exception)
 		})
 		if err := handler(ctx, msg); err != nil {
 			c.logger.Errorf(ctx, "mqtt handler fail: %v", err)
