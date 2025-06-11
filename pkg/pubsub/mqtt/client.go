@@ -7,7 +7,7 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
-	"github.com/shiqinfeng1/goframe-ddd/pkg/recover"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/recovery"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/uid"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -36,7 +36,7 @@ type Client struct {
 	mqttc  mqtt.Client
 	topics []string
 }
-type SubscribeFunc func(ctx context.Context, msg *mqtt.Message) ([]byte, error)
+type SubscribeFunc func(ctx context.Context, msg mqtt.Message) ([]byte, error)
 
 func New(ctx context.Context, cfg *Config, logger pubsub.Logger) (*Client, error) {
 	uid, _ := uid.NewClientIDWithDefault()
@@ -101,18 +101,16 @@ func (c *Client) Publish(ctx context.Context, topic string, message []byte) erro
 	return nil
 }
 
-func (c *Client) Subscribe(ctx context.Context, topic string, handler func(ctx context.Context, msg *mqtt.Message) error) error {
+func (c *Client) Subscribe(ctx context.Context, topic string, handler func(ctx context.Context, msg mqtt.Message) error) error {
 	if c.mqttc == nil {
 		c.logger.Warningf(ctx, "subscribe %v fail: mqtt client is nil", topic)
 		return nil
 	}
 	cb := func(mc mqtt.Client, msg mqtt.Message) {
-		defer func() {
-			recover.Recovery(ctx, func(ctx context.Context, exception error) {
-				c.logger.Errorf(ctx, "panic in mqtt handler: %v", exception)
-			})
-		}()
-		if err := handler(ctx, &msg); err != nil {
+		defer recovery.Recovery(ctx, func(ctx context.Context, exception error) {
+			c.logger.Errorf(ctx, "panic in mqtt handler: \n%v", exception)
+		})
+		if err := handler(ctx, msg); err != nil {
 			c.logger.Errorf(ctx, "mqtt handler fail: %v", err)
 			time.Sleep(subMessageDelay)
 			return

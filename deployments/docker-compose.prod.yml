@@ -3,7 +3,7 @@ services:
     image: "gcr.io/distroless/base-debian12:debug"
     container_name: mgrid-server
     restart: unless-stopped
-    entrypoint: ["/app/mgrid", "--config", "/app/config/config.yaml"]
+    entrypoint: ["/app/mgrid","--config","/app/config/config.yaml"]
     volumes: 
       # 运行数据挂载到宿主机独立存储空间中，防止占满系统存储空间
       - ./running/log-mgrid:/app/log

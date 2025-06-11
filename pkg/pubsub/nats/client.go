@@ -4,36 +4,32 @@ import (
 	"context"
 
 	"github.com/gogf/gf/v2/container/gmap"
-	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
 )
 
 type Config struct {
-	ServerUrl    string   `json:"serverUrl" yaml:"serverUrl"`
-	ConsumerName string   `json:"consumerName" yaml:"consumerName"`
-	StreamName   string   `json:"streamName" yaml:"streamName"`
-	Subject1     string   `json:"subject1" yaml:"subject1"`
-	Subject2     string   `json:"subject2" yaml:"subject2"`
-	JSSubject1   string   `json:"jsSubject1" yaml:"jsSubject1"`
-	JSSubject2   string   `json:"jsSubject2" yaml:"jsSubject2"`
-	KVBuckets    []string `json:"kvBuckets" yaml:"kvBuckets"`
-	ObjBuckets   []string `json:"objBuckets" yaml:"objBuckets"`
-}
-
-var defaultNatsOpts []nats.Option = []nats.Option{
-	nats.NoEcho(),
+	ServerUrl     string   `json:"serverUrl" yaml:"serverUrl"`
+	StreamName    string   `json:"streamName" yaml:"streamName"`
+	Subject1      string   `json:"subject1" yaml:"subject1"`
+	Subject2      string   `json:"subject2" yaml:"subject2"`
+	JSSubject1    string   `json:"jsSubject1" yaml:"jsSubject1"`
+	ConsumerName1 string   `json:"consumerName1" yaml:"consumerName1"`
+	JSSubject2    string   `json:"jsSubject2" yaml:"jsSubject2"`
+	ConsumerName2 string   `json:"consumerName2" yaml:"consumerName2"`
+	KVBuckets     []string `json:"kvBuckets" yaml:"kvBuckets"`
+	ObjBuckets    []string `json:"objBuckets" yaml:"objBuckets"`
 }
 
 // Client represents a Client for NATS jStream operations.
 type Client struct {
-	cfg        *Config
-	logger     pubsub.Logger
-	natsOpts   []nats.Option
-	subscriber // 管理消息订阅者
-	consumer   // 管理流的消费者
-	watcher    // kv和object变化监听
+	cfg            *Config
+	logger         pubsub.Logger
+	AsyncSubscribe *AsyncSubscriber
+	SyncSubscribe  *SyncSubscriber
+	SyncConsumer   *SyncConsumer
+	watcher        // kv和object变化监听
 }
 
 // New 创建一个新的客户端
@@ -41,66 +37,67 @@ func New(cfg *Config, logger pubsub.Logger) *Client {
 	c := &Client{
 		cfg:    cfg,
 		logger: logger,
-		subscriber: subscriber{
-			logger:        logger,
-			subscriptions: gmap.NewStrAnyMap(true),
-		},
-		consumer: consumer{
-			logger:        logger,
-			subscriptions: gmap.NewStrAnyMap(true),
-			exitNotify:    make(chan SubsKey),
-		},
 		watcher: watcher{
 			logger:      logger,
 			kvWatchers:  gmap.NewStrAnyMap(true),
 			objWatchers: gmap.NewStrAnyMap(true),
 		},
 	}
-	// 当订阅失败，或stream被删除后，需要删除相关资源
-	go func() {
-		ctx := gctx.New()
-		for key := range c.consumer.exitNotify {
-			c.consumer.Delete(ctx, key)
-		}
-		c.logger.Infof(ctx, "exit stream consumer ok")
-	}()
-	c.natsOpts = append(c.natsOpts, defaultNatsOpts...)
 	return c
 }
 
-// 订阅消息
-func (c *Client) SubMsg(ctx context.Context, nc *Conn, subject string, stype SubType, handler func(ctx context.Context, msg *nats.Msg) error) error {
-	if err := c.subscriber.AddSubscription(ctx, nc, subject, stype, handler); err != nil {
-		return err
+// 异步订阅消息
+func (c *Client) NewAsyncSubscriber(logger pubsub.Logger, f Factory) (*AsyncSubscriber, error) {
+	if c.AsyncSubscribe != nil {
+		return c.AsyncSubscribe, nil
 	}
-	return nil
-}
-func (c *Client) jstream(nc *Conn) (*JetStreamWrapper, error) {
-	js, err := nc.JetStream()
+	asub, err := NewAsyncSubscriber(logger, f)
 	if err != nil {
 		return nil, err
 	}
-	return NewJetStreamWrapper(c.logger, js), nil
+	c.AsyncSubscribe = asub
+	return c.AsyncSubscribe, nil
+}
+func (c *Client) NewSyncSubscriber(logger pubsub.Logger, f Factory) (*SyncSubscriber, error) {
+	if c.SyncSubscribe != nil {
+		return c.SyncSubscribe, nil
+	}
+	asub, err := NewSyncSubscriber(logger, f)
+	if err != nil {
+		return nil, err
+	}
+	c.SyncSubscribe = asub
+	return c.SyncSubscribe, nil
+}
+func (c *Client) NewSyncConsumer(logger pubsub.Logger, f Factory) (*SyncConsumer, error) {
+	if c.SyncConsumer != nil {
+		return c.SyncConsumer, nil
+	}
+	asub, err := NewSyncConsumer(logger, f)
+	if err != nil {
+		return nil, err
+	}
+	c.SyncConsumer = asub
+	return c.SyncConsumer, nil
 }
 
-// 创建流
-func (c *Client) CreateStream(ctx context.Context, nc *Conn, streamName string, subjects []string) error {
-	js, err := c.jstream(nc)
-	if err != nil {
-		return err
+// 取消异步订阅
+func (c *Client) ShutdownSubscribe() {
+	if c.AsyncSubscribe != nil {
+		c.AsyncSubscribe.Shutdown()
 	}
-	if err := js.CreateStream(ctx, streamName, subjects); err != nil {
-		return err
+	if c.SyncSubscribe != nil {
+		c.SyncSubscribe.Shutdown()
 	}
-	return nil
+	if c.SyncConsumer != nil {
+		c.SyncConsumer.Shutdown()
+	}
 }
 
 // 创建或更新流
-func (c *Client) CreateOrUpdateStream(ctx context.Context, nc *Conn, streamName string, subjects []string) error {
-	js, err := c.jstream(nc)
-	if err != nil {
-		return err
-	}
+func (c *Client) CreateOrUpdateStream(ctx context.Context, nc *nats.Conn, streamName string, subjects []string) error {
+	jetstream, _ := jetstream.New(nc)
+	js := NewJetStreamWrapper(c.logger, jetstream)
 	if err := js.CreateOrUpdateStream(ctx, streamName, subjects); err != nil {
 		return err
 	}
@@ -108,46 +105,10 @@ func (c *Client) CreateOrUpdateStream(ctx context.Context, nc *Conn, streamName 
 }
 
 // 删除流,  该流上的所有consumer也会被自动删除
-func (c *Client) DeleteStream(ctx context.Context, nc *Conn, streamName string) error {
-	js, err := c.jstream(nc)
-	if err != nil {
-		return err
-	}
+func (c *Client) DeleteStream(ctx context.Context, nc *nats.Conn, streamName string) error {
+	jetstream, _ := jetstream.New(nc)
+	js := NewJetStreamWrapper(c.logger, jetstream)
 	if err := js.DeleteStream(ctx, streamName); err != nil {
-		return err
-	}
-	return nil
-}
-
-// 流消费
-func (c *Client) ConsumeStream(ctx context.Context, nc *Conn, sn, cn, subject string, stype SubType, handler func(ctx context.Context, msg *jetstream.Msg) error) error {
-	js, err := c.jstream(nc)
-	if err != nil {
-		return err
-	}
-	cons, err := js.CreateOrUpdateConsumer(ctx, sn, cn, subject)
-	if err != nil {
-		return err
-	}
-
-	skey := NewSubsKey(subject, sn, cn)
-	if err := c.consumer.Add(ctx, stype, skey, cons, handler, c.exitNotify); err != nil {
-		return err
-	}
-	return nil
-}
-
-// 删除流消费
-func (c *Client) DelConsumer(ctx context.Context, nc *Conn, sn, cn, subject string, stype SubType, handler ConsumeFunc) error {
-	js, err := c.jstream(nc)
-	if err != nil {
-		return err
-	}
-	if err := js.DeleteConsumer(ctx, sn, cn, subject); err != nil {
-		return err
-	}
-	skey := NewSubsKey(subject, sn, cn)
-	if err := c.consumer.Delete(ctx, skey); err != nil {
 		return err
 	}
 	return nil
@@ -158,15 +119,10 @@ func (c *Client) Close(ctx context.Context) error {
 	if c == nil {
 		return nil
 	}
-	if err := c.subscriber.Close(ctx); err != nil {
-		return err
-	}
-	c.logger.Infof(ctx, "nats client close subscribe ok")
-	if err := c.consumer.Close(ctx); err != nil {
-		return err
-	}
-	c.logger.Infof(ctx, "nats client close stream consume ok")
-	if err := c.watcher.Stop(ctx); err != nil {
+	c.ShutdownSubscribe()
+	c.logger.Infof(ctx, "nats client close subscribe/consumer ok")
+
+	if err := c.watcher.StopAllWatch(ctx); err != nil {
 		return err
 	}
 	c.logger.Infof(ctx, "nats client close watcher ok")

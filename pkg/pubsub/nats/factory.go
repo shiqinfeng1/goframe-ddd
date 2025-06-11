@@ -11,30 +11,22 @@ import (
 )
 
 type Factory interface {
-	New(ctx context.Context, name string, opts ...nats.Option) (*Conn, error)
+	New(ctx context.Context, name string, opts ...nats.Option) (*nats.Conn, error)
 }
 type factory struct {
 	logger     pubsub.Logger
 	serverAddr string
-	connector  Connector
 }
 
 func NewFactory(
 	logger pubsub.Logger,
-	natsConnector Connector,
 ) Factory {
-	// 设置连接器
-	if natsConnector == nil {
-		natsConnector = &defaultConnector{}
-	}
-
 	return &factory{
 		logger:     logger,
-		connector:  natsConnector,
 		serverAddr: g.Cfg().MustGet(gctx.New(), "nats.serverUrl").String(),
 	}
 }
-func (f *factory) New(ctx context.Context, name string, opts ...nats.Option) (*Conn, error) {
+func (f *factory) New(ctx context.Context, name string, opts ...nats.Option) (*nats.Conn, error) {
 	opts = append(opts,
 		nats.Name(name),
 		nats.DisconnectErrHandler(func(_ *nats.Conn, err error) {
@@ -51,7 +43,7 @@ func (f *factory) New(ctx context.Context, name string, opts ...nats.Option) (*C
 		}),
 	)
 
-	conn, err := f.connector.Connect(f.serverAddr, opts...)
+	conn, err := nats.Connect(f.serverAddr, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -60,16 +52,6 @@ func (f *factory) New(ctx context.Context, name string, opts ...nats.Option) (*C
 		return nil, gerror.New("connect to nats timeout")
 	}
 
-	// 连接成功后，创建jetstream
-	js, err := conn.NewJetStream()
-	if err != nil {
-		conn.Close()
-		return nil, err
-	}
-	f.logger.Infof(ctx, "successfully connected to NATS server at %v by '%v'", f.serverAddr, conn.NatsConn().Opts.Name)
-	return &Conn{
-		conn:       conn,
-		jStream:    js,
-		serverAddr: f.serverAddr,
-	}, nil
+	f.logger.Infof(ctx, "successfully connected to NATS server at %v by '%v'", f.serverAddr, conn.Opts.Name)
+	return conn, nil
 }

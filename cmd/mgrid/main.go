@@ -15,7 +15,6 @@ import (
 func main() {
 	ctx := gctx.New()
 	wg := sync.WaitGroup{}
-
 	// 检查nats消息中间件是否运行
 	// 若未运行，则等待
 	g.Log().Infof(ctx, "start mgrid server ...")
@@ -55,7 +54,7 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := pubsubSrv.Run(ctx); err != nil {
+		if err := pubsubSrv.Run(); err != nil {
 			g.Log().Error(ctx, err)
 		}
 		g.Log().Infof(ctx, "exit pubsub server ok")
@@ -65,7 +64,7 @@ func main() {
 	// http服务本身能监听到信号，无需手动关闭
 	signalHandler := func(sig os.Signal) {
 		g.Log().Infof(ctx, "signal received:'%v'. gracefully shutting down pubsub service", sig.String())
-		if err := pubsubSrv.Stop(ctx); err != nil {
+		if err := pubsubSrv.Stop(); err != nil {
 			g.Log().Errorf(ctx, "gracefully shutting down pubsub service fail:%v", err)
 		}
 		g.Log().Infof(ctx, "gracefully shutting down pubsub service ok")

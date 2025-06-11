@@ -3,8 +3,6 @@ package natsclient
 import (
 	"context"
 	"errors"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/gogf/gf/v2/errors/gerror"
@@ -37,6 +35,9 @@ func (sm *JetStreamWrapper) validateStream(_ context.Context, name string, subje
 		return gerror.New("stream name is nil")
 	}
 	return nil
+}
+func (sm *JetStreamWrapper) JetStream() jetstream.JetStream {
+	return sm.js
 }
 
 // CreateStream creates a new jStream stream.
@@ -84,7 +85,6 @@ func (sm *JetStreamWrapper) CreateStream(ctx context.Context, name string, subje
 
 // DeleteStream deletes a jStream stream.
 func (sm *JetStreamWrapper) DeleteStream(ctx context.Context, name string) error {
-	sm.logger.Debugf(ctx, "deleteing stream '%s'", name)
 
 	err := sm.js.DeleteStream(ctx, name)
 	if err != nil {
@@ -94,7 +94,7 @@ func (sm *JetStreamWrapper) DeleteStream(ctx context.Context, name string) error
 		}
 		return gerror.Wrapf(err, "failed to delete stream '%s'", name)
 	}
-	sm.logger.Debugf(ctx, "successfully deleted stream '%s'", name)
+	sm.logger.Infof(ctx, "successfully deleted stream '%s'", name)
 	return nil
 }
 
@@ -117,17 +117,11 @@ func (sm *JetStreamWrapper) GetStream(ctx context.Context, name string) (jetstre
 }
 
 // 根据消费主题自动生成一个消费者的名字，带有通配符的主题，需要替换通配符
-func genConsumerName(consumer, subject string) string {
-	subject = strings.ReplaceAll(subject, ".", "_")
-	subject = strings.ReplaceAll(subject, "*", "token")
-	subject = strings.ReplaceAll(subject, ">", "tokens")
-	return fmt.Sprintf("%s_%s", consumer, subject)
-}
 
 func (sm *JetStreamWrapper) CreateOrUpdateConsumer(ctx context.Context, streamName, consumerName, subject string) (jetstream.Consumer, error) {
 	cons, err := sm.js.CreateOrUpdateConsumer(ctx, streamName, jetstream.ConsumerConfig{
-		Name:          genConsumerName(consumerName, subject),
-		Durable:       genConsumerName(consumerName, subject),
+		Name:          consumerName,
+		Durable:       consumerName,
 		AckPolicy:     jetstream.AckExplicitPolicy, //AckExplicitPolicy,
 		FilterSubject: subject,
 		DeliverPolicy: jetstream.DeliverNewPolicy,
@@ -140,15 +134,20 @@ func (sm *JetStreamWrapper) CreateOrUpdateConsumer(ctx context.Context, streamNa
 	sm.logger.Debugf(ctx, "creating or updating consumer ok. stream-name=%v, consumer-name=%v, subject=%v", streamName, consumerName, subject)
 	return cons, nil
 }
-
-func (sm *JetStreamWrapper) DeleteConsumer(ctx context.Context, streamName, consumerName, subject string) error {
-	if !sm.js.Conn().IsConnected() {
-		return gerror.Newf("delete consumer fail: nats not connected")
-	}
-	err := sm.js.DeleteConsumer(ctx, streamName, genConsumerName(consumerName, subject))
+func (sm *JetStreamWrapper) ConsumerInfo(ctx context.Context, streamName, consumerName string) (jetstream.Consumer, error) {
+	cons, err := sm.js.Consumer(ctx, streamName, consumerName)
 	if err != nil {
-		return gerror.Wrapf(err, "delete consumer fail. stream-name=%v, consumer-name=%v, subject=%v", streamName, consumerName, subject)
+		return nil, gerror.Wrapf(err, "delete consumer fail. stream-name=%v, consumer-name=%v", streamName, consumerName)
 	}
-	sm.logger.Debugf(ctx, "deleting consumer ok. stream-name=%v, consumer-name=%v, subject=%v", streamName, consumerName, subject)
+	sm.logger.Debugf(ctx, "deleting consumer ok. stream-name=%v, consumer-name=%v", streamName, consumerName)
+	return cons, nil
+}
+
+func (sm *JetStreamWrapper) DeleteConsumer(ctx context.Context, streamName, consumerName string) error {
+	err := sm.js.DeleteConsumer(ctx, streamName, consumerName)
+	if err != nil {
+		return gerror.Wrapf(err, "delete consumer fail. stream-name=%v, consumer-name=%v", streamName, consumerName)
+	}
+	sm.logger.Debugf(ctx, "deleting consumer ok. stream-name=%v, consumer-name=%v", streamName, consumerName)
 	return nil
 }

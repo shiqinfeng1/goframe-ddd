@@ -31,22 +31,22 @@ type ChangeEvent struct {
 	Deleted bool
 }
 
-func defaultProcessEvent(ctx context.Context, nc *Conn, event ChangeEvent) error {
+func defaultProcessEvent(ctx context.Context, nc *Publisher, event ChangeEvent) error {
 	eventBytes, _ := json.Marshal(event)
 	if event.Type == KV {
-		if err := nc.PubMsg(ctx, "notify.change.kv", eventBytes); err != nil {
+		if err := nc.PublishMsg(ctx, "notify.change.kv", eventBytes); err != nil {
 			return err
 		}
 	}
 	if event.Type == OBJECT {
-		if err := nc.PubMsg(ctx, "notify.change.object", eventBytes); err != nil {
+		if err := nc.PublishMsg(ctx, "notify.change.object", eventBytes); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (w *watcher) Stop(ctx context.Context) error {
+func (w *watcher) StopAllWatch(ctx context.Context) error {
 	w.kvWatchers.Iterator(func(key string, value interface{}) bool {
 		if err := value.(jetstream.KeyWatcher).Stop(); err != nil {
 			w.logger.Errorf(ctx, "stop kv watcher %v failed: %v", key, err)
@@ -64,26 +64,23 @@ func (w *watcher) Stop(ctx context.Context) error {
 }
 func (w *watcher) StartWatch(
 	ctx context.Context,
-	nc *Conn, kvbkts, objbkts []string,
-	handler func(context.Context, *Conn, ChangeEvent) error) error {
+	publisher *Publisher, kvbkts, objbkts []string,
+	handler func(context.Context, *Publisher, ChangeEvent) error) error {
 	if handler == nil {
 		handler = defaultProcessEvent
 	}
-	js, err := nc.JetStream()
-	if err != nil {
-		return err
-	}
+
 	// 事件通道
 	events := make(chan ChangeEvent, 1024)
 	ctx, w.cancel = context.WithCancel(ctx)
 
 	// 启动KV监听
 	for _, bkt := range kvbkts {
-		go w.watchKV(ctx, js, bkt, events)
+		go w.watchKV(ctx, publisher.JetStream(), bkt, events)
 	}
 	// 启动对象存储监听
 	for _, bkt := range objbkts {
-		go w.watchObjects(ctx, js, bkt, events)
+		go w.watchObjects(ctx, publisher.JetStream(), bkt, events)
 	}
 
 	// 事件处理器
@@ -96,7 +93,7 @@ func (w *watcher) StartWatch(
 				w.logger.Errorf(ctx, "bucket %v %v:%v", event.Bucket, event.Key, string(event.Value))
 				continue
 			}
-			if err := handler(ctx, nc, event); err != nil {
+			if err := handler(ctx, publisher, event); err != nil {
 				w.logger.Errorf(ctx, "watch handle fail:%v", err)
 			}
 		}

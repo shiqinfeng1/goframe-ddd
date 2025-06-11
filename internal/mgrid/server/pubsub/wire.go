@@ -22,5 +22,5 @@ func ProvideLogger(ctx context.Context) server.Logger {
 	return l
 }
 func ProvideConnFactory(logger server.Logger) natsclient.Factory {
-	return natsclient.NewFactory(logger, nil)
+	return natsclient.NewFactory(logger)
 }

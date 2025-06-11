@@ -1,7 +1,8 @@
-package recover
+package recovery
 
 import (
 	"context"
+	"os"
 
 	"github.com/gogf/gf/v2/errors/gcode"
 	"github.com/gogf/gf/v2/errors/gerror"
@@ -14,9 +15,9 @@ func Recovery(ctx context.Context, recoverFunc RecoverFunc) {
 		if recoverFunc != nil {
 			if v, ok := exception.(error); ok && gerror.HasStack(v) {
 				recoverFunc(ctx, v)
-			} else {
-				recoverFunc(ctx, gerror.NewCodef(gcode.CodeInternalPanic, "%+v", exception))
 			}
+			recoverFunc(ctx, gerror.NewCodef(gcode.CodeInternalPanic, "%+v", exception))
 		}
 	}
+	os.Exit(1)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/gogf/gf/v2/errors/gerror"
+	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application/dto"
@@ -12,7 +13,7 @@ import (
 
 type jetstreamService struct {
 	logger application.Logger
-	nc     *natsclient.Conn
+	nc     *nats.Conn
 }
 
 func NewJetstreamService(ctx context.Context, logger application.Logger, ncfact natsclient.Factory) application.JetstreamService {
@@ -34,7 +35,7 @@ func (jsm *jetstreamService) DeleteStream(ctx context.Context, in *dto.DeleteStr
 	if err != nil {
 		return err
 	}
-	if err := jstream.DeleteStream(ctx, in.Name); err != nil {
+	if err := jstream.DeleteStream(in.Name); err != nil {
 		return gerror.Wrapf(err, "delete stream fail: name=%v", in.Name)
 	}
 	return nil
@@ -42,7 +43,7 @@ func (jsm *jetstreamService) DeleteStream(ctx context.Context, in *dto.DeleteStr
 
 func (jsm *jetstreamService) JetStreamInfo(ctx context.Context, in *dto.JetStreamInfoIn) (*dto.JetStreamInfoOut, error) {
 
-	jstream, err := jsm.nc.JetStream()
+	jstream, err := jetstream.New(jsm.nc)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +51,7 @@ func (jsm *jetstreamService) JetStreamInfo(ctx context.Context, in *dto.JetStrea
 	// 获取 Stream 信息
 	stream, err := jstream.Stream(ctx, in.Name)
 	if err != nil {
-		return nil, gerror.Wrapf(err, "get stream fail: name=%v", in.Name)
+		return nil, gerror.Wrapf(err, "get stream info fail: name=%v", in.Name)
 	}
 	si, err := stream.Info(ctx)
 	if err != nil {
@@ -68,7 +69,7 @@ func (jsm *jetstreamService) JetStreamInfo(ctx context.Context, in *dto.JetStrea
 
 func (jsm *jetstreamService) JetStreamList(ctx context.Context, in *dto.JetStreamListIn) (*dto.JetStreamListOut, error) {
 
-	jstream, err := jsm.nc.JetStream()
+	jstream, err := jetstream.New(jsm.nc)
 	if err != nil {
 		return nil, err
 	}

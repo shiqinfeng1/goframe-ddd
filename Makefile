@@ -68,6 +68,13 @@ build.multiarch:
 image-nats:
 	docker build  -t nats-for-mgrid -f Dockerfile-nats .
 
+.PHONY: image-arm
+image-arm:
+	docker build -f Dockerfile --build-arg TARGET=./cmd/mgrid --build-arg COMMIT=$(GIT_COMMIT)  --build-arg VERSION=$(VERSION) --build-arg CC=aarch64-linux-gnu-gcc --build-arg GOARCH=arm64 --target production \
+		 --build-arg GOPRIVATE=$(GOPRIVATE) \
+		-t "mgrid:$(VERSION)-arm"  .
+# -t "$(CONTAINER_REGISTRY)/mgrid:$(IMAGE_TAG_ARM)"  .
+
 ## image.multiarch: Build docker images for multiple platforms. See option PLATFORMS.
 .PHONY: image.multiarch
 image.multiarch:
@@ -162,12 +169,7 @@ check-updates:
 tidy:
 	@$(MAKE) dependencies.packages
 
-.PHONY: image-arm
-image-arm:
-	docker build -f Dockerfile --build-arg TARGET=./cmd/mgrid --build-arg COMMIT=$(GIT_COMMIT)  --build-arg VERSION=$(VERSION) --build-arg CC=aarch64-linux-gnu-gcc --build-arg GOARCH=arm64 --target production \
-		 --build-arg GOPRIVATE=$(GOPRIVATE) \
-		-t "mgrid:$(VERSION)-arm"  .
-# -t "$(CONTAINER_REGISTRY)/mgrid:$(IMAGE_TAG_ARM)"  .
+
 
 ## help: Show this help info.
 .PHONY: help

@@ -13,4 +13,5 @@ type Logger interface {
 	Debug(ctx context.Context, v ...any)
 	Info(ctx context.Context, v ...any)
 	Warning(ctx context.Context, v ...any)
+	Fatal(ctx context.Context, v ...any)
 }

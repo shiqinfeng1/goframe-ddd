@@ -30,13 +30,13 @@ func (p *PointdataService) HandleMsg(ctx context.Context, msg *nats.Msg) ([]byte
 	return (*msg).Data, nil
 }
 
-func (p *PointdataService) HandleStream(ctx context.Context, msg *jetstream.Msg) ([]byte, error) {
+func (p *PointdataService) HandleStream(ctx context.Context, msg jetstream.Msg) ([]byte, error) {
 	time.Sleep(5 * time.Millisecond)
 	p.logger.Debugf(ctx, "recv a stream data: %+v", msg)
-	return (*msg).Data(), nil
+	return msg.Data(), nil
 }
-func (p *PointdataService) HandleMqttMsg(ctx context.Context, msg *mqtt.Message) ([]byte, error) {
+func (p *PointdataService) HandleMqttMsg(ctx context.Context, msg mqtt.Message) ([]byte, error) {
 	time.Sleep(5 * time.Millisecond)
 	p.logger.Debugf(ctx, "recv a mqtt msg: %+v", msg)
-	return (*msg).Payload(), nil
+	return msg.Payload(), nil
 }
