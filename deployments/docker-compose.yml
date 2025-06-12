@@ -1,6 +1,6 @@
 services:
   mgrid-server:
-    image: "${GO_IMAGE_NAME:-debian12-for-mgrid}:${IMAGE_VERSION:-latest}"
+    image: "debian12-for-mgrid:${IMAGE_VERSION:-latest}"
     container_name: mgrid-server
     restart: unless-stopped
     entrypoint: ["/app/mgrid","--config","/app/config/config.yaml"]
@@ -55,7 +55,7 @@ services:
       - mgrid-network  # 显式指定网络
   
   nats-server:
-    image: ${NATS_IMAGE_NAME:-nats-for-mgrid}:latest
+    image: nats-for-mgrid:latest
     container_name: nats-server
     restart: unless-stopped
     stdin_open: true

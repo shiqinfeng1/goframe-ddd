@@ -1,6 +1,6 @@
 # Dockerfile
 
-FROM nats:alpine
+FROM arm64v8/nats:alpine
 
 # 创建具有特定UID的用户
 RUN mkdir -p /var/lib/nats && \
