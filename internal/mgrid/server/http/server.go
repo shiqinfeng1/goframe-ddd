@@ -41,8 +41,13 @@ func NewServer(ctx context.Context, logger server.Logger, app application.Servic
 	// 业务api接口注册
 	s.Group("/mgrid/v1", func(g *ghttp.RouterGroup) {
 		g.Middleware(locale.Locale)
-		g.Middleware(service.Auth)
 		g.Middleware(ghttp.MiddlewareHandlerResponse)
+		g.Group("/auth", func(g *ghttp.RouterGroup) {
+			g.Bind(
+				auth.NewV1(logger, app),
+			)
+		})
+		g.Middleware(service.Auth)
 		g.Bind(
 			pointdata.NewV1(logger, app),
 			ops.NewV1(logger, app, dockerOps),

@@ -239,16 +239,16 @@ func (s *authService) Logout(ctx context.Context) (err error) {
 	// 1. 获取当前用户的Refresh Token
 	r := ghttp.RequestFromCtx(ctx)
 	refreshToken := r.Cookie.Get(REFRESH_TOKEN).String()
-
+	if refreshToken == "" {
+		return gerror.New("refresh token not found in cookie")
+	}
 	// 2. 使Token失效
-	if refreshToken != "" {
-		t := entity.NewToken()
-		err := t.ParseJWT(refreshToken, g.Cfg().MustGet(ctx, "jwt.refreshSecret").String())
-		if err == nil {
-			// 使旧Token失效
-			if err := s.tokenRepo.DeleteRefreshToken(ctx, t.RefreshID); err != nil {
-				return err
-			}
+	t := entity.NewToken()
+	err = t.ParseJWT(refreshToken, g.Cfg().MustGet(ctx, "jwt.refreshSecret").String())
+	if err == nil {
+		// 使旧Token失效
+		if err := s.tokenRepo.DeleteRefreshToken(ctx, t.RefreshID); err != nil {
+			return err
 		}
 	}
 	// 3. 清除Cookie
