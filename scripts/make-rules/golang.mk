@@ -79,7 +79,7 @@ go.build.%:
 # upx $(UPX_FLAG) $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)/$(COMMAND)$(GO_OUT_EXT)
 	@echo "===========> Copy binary $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)/$(COMMAND)$(GO_OUT_EXT) --> deployments/artifacts/$(COMMAND)$(GO_OUT_EXT)"
 	@rm -f deployments/artifacts/$(COMMAND)$(GO_OUT_EXT)
-	@cp $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)/$(COMMAND)$(GO_OUT_EXT) deployments/artifacts/$(COMMAND)$(GO_OUT_EXT)
+	@cp $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)/$(COMMAND)$(GO_OUT_EXT) deployments/artifacts/bin/$(OS)/$(ARCH)/$(COMMAND)$(GO_OUT_EXT)
 	@cp -r config deployments/artifacts
 
 # 编译当前平台的bin

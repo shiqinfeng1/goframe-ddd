@@ -2,20 +2,23 @@
 
 set -o errexit
 set +o nounset
-set -o pipefail
+set -eo pipefail
+
+ENV="${ENV:-prod}"
+# 初始化颜色代码
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m'
 
 # 定义网络名称
-NETWORK_NAME="mgrid_network"
-
-# 设置统一的密码，方便记忆
-readonly PASSWORD=${PASSWORD:-'123456'}
+readonly NETWORK_NAME="mgrid_network"
 readonly APP_WATCHER_HOST=${APP_WATCHER_HOST:-'127.0.0.1'}
 readonly APP_WATCHER_PORT=${APP_WATCHER_PORT:-'31083'}
-
-# Linux系统 going 用户
-readonly LINUX_USERNAME=${LINUX_USERNAME:-admin}
+# The root of the build/dist directory
+APP_ROOT=$(dirname "${BASH_SOURCE[0]}")
+readonly APP_BIN_DIR="${APP_ROOT}/artifacts/${OS}/${ARCH}" # 安装文件存放目录
 # Linux root & going 用户密码
-readonly LINUX_PASSWORD=${LINUX_PASSWORD:-${PASSWORD}}
+readonly LINUX_PASSWORD=${LINUX_PASSWORD:-'123456'}
 # 不输入密码执行需要 root 权限的命令
 function common::sudo {
   echo ${LINUX_PASSWORD} | sudo -S "$@"
@@ -34,11 +37,20 @@ log::error() {
     echo "    ${message}" >&2
   done
 }
-# The root of the build/dist directory
-APP_ROOT=$(dirname "${BASH_SOURCE[0]}")
-readonly APP_BIN_DIR="${APP_ROOT}/artifacts" # 安装文件存放目录
 
-# 安装
+# 加载环境变量
+load_env() {
+    source .env.${ENV}
+    echo -e "${GREEN}current env:${NC}"
+    echo -e "${GREEN}IMAGE_VERSION = ${IMAGE_VERSION}${NC}"
+    echo -e "${GREEN}GO_IMAGE_NAME = ${GO_IMAGE_NAME}${NC}"
+    echo -e "${GREEN}NATS_IMAGE_NAME = ${NATS_IMAGE_NAME}${NC}"
+    echo -e "${GREEN}OS = ${OS}${NC}"
+    echo -e "${GREEN}ARCH = ${ARCH}${NC}"
+
+}
+
+# 宿主机上安装watcher
 function watcher::install()
 {
   if systemctl status watcher| grep -q 'active'; then 
@@ -64,7 +76,7 @@ function watcher::install()
   popd > /dev/null || return 1
 }
 
-# 卸载
+# 宿主机上卸载watcher
 function watcher::uninstall()
 {
   set +o errexit
@@ -76,7 +88,7 @@ function watcher::uninstall()
   log::info "uninstall watcher successfully"
 }
 
-# 状态检查
+# 宿主机上watcher状态查看
 function watcher::status()
 {
   # 查看 watcher 运行状态，如果输出中包含 active (running) 字样说明 watcher 成功启动。
@@ -99,10 +111,20 @@ function watcher::status()
   fi
   log::error "cannot access watcher port(:${APP_WATCHER_PORT}), watcher maybe not startup"
 }
+
+# 退出所有镜像
+function app::up::all()
+{
+  app::up::nats()
+  app::up::mgrid()
+  app::up::watcher()
+}
 function app::down::all()
 {
-  docker compose -f docker-compose.prod.yml down mgrid-server &>/dev/null
-  docker compose -f docker-compose.prod.yml down nats-server nats-box  &>/dev/null
+  app::down::nats()
+  app::down::mgrid()
+  app::down::watcher()
+
   if docker network inspect "$NETWORK_NAME" &>/dev/null; then
     log::info "remove network: $NETWORK_NAME"
     docker network remove "$NETWORK_NAME"
@@ -117,16 +139,26 @@ function app::up::nats()
   sudo mkdir -p ./running/data-nats
   sudo chown -R 1000:1000 ./running/data-nats
   sudo chmod -R 755 ./running/data-nats
-  docker compose -f docker-compose.prod.yml up -d nats-server nats-box
+  docker compose -f docker-compose.prod.yml up -d nats-server
+  if [ ${ENV} = "dev" ]; then
+    docker compose -f docker-compose.prod.yml up -d nats-box
+  fi
 }
 function app::restart::nats()
 {
-  docker compose -f docker-compose.prod.yml down nats-server nats-box
-  docker compose -f docker-compose.prod.yml up -d nats-server nats-box
+  docker compose -f docker-compose.prod.yml down nats-server
+  docker compose -f docker-compose.prod.yml up -d nats-server
+  if [ ${ENV} = "dev" ]; then
+    docker compose -f docker-compose.prod.yml down nats-box
+    docker compose -f docker-compose.prod.yml up -d nats-box
+  fi
 }
 function app::down::nats()
 {
-  docker compose -f docker-compose.prod.yml down nats-server nats-box
+  docker compose -f docker-compose.prod.yml down nats-server
+  if [ ${ENV} = "dev" ]; then
+    docker compose -f docker-compose.prod.yml down ats-box
+  fi
 }
 
 function app::up::mgrid()
@@ -146,40 +178,19 @@ function app::down::mgrid()
 {
   docker compose -f docker-compose.prod.yml down mgrid-server
 }
-
-if [[ "$1" = startup ]];then
+function app::up::watcher()
+{
   watcher::install
-  docker compose up -d
-  exit 0
-fi
-if [[ "$1" = shutdown ]];then
+}
+function app::restart::watcher()
+{
   watcher::uninstall
-  docker compose down
-  exit 0
-fi
-if [[ "$1" = restart ]];then
-  watcher::uninstall
-  docker compose down
   watcher::install
-  docker compose up -d
-  exit 0
-fi
-if [[ "$1" = upgrade ]];then
-  docker compose up -d 
-  exit 0
-fi
-if [[ "$1" = images ]];then
-  docker images 
-  exit 0
-fi
-if [[ "$1" = composeimages ]];then
-  docker compose images 
-  exit 0
-fi
-
-if [[ "$*" =~ watcher:: ]];then
-  eval $*
-fi
+}
+function app::down::watcher()
+{
+  watcher::uninstall
+}
 
 if [[ "$*" =~ app:: ]];then
   eval $*
