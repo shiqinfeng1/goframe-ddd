@@ -10,8 +10,8 @@ services:
       - ./running/data-mgrid:/app/data
       # 映射程序和配置
       - ./artifacts/config:/app/config
-      - ./artifacts/bin/${OS:-linux}/${ARCH:-arm64}/mgrid:/app/mgrid
-      - ./artifacts/bin/${OS:-linux}/${ARCH:-arm64}/nats:/app/nats
+      - ./artifacts/bin/${os:-linux}/${arch:-arm64}/mgrid:/app/mgrid
+      - ./artifacts/bin/${os:-linux}/${arch:-arm64}/nats:/app/nats
       # 映射docker.sock及compose相关文件 (可选，在容器内通过sdk操作容器时使用)
       # - /var/run/docker.sock:/var/run/docker.sock
     working_dir: /app

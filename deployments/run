@@ -153,15 +153,8 @@ check_service_running() {
     
     log::info "Check service '$service_name' status..."
     
-    # 尝试无密码检查服务状态
-    if ! common::sudo -n systemctl is-active --quiet "$service_name" 2>/dev/null; then
-
-        # 带密码检查
-        if ! common::sudo systemctl is-active --quiet "$service_name"; then
-            log::info "Service '$service_name' not running..."
-            return 0  # 服务未运行，返回成功
-        fi
-    else
+    # 带密码检查
+    if ! common::sudo systemctl is-active --quiet "$service_name"; then
         log::info "Service '$service_name' not running..."
         return 0  # 服务未运行，返回成功
     fi
@@ -170,6 +163,11 @@ check_service_running() {
     return 1  # 服务正在运行，返回失败
 }
 
+# 加载环境变量
+source .env
+#设置docker-compose.yml中使用的变量
+export os=$(OS)
+export arch=$(ARCH)
 # 定义网络名称
 readonly NETWORK_NAME="mgrid_network"
 readonly APP_WATCHER_HOST=${APP_WATCHER_HOST:-'127.0.0.1'}
@@ -184,8 +182,7 @@ function common::sudo {
   echo ${LINUX_PASSWORD} | sudo -S "$@"
 }
 
-# 加载环境变量
-source .env
+
 ENV="${ENV:-prod}"
 printf "${GREEN}+------------------------------------+\n${NC}"
 printf "${GREEN}|CURRENT VARS:                       |\n${NC}"
@@ -199,8 +196,8 @@ printf "${GREEN}+------------------------------------+\n${NC}"
 function app::up::watcher()
 {
   if ! check_service_running "watcher"; then
-      log::info "watcher is already running, please shutdown first!"
-      exit 1
+      log::info "watcher is already running, now shutdown!"
+      app::down::watcher
   fi
   pushd ${APP_ROOT} > /dev/null || return 1
 
@@ -286,7 +283,7 @@ function app::down::all()
 function app::up::nats()
 {
   local image_name="nats-for-mgrid:latest"
-  local tar_file="./artifacts/bin/linux/arm64/image-nats.tar"
+  local tar_file="./artifacts/bin/$(OS)/$(ARCH)/image-nats.tar"
   remove_image "$image_name" || {
       log::error "Aborting due to error in removing image: $image_name"
       exit 1
@@ -310,7 +307,7 @@ function app::up::nats()
   common::sudo chmod -R 755 ./running/data-nats ./running/log-nats
   docker compose -f docker-compose.yml up -d nats-server
   if [ ${ENV} = "dev" ]; then
-    load_image "./artifacts/bin/linux/arm64/image-natsbox.tar" || {
+    load_image "./artifacts/bin/$(OS)/$(ARCH)/image-natsbox.tar" || {
       log::error "Aborting due to error in loading nats-box image"
       exit 1
   }
@@ -337,7 +334,7 @@ function app::down::nats()
 function app::up::mgrid()
 {
   local image_name="debian12-for-mgrid:${IMAGE_VERSION}"
-  local tar_file="./artifacts/bin/linux/arm64/image-debian12.tar"
+  local tar_file="./artifacts/bin/$(OS)/$(ARCH)/image-debian12.tar"
   remove_image "$image_name" || {
       log::error "Aborting due to error in removing image: $image_name"
       exit 1
