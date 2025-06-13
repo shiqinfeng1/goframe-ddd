@@ -59,20 +59,6 @@ ARCH() {
   echo "${host_arch}"
 }
 
-# 定义网络名称
-readonly NETWORK_NAME="mgrid_network"
-readonly APP_WATCHER_HOST=${APP_WATCHER_HOST:-'127.0.0.1'}
-readonly APP_WATCHER_PORT=${APP_WATCHER_PORT:-'31083'}
-# The root of the build/dist directory
-APP_ROOT=$(dirname "${BASH_SOURCE[0]}")
-readonly APP_BIN_DIR="${APP_ROOT}/artifacts/$(OS)/$(ARCH)" # 安装文件存放目录
-# Linux root & going 用户密码
-readonly LINUX_PASSWORD=${LINUX_PASSWORD:-'123456'}
-
-# 不输入密码执行需要 root 权限的命令
-function common::sudo {
-  echo ${LINUX_PASSWORD} | sudo -S "$@"
-}
 
 log::info() {
   for message; do
@@ -88,29 +74,138 @@ log::error() {
   done
 }
 
+# 检查并删除镜像
+remove_image() {
+    local image_name=$1
+    
+    log::info "Checking if image '$image_name' exists..."
+    
+    # 检查镜像是否存在
+    if docker image inspect "$image_name" &> /dev/null; then
+        log::info "Image '$image_name' found. Removing..."
+        
+        # 删除镜像
+        if docker rmi -f "$image_name" &> /dev/null; then
+            log::info "Successfully removed image '$image_name'"
+            return 0
+        else
+            log::error "Failed to remove image '$image_name'"
+            return 1
+        fi
+    else
+        log::info "Image '$image_name' does not exist. Skipping removal."
+        return 0
+    fi
+}
+
+# 加载镜像包
+load_image() {
+    local tar_file=$1
+    
+    log::info "Loading image from '$tar_file'..."
+    
+    # 检查文件是否存在
+    if [ ! -f "$tar_file" ]; then
+        log::error "Tar file '$tar_file' does not exist"
+        return 1
+    fi
+    
+    # 加载镜像
+    if docker load -i "$tar_file" &> /dev/null; then
+        log::info "Successfully loaded image from '$tar_file'"
+        return 0
+    else
+        log::error "Failed to load image from '$tar_file'"
+        return 1
+    fi
+}
+# 检查镜像架构
+check_image_architecture() {
+    local image_name=$1
+    local expected_arch=$2
+    
+    log::info "Checking architecture of image '$image_name'..."
+    
+    # 获取镜像架构
+    local actual_arch=$(docker image inspect "$image_name" --format '{{.Architecture}}' 2>/dev/null)
+    
+    if [ $? -ne 0 ]; then
+        log::error "Failed to inspect image '$image_name'"
+        return 1
+    fi
+    
+    log::info "Image architecture: $actual_arch"
+    log::info "Expected architecture: $expected_arch"
+    
+    # 比较架构
+    if [ "$actual_arch" = "$expected_arch" ]; then
+        log::info "Architecture matches"
+        return 0
+    else
+        log::error "Architecture mismatch! Expected '$expected_arch', got '$actual_arch'"
+        return 1
+    fi
+}
+
+# 检查服务是否正在运行
+check_service_running() {
+    local service_name=$1
+    
+    log::info "Check service '$service_name' status..."
+    
+    # 尝试无密码检查服务状态
+    if ! common::sudo -n systemctl is-active --quiet "$service_name" 2>/dev/null; then
+
+        # 带密码检查
+        if ! common::sudo systemctl is-active --quiet "$service_name"; then
+            log::info "Service '$service_name' not running..."
+            return 0  # 服务未运行，返回成功
+        fi
+    else
+        log::info "Service '$service_name' not running..."
+        return 0  # 服务未运行，返回成功
+    fi
+    
+    log::info "Service '$service_name' is running!"
+    return 1  # 服务正在运行，返回失败
+}
+
+# 定义网络名称
+readonly NETWORK_NAME="mgrid_network"
+readonly APP_WATCHER_HOST=${APP_WATCHER_HOST:-'127.0.0.1'}
+readonly APP_WATCHER_PORT=${APP_WATCHER_PORT:-'31083'}
+# The root of the build/dist directory
+APP_ROOT=$(dirname "${BASH_SOURCE[0]}")
+# Linux root & going 用户密码
+readonly LINUX_PASSWORD=${LINUX_PASSWORD:-'ubuntu'}
+
+# 不输入密码执行需要 root 权限的命令
+function common::sudo {
+  echo ${LINUX_PASSWORD} | sudo -S "$@"
+}
 
 # 加载环境变量
 source .env
 ENV="${ENV:-prod}"
-echo -e ""
-echo -e "${GREEN}CURRENT VARS:${NC}"
-echo -e "\t${GREEN}ENV = ${ENV}${NC}"
-echo -e "\t${GREEN}IMAGE_VERSION = ${IMAGE_VERSION}${NC}"
-echo -e "\t${GREEN}OS = $(OS)${NC}"
-echo -e "\t${GREEN}ARCH = $(ARCH)${NC}"
+printf "${GREEN}+------------------------------------+\n${NC}"
+printf "${GREEN}|CURRENT VARS:                       |\n${NC}"
+printf "${GREEN}|\t%-16s = %-10s|\n${NC}" "ENV" "$ENV"
+printf "${GREEN}|\t%-16s = %-10s|\n${NC}" "IMAGE_VERSION" "$IMAGE_VERSION"
+printf "${GREEN}|\t%-16s = %-10s|\n${NC}" "OS" "$(OS)"
+printf "${GREEN}|\t%-16s = %-10s|\n${NC}" "ARCH" "$(ARCH)"
+printf "${GREEN}+------------------------------------+\n${NC}"
 
 # 宿主机上安装watcher
-function watcher::install()
+function app::up::watcher()
 {
-  if systemctl status watcher| grep -q 'active'; then 
-    log::info "watcher is already running, please shutdown first!"
-    return 1
+  if ! check_service_running "watcher"; then
+      log::info "watcher is already running, please shutdown first!"
+      exit 1
   fi
-
   pushd ${APP_ROOT} > /dev/null || return 1
 
-  common::sudo cp ${APP_BIN_DIR}/watcher /usr/local/bin
-  common::sudo cp ${APP_BIN_DIR}/watcher.service /etc/systemd/system/watcher.service
+  common::sudo cp ${APP_ROOT}/artifacts/bin/$(OS)/$(ARCH)/watcher /usr/local/bin
+  common::sudo cp ${APP_ROOT}/artifacts/watcher.service /etc/systemd/system/watcher.service
   ABS_BIN_DIR=$(realpath "$APP_ROOT")  # 获取绝对路径
 
   common::sudo sed -i "s|\${DATA_DIR}|$ABS_BIN_DIR|g" "/etc/systemd/system/watcher.service"    # 替换工作路径
@@ -119,14 +214,14 @@ function watcher::install()
   common::sudo systemctl daemon-reload
   common::sudo systemctl restart watcher
   common::sudo systemctl enable watcher
-  watcher::status || return 1
+  app::status::watcher || return 1
 
   log::info "install watcher successfully"
   popd > /dev/null || return 1
 }
 
 # 宿主机上卸载watcher
-function watcher::uninstall()
+function app::down::watcher()
 {
   set +o errexit
   common::sudo systemctl stop watcher
@@ -136,13 +231,17 @@ function watcher::uninstall()
   set -o errexit
   log::info "uninstall watcher successfully"
 }
-
+function app::restart::watcher()
+{
+  app::down::watcher
+  app::up::watcher
+}
 # 宿主机上watcher状态查看
-function watcher::status()
+function app::status::watcher()
 {
   # 查看 watcher 运行状态，如果输出中包含 active (running) 字样说明 watcher 成功启动。
   systemctl status watcher|grep -q 'active' || {
-    log::error "watcher failed to start, maybe not installed properly"
+    log::error "watcher is not started, maybe not installed properly"
     return 1
   }
 
@@ -159,6 +258,11 @@ function watcher::status()
     fi
   fi
   log::error "cannot access watcher port(:${APP_WATCHER_PORT}), watcher maybe not startup"
+}
+
+function app::init::docker()
+{
+  ./install-docker-ubuntu2004.sh
 }
 
 # 退出所有镜像
@@ -181,76 +285,123 @@ function app::down::all()
 }
 function app::up::nats()
 {
+  local image_name="nats-for-mgrid:latest"
+  local tar_file="./artifacts/bin/linux/arm64/image-nats.tar"
+  remove_image "$image_name" || {
+      log::error "Aborting due to error in removing image: $image_name"
+      exit 1
+  }
+  
+  load_image "$tar_file" || {
+      log::error "Aborting due to error in loading image: $image_name"
+      exit 1
+  }
+  check_image_architecture "$image_name" "$(ARCH)" || {
+      log::error "Aborting due to architecture mismatch of $image_name. Expect: $(ARCH)"
+      exit 1
+  }
+
   if ! docker network inspect "$NETWORK_NAME" &>/dev/null; then
     log::info "create network: $NETWORK_NAME"
     docker network create "$NETWORK_NAME"
   fi
-  sudo mkdir -p ./running/data-nats
-  sudo chown -R 1000:1000 ./running/data-nats
-  sudo chmod -R 755 ./running/data-nats
-  docker compose -f docker-compose.prod.yml up -d nats-server
+  common::sudo mkdir -p ./running/data-nats ./running/log-nats
+  common::sudo chown -R 1000:1000 ./running/data-nats ./running/log-nats
+  common::sudo chmod -R 755 ./running/data-nats ./running/log-nats
+  docker compose -f docker-compose.yml up -d nats-server
   if [ ${ENV} = "dev" ]; then
-    docker compose -f docker-compose.prod.yml up -d nats-box
+    load_image "./artifacts/bin/linux/arm64/image-natsbox.tar" || {
+      log::error "Aborting due to error in loading nats-box image"
+      exit 1
+  }
+    docker compose -f docker-compose.yml up -d nats-box
   fi
 }
 function app::restart::nats()
 {
-  docker compose -f docker-compose.prod.yml down nats-server
-  docker compose -f docker-compose.prod.yml up -d nats-server
+  docker compose -f docker-compose.yml down nats-server
+  docker compose -f docker-compose.yml up -d nats-server
   if [ ${ENV} = "dev" ]; then
-    docker compose -f docker-compose.prod.yml down nats-box
-    docker compose -f docker-compose.prod.yml up -d nats-box
+    docker compose -f docker-compose.yml down nats-box
+    docker compose -f docker-compose.yml up -d nats-box
   fi
 }
 function app::down::nats()
 {
-  docker compose -f docker-compose.prod.yml down nats-server
+  docker compose -f docker-compose.yml down nats-server
   if [ ${ENV} = "dev" ]; then
-    docker compose -f docker-compose.prod.yml down ats-box
+    docker compose -f docker-compose.yml down nats-box
   fi
 }
 
 function app::up::mgrid()
 {
+  local image_name="debian12-for-mgrid:${IMAGE_VERSION}"
+  local tar_file="./artifacts/bin/linux/arm64/image-debian12.tar"
+  remove_image "$image_name" || {
+      log::error "Aborting due to error in removing image: $image_name"
+      exit 1
+  }
+  
+  load_image "$tar_file" || {
+      log::error "Aborting due to error in loading image: $image_name"
+      exit 1
+  }
+  check_image_architecture "$image_name" "$(ARCH)" || {
+      log::error "Aborting due to architecture mismatch of $image_name. Expect: $(ARCH)"
+      exit 1
+  }
+
   if ! docker network inspect "$NETWORK_NAME" &>/dev/null; then
     log::info "create network: $NETWORK_NAME"
     docker network create "$NETWORK_NAME"
   fi
-   docker compose -f docker-compose.prod.yml up -d mgrid-server
+   docker compose -f docker-compose.yml up -d mgrid-server
 }
 function app::restart::mgrid()
 {
-  docker compose -f docker-compose.prod.yml down mgrid-server
-  docker compose -f docker-compose.prod.yml up -d mgrid-server
+  docker compose -f docker-compose.yml down mgrid-server
+  docker compose -f docker-compose.yml up -d mgrid-server
 }
 function app::down::mgrid()
 {
-  docker compose -f docker-compose.prod.yml down mgrid-server
-}
-function app::up::watcher()
-{
-  watcher::install
-}
-function app::restart::watcher()
-{
-  watcher::uninstall
-  watcher::install
-}
-function app::down::watcher()
-{
-  watcher::uninstall
+  docker compose -f docker-compose.yml down mgrid-server
 }
 
-if [[ "$*" =~ app:: ]];then
-  eval $*
+# 验证参数格式是否符合 app::xx::xx
+validate_command() {
+    local cmd="$1"
+    
+    # 使用正则表达式验证格式
+    # ^app::[a-zA-Z0-9_]+(::[a-zA-Z0-9_]+)+$
+    # - 必须以 app:: 开头
+    # - 中间至少有一个或多个 xx:: 格式的段
+    # - xx 可以是字母、数字或下划线
+    
+    if [[ ! "$cmd" =~ ^app::[a-zA-Z0-9_]+(::[a-zA-Z0-9_]+)+$ ]]; then
+        echo "Error: Invalid command format. Must be 'app::verb::modoule'."
+        echo "Example: app::up::all"
+        return 1
+    fi
+    
+    return 0
+}
+
+# 主逻辑
+if [ $# -eq 0 ]; then
+    echo "Usage: $0 app::verb::modoule "
+    exit 1
 fi
 
-function init::docker()
-{
-  ./install-docker-ubuntu2004.sh
-  docker load -i artifacts/bin/$(OS)/$(ARCH)/image-nats.tar
-  docker load -i artifacts/bin/$(OS)/$(ARCH)/image-debian12.tar
-}
-if [[ "$*" =~ init:: ]];then
-  eval $*
+# 提取命令部分（第一个参数）
+command_part="$1"
+shift
+
+# 验证命令格式
+if ! validate_command "$command_part"; then
+    exit 1
 fi
+
+# 执行命令（将命令部分和剩余参数拼接）
+echo "Executing: $command_part $*"
+eval "$command_part $*"
