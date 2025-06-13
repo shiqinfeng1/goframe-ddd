@@ -72,10 +72,16 @@ go.build.%:
 	$(eval PLATFORM := $(word 1,$(subst ., ,$*)))
 	$(eval OS := $(word 1,$(subst _, ,$(PLATFORM))))
 	$(eval ARCH := $(word 2,$(subst _, ,$(PLATFORM))))
-	$(eval $(if $(filter arm64,$(ARCH)), CC := aarch64-linux-gnu-gcc))
+	$(eval CC := $(if $(filter arm64,$(ARCH)),aarch64-linux-gnu-gcc,cc))
+	$(eval $(if $(filter watcher,$(COMMAND)), \
+		$(eval GO_BUILD_FLAGS := -ldflags '-s -w $(GO_LDFLAGS) -extldflags "-static"') \
+		$(eval CGO := 0), \
+		$(eval GO_BUILD_FLAGS := -ldflags '-s -w $(GO_LDFLAGS)') \
+		$(eval CGO := 1) \
+	))
 	@echo "===========> Building binary $(COMMAND) $(VERSION) for $(OS) $(ARCH)"
 	@mkdir -p $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)
-	CGO_ENABLED=1 GOOS=$(OS) GOARCH=$(ARCH) CC=$(CC) $(GO) build $(GO_BUILD_FLAGS) -o $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)/$(COMMAND)$(GO_OUT_EXT) $(ROOT_PACKAGE)/cmd/$(COMMAND)
+	CGO_ENABLED=$(CGO) GOOS=$(OS) GOARCH=$(ARCH) CC=$(CC) $(GO) build $(GO_BUILD_FLAGS) -o $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)/$(COMMAND)$(GO_OUT_EXT) $(ROOT_PACKAGE)/cmd/$(COMMAND)
 # upx $(UPX_FLAG) $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)/$(COMMAND)$(GO_OUT_EXT)
 	@echo "===========> Copy binary $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)/$(COMMAND)$(GO_OUT_EXT) --> deployments/artifacts/$(COMMAND)$(GO_OUT_EXT)"
 	@rm -f deployments/artifacts/$(COMMAND)$(GO_OUT_EXT)
