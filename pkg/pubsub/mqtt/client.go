@@ -20,6 +20,7 @@ const (
 
 type Config struct {
 	ClientID  string
+	Enable    bool   `json:"enable"`
 	Store     string `json:"store"`
 	Topic1    string `json:"topic1"`
 	Topic2    string `json:"topic2"`
@@ -90,6 +91,9 @@ func New(ctx context.Context, cfg *Config, logger pubsub.Logger) (*Client, error
 }
 
 func (c *Client) Publish(ctx context.Context, topic string, message []byte) error {
+	if !c.cfg.Enable {
+		return nil
+	}
 	if c.mqttc == nil {
 		c.logger.Warningf(ctx, "publish to %v fail: mqtt client is nil", topic)
 		return nil
@@ -102,6 +106,9 @@ func (c *Client) Publish(ctx context.Context, topic string, message []byte) erro
 }
 
 func (c *Client) Subscribe(ctx context.Context, topic string, handler func(ctx context.Context, msg mqtt.Message) error) error {
+	if !c.cfg.Enable {
+		return nil
+	}
 	if c.mqttc == nil {
 		c.logger.Warningf(ctx, "subscribe %v fail: mqtt client is nil", topic)
 		return nil
@@ -126,7 +133,7 @@ func (c *Client) Subscribe(ctx context.Context, topic string, handler func(ctx c
 }
 
 func (c *Client) Close(ctx context.Context) error {
-	if c == nil {
+	if c == nil || !c.cfg.Enable {
 		return nil
 	}
 	// 取消订阅

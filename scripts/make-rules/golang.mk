@@ -73,7 +73,7 @@ go.build.%:
 	$(eval OS := $(word 1,$(subst _, ,$(PLATFORM))))
 	$(eval ARCH := $(word 2,$(subst _, ,$(PLATFORM))))
 	$(eval CC := $(if $(filter arm64,$(ARCH)),aarch64-linux-gnu-gcc,cc))
-	$(eval $(if $(filter watcher,$(COMMAND)), \
+	$(eval $(if $(filter watcher nats-benchmark,$(COMMAND)), \
 		$(eval GO_BUILD_FLAGS := -ldflags '-s -w $(GO_LDFLAGS) -extldflags "-static"') \
 		$(eval CGO := 0), \
 		$(eval GO_BUILD_FLAGS := -ldflags '-s -w $(GO_LDFLAGS)') \

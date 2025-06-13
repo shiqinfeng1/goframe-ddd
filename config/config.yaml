@@ -161,6 +161,7 @@ nats:
   objBuckets: ["objbucket1","objbucket2"]
 
 mqtt:
+  enable: false
   brokerUrl: "tcp://mqtt-server:1883"
   store: "./data/mqtt-store"
   username: "admin"
