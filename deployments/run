@@ -175,7 +175,7 @@ readonly APP_WATCHER_PORT=${APP_WATCHER_PORT:-'31083'}
 # The root of the build/dist directory
 APP_ROOT=$(dirname "${BASH_SOURCE[0]}")
 # Linux root & going 用户密码
-readonly LINUX_PASSWORD=${LINUX_PASSWORD:-'ubuntu'}
+LINUX_PASSWORD=${LINUX_PASSWORD:-'ubuntu'}
 
 # 不输入密码执行需要 root 权限的命令
 function common::sudo {
