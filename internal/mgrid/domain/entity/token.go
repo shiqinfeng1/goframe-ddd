@@ -2,13 +2,13 @@ package entity
 
 import (
 	"context"
-	"time"
 
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/gogf/gf/v2/util/guid"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/clock"
 )
 
 // t.go (值对象)
@@ -29,7 +29,7 @@ func generateJWT(secret string, claims *jwt.RegisteredClaims) (string, error) {
 
 // 生成Token对
 func (s *Token) GenerateTokenPair(ctx context.Context, userId string) (accessToken, refreshToken string, err error) {
-	now := time.Now()
+	now := clock.Now()
 	s.UserID = userId
 	accessSecret := g.Cfg().MustGet(ctx, "jwt.accessSecret").String()
 

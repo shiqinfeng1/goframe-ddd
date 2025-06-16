@@ -9,6 +9,7 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/metrics"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/recovery"
 )
@@ -81,6 +82,7 @@ func (s *SyncConsumer) processMessages(iter jetstream.MessagesContext, handler f
 			s.logger.Warningf(s.ctx, "sync consumer: get next stream msg fail:%v", err)
 			continue
 		}
+		metrics.Inc(s.ctx, metrics.NatsJSConsumeTotalCount, "topic", msg.Subject())
 		err = func() error {
 			defer recovery.Recovery(s.ctx, func(ctx context.Context, exception error) {
 				s.logger.Errorf(ctx, "sync consumer: panic in handler: \n%v", exception)
@@ -98,7 +100,9 @@ func (s *SyncConsumer) processMessages(iter jetstream.MessagesContext, handler f
 		// 处理完成
 		if err := msg.Ack(); err != nil {
 			s.logger.Errorf(s.ctx, "sync consumer: ack fail: %v", err)
+			continue
 		}
+		metrics.Inc(s.ctx, metrics.NatsJSConsumeSuccessCount, "topic", msg.Subject())
 	}
 }
 func (s *SyncConsumer) Run() {

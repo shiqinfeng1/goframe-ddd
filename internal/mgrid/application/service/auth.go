@@ -14,6 +14,7 @@ import (
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/application/dto"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/domain/entity"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/domain/repository"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/clock"
 )
 
 const (
@@ -96,7 +97,7 @@ func (s *authService) verifyCredentials(ctx context.Context, username, plainPass
 	}
 	// 2. 检查账户锁定状态
 	if user.IsLocked {
-		if user.LockedUntil.After(time.Now()) {
+		if user.LockedUntil.After(clock.Now()) {
 			return nil, gerror.Newf("account is locked until %s", user.LockedUntil.Format("2006-01-02 15:04"))
 		}
 		// 自动解锁过期锁定

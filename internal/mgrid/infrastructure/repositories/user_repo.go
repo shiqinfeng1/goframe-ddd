@@ -2,13 +2,13 @@ package repositories
 
 import (
 	"context"
-	"time"
 
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/domain/entity"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/domain/repository"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/clock"
 )
 
 type userRepo struct {
@@ -112,14 +112,14 @@ func (s *userRepo) RecordFailedAttempt(ctx context.Context, username string) (*e
 				Where("username", username).
 				Data(g.Map{
 					"is_locked":    true,
-					"locked_until": time.Now().Add(lockDuration),
+					"locked_until": clock.Now().Add(lockDuration),
 				}).
 				Update()
 			if err != nil {
 				return err
 			}
 			user.IsLocked = true
-			user.LockedUntil = time.Now().Add(lockDuration)
+			user.LockedUntil = clock.Now().Add(lockDuration)
 		}
 
 		return nil

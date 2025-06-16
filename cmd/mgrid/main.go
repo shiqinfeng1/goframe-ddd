@@ -10,6 +10,7 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/gproc"
 	"github.com/nats-io/nats.go"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/metrics"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/recovery"
 	_ "go.uber.org/automaxprocs"
 )
@@ -76,6 +77,7 @@ func main() {
 
 		httpSrv.Shutdown()
 		g.Log().Infof(ctx, "gracefully shutting down http service ok")
+		metrics.Shutdown(ctx)
 	}
 	// 监听系统中断信号
 	gproc.AddSigHandlerShutdown(

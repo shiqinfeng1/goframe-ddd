@@ -2,7 +2,6 @@ package recovery
 
 import (
 	"context"
-	"os"
 
 	"github.com/gogf/gf/v2/errors/gcode"
 	"github.com/gogf/gf/v2/errors/gerror"
@@ -18,6 +17,6 @@ func Recovery(ctx context.Context, recoverFunc RecoverFunc) {
 			}
 			recoverFunc(ctx, gerror.NewCodef(gcode.CodeInternalPanic, "%+v", exception))
 		}
-		os.Exit(1)
+		// os.Exit(1)
 	}
 }

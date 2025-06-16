@@ -25,18 +25,18 @@ func NewPointdataService(_ context.Context, logger application.Logger, repo repo
 }
 
 func (p *PointdataService) HandleMsg(ctx context.Context, msg *nats.Msg) ([]byte, error) {
-	time.Sleep(10 * time.Microsecond)
-	p.logger.Debugf(ctx, "recv a msg: %v", msg.Subject)
+	time.Sleep(20 * time.Microsecond)
+	// p.logger.Debugf(ctx, "recv a msg: %v", msg.Subject)
 	return (*msg).Data, nil
 }
 
 func (p *PointdataService) HandleStream(ctx context.Context, msg jetstream.Msg) ([]byte, error) {
-	time.Sleep(5 * time.Microsecond)
-	p.logger.Debugf(ctx, "recv a stream data: %v", msg.Subject())
+	time.Sleep(20 * time.Microsecond)
+	// p.logger.Debugf(ctx, "recv a stream data: %v", msg.Subject())
 	return msg.Data(), nil
 }
 func (p *PointdataService) HandleMqttMsg(ctx context.Context, msg mqtt.Message) ([]byte, error) {
-	time.Sleep(5 * time.Microsecond)
-	p.logger.Debugf(ctx, "recv a mqtt msg: %v", msg.Topic())
+	time.Sleep(20 * time.Microsecond)
+	// p.logger.Debugf(ctx, "recv a mqtt msg: %v", msg.Topic())
 	return msg.Payload(), nil
 }

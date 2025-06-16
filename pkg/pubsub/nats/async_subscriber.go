@@ -6,6 +6,7 @@ import (
 
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/nats-io/nats.go"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/metrics"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/recovery"
 )
@@ -41,19 +42,16 @@ func NewAsyncSubscriber(logger pubsub.Logger, f Factory) (*AsyncSubscriber, erro
 
 func (s *AsyncSubscriber) Subscribe(subject string, handler func(context.Context, *nats.Msg) error) error {
 	sub, err := s.nc.Subscribe(subject, func(msg *nats.Msg) {
-		err := func() error {
-			defer recovery.Recovery(s.ctx, func(ctx context.Context, exception error) {
-				s.logger.Errorf(ctx, "async subscriber: panic in handler: \n%v", exception)
-			})
-			if err := handler(s.ctx, msg); err != nil {
-				time.Sleep(consumeMessageDelay)
-				return err
-			}
-			return nil
-		}()
-		if err != nil {
+		metrics.Inc(s.ctx, metrics.NatsSubscribeTotalCount, "topic", subject)
+		defer recovery.Recovery(s.ctx, func(ctx context.Context, exception error) {
+			s.logger.Errorf(ctx, "async subscriber: panic in handler: \n%v", exception)
+		})
+		if err := handler(s.ctx, msg); err != nil {
+			time.Sleep(consumeMessageDelay)
 			s.logger.Errorf(s.ctx, "async subscriber: error in handler for topic '%s': %v", subject, err)
+			return
 		}
+		metrics.Inc(s.ctx, metrics.NatsSubscribeSuccessCount, "topic", subject)
 	})
 	if err != nil {
 		return err

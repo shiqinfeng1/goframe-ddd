@@ -6,6 +6,7 @@ import (
 
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/nats-io/nats.go"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/metrics"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/pubsub"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/recovery"
 )
@@ -63,6 +64,7 @@ func (s *SyncSubscriber) processMessages(sub *nats.Subscription, handler func(ct
 			s.logger.Warningf(s.ctx, "sync subscriber: get next msg fail: %v", err)
 			return
 		}
+		metrics.Inc(s.ctx, metrics.NatsSubscribeTotalCount, "topic", sub.Subject)
 		err = func() error {
 			defer recovery.Recovery(s.ctx, func(ctx context.Context, exception error) {
 				s.logger.Errorf(ctx, "sync subscriber: panic in nats handler: \n%v", exception)
@@ -75,7 +77,9 @@ func (s *SyncSubscriber) processMessages(sub *nats.Subscription, handler func(ct
 		}()
 		if err != nil {
 			s.logger.Errorf(s.ctx, "sync subscriber: error in handler for topic '%s': %v", sub.Subject, err)
+			continue
 		}
+		metrics.Inc(s.ctx, metrics.NatsSubscribeSuccessCount, "topic", sub.Subject)
 	}
 }
 func (s *SyncSubscriber) Run() {
