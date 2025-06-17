@@ -55,7 +55,7 @@ func init() {
 		g.Log().Fatal(ctx, err)
 	}
 
-	if genv.Get("ENV").String() == "dev" {
+	if genv.Get("ENV").String() == "prod" {
 		provider = otelmetric.MustProvider(otelmetric.WithReader(exporter))
 	} else {
 		provider = otelmetric.MustProvider(
