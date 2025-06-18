@@ -1,0 +1,30 @@
+
+services:
+  prometheus:
+    container_name: prometheus
+    hostname: prometheus
+    image: "prom/prometheus:latest"
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro"
+      - "/etc/timezone:/etc/timezone:ro"
+      - ./artifacts/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    restart: always
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'  # 容器内访问宿主机服务
+
+  grafana:
+    container_name: grafana
+    hostname: grafana
+    image: "grafana/grafana:latest"
+    ports:
+      - "3000:3000"
+    restart: always
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true # 公开仪表板
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro"
+      - "/etc/timezone:/etc/timezone:ro"
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'

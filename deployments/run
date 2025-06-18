@@ -310,7 +310,7 @@ function app::up::nats()
     load_image "./artifacts/bin/$(OS)/$(ARCH)/image-natsbox.tar" || {
       log::error "Aborting due to error in loading nats-box image"
       exit 1
-  }
+    }
     docker compose -f docker-compose.yml up -d nats-box
   fi
 }
@@ -318,10 +318,6 @@ function app::restart::nats()
 {
   docker compose -f docker-compose.yml down nats-server
   docker compose -f docker-compose.yml up -d nats-server
-  if [ ${ENV} = "dev" ]; then
-    docker compose -f docker-compose.yml down nats-box
-    docker compose -f docker-compose.yml up -d nats-box
-  fi
 }
 function app::down::nats()
 {

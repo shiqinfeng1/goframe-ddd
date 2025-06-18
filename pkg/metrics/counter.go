@@ -54,7 +54,6 @@ func init() {
 	if err != nil {
 		g.Log().Fatal(ctx, err)
 	}
-
 	if genv.Get("ENV").String() == "prod" {
 		provider = otelmetric.MustProvider(otelmetric.WithReader(exporter))
 	} else {
@@ -62,7 +61,6 @@ func init() {
 			otelmetric.WithReader(exporter),
 			otelmetric.WithBuiltInMetrics())
 	}
-	provider = otelmetric.MustProvider(otelmetric.WithReader(exporter))
 	provider.SetAsGlobal()
 
 	// 实例化一个pubsub的meter,一个Instrument

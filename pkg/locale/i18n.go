@@ -21,11 +21,13 @@ import (
 var Lang = map[string]*gi18n.Manager{
 	"en": func() *gi18n.Manager {
 		i18n := gi18n.New()
+		i18n.SetPath("config/i18n")
 		i18n.SetLanguage("en")
 		return i18n
 	}(),
 	"zh": func() *gi18n.Manager {
 		i18n := gi18n.New()
+		i18n.SetPath("config/i18n")
 		i18n.SetLanguage("zh-CN")
 		return i18n
 	}(),
