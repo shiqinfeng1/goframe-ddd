@@ -9,9 +9,9 @@ import "github.com/gogf/gf/v2/errors/gcode"
 // 20：消息队列
 // --00：nats管理
 var (
-	ErrNotAbsFilePath = codeFunc(gcode.New(CodeNotAbsFilePath, "", nil), "file.notAbsFilePath")
-	ErrEmptyDir       = codeFunc(gcode.New(CodeEmptyDir, "", nil), "file.emptyDir")
-	ErrInvalidFiles   = codeFunc(gcode.New(CodeInvalidFiles, "", nil), "file.invalidFiles")
-	ErrInvalidNodeId  = codeFunc(gcode.New(CodeInvalidNodeId, "", nil), "file.invalidNodeId")
-	ErrOver4GSize     = codeFunc(gcode.New(CodeOver4GSize, "", nil), "file.over4GSize")
+	ErrNotAbsFilePath = codeFunc(gcode.New(CodeNotAbsFilePath, "", nil), "fileNotAbsFilePath")
+	ErrEmptyDir       = codeFunc(gcode.New(CodeEmptyDir, "", nil), "fileEmptyDir")
+	ErrInvalidFiles   = codeFunc(gcode.New(CodeInvalidFiles, "", nil), "fileInvalidFiles")
+	ErrInvalidNodeId  = codeFunc(gcode.New(CodeInvalidNodeId, "", nil), "fileInvalidNodeId")
+	ErrOver4GSize     = codeFunc(gcode.New(CodeOver4GSize, "", nil), "fileOver4GSize")
 )

@@ -10,6 +10,7 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/gproc"
 	"github.com/nats-io/nats.go"
+	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/infrastructure/repositories/migration"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/metrics"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/recovery"
 	_ "go.uber.org/automaxprocs"
@@ -33,6 +34,7 @@ func main() {
 		}
 	}
 
+	migration.InitDB()
 	// 初始化http服务
 	httpSrv, cleanup1, err := initServer()
 	if err != nil {

@@ -349,7 +349,10 @@ function app::up::mgrid()
     log::info "create network: $NETWORK_NAME"
     docker network create "$NETWORK_NAME"
   fi
-   docker compose -f docker-compose.yml up -d mgrid-server
+  common::sudo mkdir -p ./running/data-mgrid
+  common::sudo chown -R 1000:1000  ./running/data-mgrid
+  common::sudo chmod -R 755 ./running/data-mgrid
+  docker compose -f docker-compose.yml up -d mgrid-server
 }
 function app::restart::mgrid()
 {

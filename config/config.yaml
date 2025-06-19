@@ -47,7 +47,7 @@ server:
   # 此配置主要影响server（ghttp模块）日志，如web服务监听端口号、web服务路由，不会对 g.Log 产生影响
   logger:
     path:                  "./log/"           # 日志文件路径。默认为空，表示关闭，仅输出到终端
-    file:                  "http-{Y-m}.log"   # 日志文件格式。默认为"{Y-m-d}.log"
+    file:                  "{Y-m}.log"   # 日志文件格式。默认为"{Y-m-d}.log"
     prefix:                ""                    # 日志内容输出前缀。默认为空
     level:                 "all"                 # 日志输出级别
     timeFormat:            "2006-01-02T15:04:05.000" # 自定义日志输出的时间格式，使用Golang标准的时间格式配置
@@ -102,6 +102,41 @@ grpc:
     rotateBackupCompress:  6             # 滚动切分文件的压缩比（0-9）。默认为0，表示不压缩
     rotateCheckInterval:   "1h"          # 滚动切分的时间检测间隔，一般不需要设置。默认为1小时
 
+database:
+  logger:
+    path: "./log/"              # 日志文件路径。默认为空，表示关闭，仅输出到终端
+    file: "sql-{Y-m}.log"           # 日志文件格式。默认为"{Y-m-d}.log"
+    level: "all"
+  default:                      # 分组名称，可自定义，默认为default
+    # host: "127.0.0.1"           # 地址
+    # port: "3306"                # 端口
+    # user: "root"                # 账号
+    # pass: "your_password"       # 密码
+    # name: "your_database"       # 数据库名称
+    # type: "sqlite"               # 数据库类型(如：mariadb/tidb/mysql/pgsql/mssql/sqlite/oracle/clickhouse/dm)
+    link: "sqlite::@file(/app/data/mgrid.sqlite3)" # (可选)自定义数据库链接信息，当该字段被设置值时，以上链接字段(Host,Port,User,Pass,Name,Type)将失效
+    # extra: ""                   # (可选)不同数据库的额外特性配置，由底层数据库driver定义，具体有哪些配置请查看具体的数据库driver介绍
+    # role: "master"              # (可选)数据库主从角色(master/slave)，默认为master。如果不使用应用主从机制请不配置或留空即可。
+    debug: true                # (可选)开启调试模式
+    # prefix: "gf_"               # (可选)表名前缀
+    # dryRun: false               # (可选)ORM空跑(只读不写)
+    charset: "utf8mb4"             # (可选)数据库编码(如: utf8mb4/utf8/gbk/gb2312)，一般设置为utf8mb4。默认为utf8。
+    # protocol: "tcp"             # (可选)数据库连接协议，默认为TCP
+    # weight: 100                 # (可选)负载均衡权重，用于负载均衡控制，不使用应用层的负载均衡机制请置空
+    # timezone: "Local"           # (可选)时区配置，例如:Local
+    # namespace: ""               # (可选)用以支持个别数据库服务Catalog&Schema区分的问题，原有的Schema代表数据库名称，而NameSpace代表个别数据库服务的Schema
+    # maxIdle: 10                 # (可选)连接池最大闲置的连接数(默认10)
+    # maxOpen: 100                # (可选)连接池最大打开的连接数(默认无限制)
+    # maxLifetime: "30s"          # (可选)连接对象可重复使用的时间长度(默认30秒)
+    # queryTimeout: "0"           # (可选)查询语句超时时长(默认无限制，同时受ctx超时时间影响)。值为time.Parse支持的格式，如30s, 1m。
+    # execTimeout: "0"            # (可选)写入语句超时时长(默认无限制，同时受ctx超时时间影响)。值为time.Parse支持的格式，如30s, 1m。
+    # tranTimeout: "0"            # (可选)事务处理超时时长(默认无限制，同时受ctx超时时间影响)。值为time.Parse支持的格式，如30s, 1m。
+    # prepareTimeout: "0"         # (可选)预准备SQL语句执行超时时长(默认无限制，同时受ctx超时时间影响)。值为time.Parse支持的格式，如30s, 1m。
+    createdAt: "created_at"     # (可选)自动创建时间字段名称
+    updatedAt: "updated_at"     # (可选)自动更新时间字段名称
+    # deletedAt: "deleted_at"     # (可选)软删除时间字段名称
+    # timeMaintainDisabled: false # (可选)是否完全关闭时间更新特性，为true时CreatedAt/UpdatedAt/DeletedAt都将失效
+
 # 该配置针对g.Log()
 logger:
   path:                  "./log/"              # 日志文件路径。默认为空，表示关闭，仅输出到终端
@@ -142,11 +177,16 @@ jwt:
 
 password:
   hashCost: 12      # bcrypt 哈希计算成本
-  minLength: 8      # 密码最小长度
+  minLength: 6      # 密码最小长度
   maxLength: 64     # 密码最大长度
-  requireMixed: true # 需要大小写混合
-  requireNumber: true # 需要数字
-  requireSpecial: true # 需要特殊字符
+  requireMixed: false # 需要大小写混合
+  requireNumber: false # 需要数字
+  requireSpecial: false # 需要特殊字符
+  maxAttempts: 5            # 最大尝试次数
+  lockDuration: "30m"       # 锁定持续时间
+  # 弱密码
+  # commonPassword: ["password", "123456", "12345678", "11111111", "88888888", "qwerty", "admin", "admin123", "welcome"]
+  commonPassword: []
 
 nats:
   serverUrl: "nats://nats-server:4222"

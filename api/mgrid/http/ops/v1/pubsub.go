@@ -6,7 +6,8 @@ import (
 )
 
 type GetStreamListReq struct {
-	g.Meta `path:"/pubsub/stream/list" tags:"消息队列管理" method:"post" summary:"查询消息流列表"`
+	g.Meta        `path:"/pubsub/stream/list" tags:"消息队列管理" method:"post" summary:"查询消息流列表"`
+	Authorization string `p:"Authorization" in:"header" v:"required" dc:"访问token"`
 }
 type GetStreamListRes struct {
 	g.Meta  `status:"200"`
@@ -14,8 +15,9 @@ type GetStreamListRes struct {
 }
 
 type GetStreamInfoReq struct {
-	g.Meta     `path:"/pubsub/stream/getInfo" tags:"消息队列管理" method:"post" summary:"查询消息流信息和状态"`
-	StreamName string `p:"stream_name" v:"required#未指定消息流名称" dc:"消息流名称"`
+	g.Meta        `path:"/pubsub/stream/getInfo" tags:"消息队列管理" method:"post" summary:"查询消息流信息和状态"`
+	Authorization string `p:"Authorization" in:"header" v:"required" dc:"访问token"`
+	StreamName    string `p:"stream_name" v:"required" dc:"消息流名称"`
 }
 type GetStreamInfoRes struct {
 	g.Meta        `status:"200"`
@@ -24,8 +26,9 @@ type GetStreamInfoRes struct {
 }
 
 type DeleteStreamReq struct {
-	g.Meta     `path:"/pubsub/stream/delete" tags:"消息队列管理" method:"post" summary:"删除消息流"`
-	StreamName string `p:"stream_name" dc:"消息流名称"`
+	g.Meta        `path:"/pubsub/stream/delete" tags:"消息队列管理" method:"post" summary:"删除消息流"`
+	Authorization string `p:"Authorization" in:"header" v:"required" dc:"访问token"`
+	StreamName    string `p:"stream_name" v:"required" dc:"消息流名称"`
 }
 type DeleteStreamRes struct {
 	g.Meta `status:"200"`

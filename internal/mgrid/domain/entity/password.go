@@ -3,7 +3,6 @@ package entity
 import (
 	"context"
 	"errors"
-	"regexp"
 	"unicode"
 
 	"github.com/gogf/gf/v2/errors/gerror"
@@ -96,7 +95,7 @@ func (s *Password) validatePasswordStrength(ctx context.Context, password string
 	}
 
 	// 常见弱密码检查
-	if s.isCommonPassword(password) {
+	if s.isCommonPassword(ctx, password) {
 		return gerror.New("password is too common")
 	}
 
@@ -104,12 +103,12 @@ func (s *Password) validatePasswordStrength(ctx context.Context, password string
 }
 
 // isCommonPassword 检查是否为常见弱密码
-func (s *Password) isCommonPassword(password string) bool {
-	commonPasswords := []string{
-		"password", "123456", "12345678", "11111111", "88888888", "qwerty", "admin", "admin123", "welcome",
-		// 可以扩展更多常见弱密码
-	}
-
+func (s *Password) isCommonPassword(ctx context.Context, password string) bool {
+	// commonPasswords := []string{
+	// 	"password", "123456", "12345678", "11111111", "88888888", "qwerty", "admin", "admin123", "welcome",
+	// 	// 可以扩展更多常见弱密码
+	// }
+	commonPasswords := g.Cfg().MustGet(ctx, "commonPassword").Strings()
 	for _, p := range commonPasswords {
 		if password == p {
 			return true
@@ -117,9 +116,9 @@ func (s *Password) isCommonPassword(password string) bool {
 	}
 
 	// 检查连续字符
-	if match, _ := regexp.MatchString(`(?:0123|1234|2345|3456|4567|5678|6789|7890)`, password); match {
-		return true
-	}
+	// if match, _ := regexp.MatchString(`(?:0123|1234|2345|3456|4567|5678|6789|7890)`, password); match {
+	// 	return true
+	// }
 
 	return false
 }

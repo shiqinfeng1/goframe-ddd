@@ -48,10 +48,11 @@ func (s *Token) GenerateTokenPair(ctx context.Context, userId string) (accessTok
 		return "", "", err
 	}
 
+	refreshSecret := g.Cfg().MustGet(ctx, "jwt.refreshSecret").String()
 	// 生成Refresh Token (带唯一ID)
 	s.RefreshID = guid.S()
 	refreshToken, err = generateJWT(
-		accessSecret,
+		refreshSecret,
 		&jwt.RegisteredClaims{
 			Subject:   gconv.String(s.UserID),
 			ID:        s.RefreshID,
@@ -70,15 +71,15 @@ func (s *Token) GenerateTokenPair(ctx context.Context, userId string) (accessTok
 
 // 解析JWT Token
 func (s *Token) ParseJWT(tokenString, secret string) error {
-	t, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+	t, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(t *jwt.Token) (interface{}, error) {
 		return []byte(secret), nil
 	})
 
 	if err != nil || !t.Valid {
-		return gerror.New("invalid jwt token")
+		return gerror.Wrap(err, "invalid jwt token")
 	}
 
-	claims := t.Claims.(jwt.RegisteredClaims)
+	claims := t.Claims.(*jwt.RegisteredClaims)
 	s.UserID = claims.Subject
 	s.RefreshID = claims.ID
 	return nil

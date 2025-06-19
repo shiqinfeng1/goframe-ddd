@@ -2,7 +2,9 @@ package repositories
 
 import (
 	"context"
+	"time"
 
+	_ "github.com/gogf/gf/contrib/drivers/sqlite/v2"
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
@@ -18,8 +20,20 @@ type userRepo struct {
 func NewUserRepo() repository.UserRepository {
 	return &userRepo{}
 }
-
+func (s *userRepo) UserIsExisted(ctx context.Context, name, mobile, email string) (bool, error) {
+	// // 检查用户是否已存在
+	exists, err := g.DB().Model("users").Ctx(ctx).
+		Where("username", name).
+		WhereOr("mobile_phone", mobile).
+		WhereOr("email", email).
+		Exist()
+	if err != nil {
+		return false, gerror.Wrapf(err, "failed to check user existence. user:%v", name)
+	}
+	return exists, nil
+}
 func (s *userRepo) SaveUser(ctx context.Context, t *entity.User) error {
+
 	_, err := g.DB().Model("users").Ctx(ctx).Insert(t)
 	if err != nil {
 		return gerror.Wrapf(err, "failed to save user %s", t.Username)
@@ -59,7 +73,7 @@ func (s *userRepo) FindByName(ctx context.Context, username string) (*entity.Use
 }
 func (s *userRepo) FindByEmailOrPhone(ctx context.Context, email, phone string) (*entity.User, error) {
 	var user *entity.User
-	err := g.DB().Model("users").Ctx(ctx).Where("email", email).Where("mobile_phone", phone).Scan(&user)
+	err := g.DB().Model("users").Ctx(ctx).Where("email", email).WhereOr("mobile_phone", phone).Scan(&user)
 	if err != nil {
 		return nil, gerror.Wrapf(err, "user not found by email %s or phone %s", email, phone)
 	}
@@ -78,9 +92,7 @@ func (s *userRepo) UpdatePassword(ctx context.Context, userId, pwd string) error
 }
 
 // RecordFailedAttempt 记录登录失败尝试
-func (s *userRepo) RecordFailedAttempt(ctx context.Context, username string) (*entity.User, error) {
-	maxAttempts := g.Cfg().MustGet(ctx, "password.maxAttempts").Int()
-	lockDuration := g.Cfg().MustGet(ctx, "password.lockDuration").Duration()
+func (s *userRepo) RecordFailedAttempt(ctx context.Context, username string, maxAttempts int, lockDuration time.Duration) (*entity.User, error) {
 
 	var user *entity.User
 
@@ -112,14 +124,14 @@ func (s *userRepo) RecordFailedAttempt(ctx context.Context, username string) (*e
 				Where("username", username).
 				Data(g.Map{
 					"is_locked":    true,
-					"locked_until": clock.Now().Add(lockDuration),
+					"locked_until": clock.Now().Add(lockDuration).Format(time.RFC3339),
 				}).
 				Update()
 			if err != nil {
 				return err
 			}
 			user.IsLocked = true
-			user.LockedUntil = clock.Now().Add(lockDuration)
+			user.LockedUntil = clock.Now().Add(lockDuration).Format(time.RFC3339)
 		}
 
 		return nil
@@ -139,7 +151,7 @@ func (s *userRepo) ResetFailedAttempts(ctx context.Context, userId string) error
 		Data(g.Map{
 			"failed_attempts": 0,
 			"is_locked":       false,
-			"locked_until":    nil,
+			"locked_until":    "",
 		}).
 		Update()
 

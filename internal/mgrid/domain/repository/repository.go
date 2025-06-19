@@ -14,9 +14,10 @@ type UserRepository interface {
 	FindByName(ctx context.Context, username string) (*entity.User, error)
 	FindByEmailOrPhone(ctx context.Context, email, phone string) (*entity.User, error)
 	UpdatePassword(ctx context.Context, userId, pwd string) error
-	RecordFailedAttempt(ctx context.Context, username string) (*entity.User, error)
+	RecordFailedAttempt(ctx context.Context, username string, maxAttempts int, lockDuration time.Duration) (*entity.User, error)
 	ResetFailedAttempts(ctx context.Context, userId string) error
 	GetFailedAttempts(ctx context.Context, username string) (int, error)
+	UserIsExisted(ctx context.Context, name, mobile, email string) (bool, error)
 }
 
 type TokenRepository interface {

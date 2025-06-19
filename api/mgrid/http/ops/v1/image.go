@@ -16,7 +16,8 @@ type ComposeImagesOutput struct {
 }
 
 type ImageListReq struct {
-	g.Meta `path:"/ops/imageList" tags:"运维" method:"post" summary:"镜像列表"`
+	g.Meta        `path:"/ops/imageList" tags:"运维" method:"post" summary:"镜像列表"`
+	Authorization string `p:"Authorization" in:"header" v:"required" dc:"访问token"`
 }
 type ImageListRes struct {
 	g.Meta `status:"200"`
@@ -24,7 +25,8 @@ type ImageListRes struct {
 }
 
 type ContainerImageReq struct {
-	g.Meta `path:"/ops/containerImage" tags:"运维" method:"post" summary:"当前容器的镜像"`
+	g.Meta        `path:"/ops/containerImage" tags:"运维" method:"post" summary:"当前容器的镜像"`
+	Authorization string `p:"Authorization" in:"header" v:"required" dc:"访问token"`
 }
 type ContainerImageRes struct {
 	g.Meta `status:"200"`

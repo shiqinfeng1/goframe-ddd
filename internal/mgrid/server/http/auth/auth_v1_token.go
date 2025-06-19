@@ -10,7 +10,8 @@ import (
 
 func (c *ControllerV1) RefreshToken(ctx context.Context, req *v1.RefreshTokenReq) (res *v1.RefreshTokenRes, err error) {
 	lang := ghttp.RequestFromCtx(ctx).GetCtxVar("lang").String()
-	newTokens, err := c.app.Auth().RefreshToken(ctx, req.RefreshToken)
+
+	newTokens, err := c.app.Auth().RefreshToken(ctx)
 	if err != nil {
 		c.logger.Error(ctx, err)
 		return nil, errors.ErrAuthRefreshTokenFail(lang)

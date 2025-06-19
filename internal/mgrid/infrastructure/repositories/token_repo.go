@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	_ "github.com/gogf/gf/contrib/drivers/sqlite/v2"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gcache"
@@ -24,7 +25,7 @@ func NewTokenRepo() repository.TokenRepository {
 }
 
 func (s *tokenRepo) SaveRefrsehToken(ctx context.Context, t *entity.Token) error {
-	_, err := g.DB().Model("user_tokens").Ctx(ctx).Insert(t)
+	_, err := g.DB().Model("user_tokens").Ctx(ctx).OnConflict("user_id").Save(t)
 	if err != nil {
 		return gerror.Wrapf(err, "insert user_token fail: userid=%v refreshid=%v", t.UserID, t.RefreshID)
 	}

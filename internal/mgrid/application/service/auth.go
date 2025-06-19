@@ -15,6 +15,7 @@ import (
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/domain/entity"
 	"github.com/shiqinfeng1/goframe-ddd/internal/mgrid/domain/repository"
 	"github.com/shiqinfeng1/goframe-ddd/pkg/clock"
+	"github.com/shiqinfeng1/goframe-ddd/pkg/errors"
 )
 
 const (
@@ -67,7 +68,7 @@ func (s *authService) ResetPassword(ctx context.Context, verifyCode, newPassword
 	// 1. 验证重置令牌
 	userId := s.tokenRepo.GetUserIdByVerifyCode(ctx, verifyCode)
 	if userId == "" {
-		return gerror.New("failed to save verify code")
+		return gerror.Newf("not match user by verify code: %v", verifyCode)
 	}
 
 	// 2. 哈希新密码
@@ -89,16 +90,20 @@ func (s *authService) ResetPassword(ctx context.Context, verifyCode, newPassword
 }
 
 // VerifyCredentials 验证用户凭证
-func (s *authService) verifyCredentials(ctx context.Context, username, plainPassword string) (*entity.User, error) {
+func (s *authService) VerifyCredentials(ctx context.Context, lang, username, plainPassword string) (*entity.User, error) {
 	// 查询用户
 	user, err := s.userRepo.FindByName(ctx, username)
 	if err != nil {
 		return nil, err
 	}
 	// 2. 检查账户锁定状态
-	if user.IsLocked {
-		if user.LockedUntil.After(clock.Now()) {
-			return nil, gerror.Newf("account is locked until %s", user.LockedUntil.Format("2006-01-02 15:04"))
+	if user.IsLocked { // 已被锁定
+		if user.LockedUntil == "" {
+			return nil, gerror.Newf("invalid locked time. user=%s", user.Username)
+		}
+		lockedTime, _ := time.Parse(time.RFC3339, user.LockedUntil)
+		if lockedTime.After(clock.Now()) {
+			return nil, errors.ErrUserIsLockdBefore(lang, lockedTime.Local().Format("2006-01-02 15:04"))
 		}
 		// 自动解锁过期锁定
 		if err := s.userRepo.ResetFailedAttempts(ctx, user.UserID); err != nil {
@@ -112,22 +117,27 @@ func (s *authService) verifyCredentials(ctx context.Context, username, plainPass
 	}
 	if !match {
 		// 记录失败尝试
-		user2, err := s.userRepo.RecordFailedAttempt(ctx, username)
+		maxAttempts := g.Cfg().MustGet(ctx, "password.maxAttempts").Int()
+		lockDuration := g.Cfg().MustGet(ctx, "password.lockDuration").Duration()
+
+		user2, err := s.userRepo.RecordFailedAttempt(ctx, username, maxAttempts, lockDuration)
 		if err != nil {
 			return nil, err
 		}
 		if user2.IsLocked {
-			return nil, gerror.Newf("account locked due to too many failed attempts")
+			return nil, errors.ErrUserIsLockdTooManyAttempts(lang)
 		}
-		maxAttempts := g.Cfg().MustGet(ctx, "password.maxAttempts").Int()
-		return nil, gerror.Newf("invalid password (%d/%d attempts remaining)",
-			maxAttempts-user2.FailedAttempts, maxAttempts)
+		return nil, errors.ErrUserVerifyAttemptsRemain(lang, maxAttempts-user2.FailedAttempts, maxAttempts)
 	}
 	// 4. 密码正确，重置失败计数
 	if err := s.userRepo.ResetFailedAttempts(ctx, user.UserID); err != nil {
 		return nil, err
 	}
 	return user, nil
+}
+func (s *authService) UserIsExisted(ctx context.Context, username, mobilePhone, email string) (exist bool, err error) {
+	exist, err = s.userRepo.UserIsExisted(ctx, username, mobilePhone, email)
+	return
 }
 
 // CreateUser 创建用户
@@ -147,18 +157,14 @@ func (s *authService) CreateUser(ctx context.Context, in *dto.CreateUserIn) erro
 		PasswordHash: hashedPassword,
 	}
 
-	if s.userRepo.SaveUser(ctx, user) != nil {
+	if err := s.userRepo.SaveUser(ctx, user); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *authService) Login(ctx context.Context, username, password string) (*dto.Token, error) {
-	user, err := s.verifyCredentials(ctx, username, password)
-	if err != nil {
-		return nil, err
-	}
+func (s *authService) Login(ctx context.Context, user *entity.User) (*dto.Token, error) {
 	// 2. 生成Token对
 	t := entity.NewToken()
 	at, rt, err := t.GenerateTokenPair(ctx, user.UserID)
@@ -185,8 +191,12 @@ func (s *authService) Login(ctx context.Context, username, password string) (*dt
 }
 
 // 刷新Token
-func (s *authService) RefreshToken(ctx context.Context, oldRefreshToken string) (*dto.Token, error) {
+func (s *authService) RefreshToken(ctx context.Context) (*dto.Token, error) {
 
+	oldRefreshToken := ghttp.RequestFromCtx(ctx).Cookie.Get(REFRESH_TOKEN).String()
+	if oldRefreshToken == "" {
+		return nil, gerror.New("refresh token not found in cookie")
+	}
 	// 验证旧Refresh Token
 	token := entity.NewToken()
 	err := token.ParseJWT(

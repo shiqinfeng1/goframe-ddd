@@ -16,6 +16,14 @@ func codeFunc(c gcode.Code, token string) func(string) error {
 		return gerror.NewCode(c, locale.Lang["en"].T(ctx, token))
 	}
 }
+func codefFunc(c gcode.Code, token string) func(string, ...any) error {
+	return func(l string, values ...any) error {
+		if v, ok := locale.Lang[l]; ok {
+			return gerror.NewCode(c, v.Tf(ctx, token, values...))
+		}
+		return gerror.NewCode(c, locale.Lang["en"].Tf(ctx, token, values...))
+	}
+}
 
 var ctx = context.Background()
 
@@ -46,10 +54,14 @@ const (
 	// 13: 认证
 	//	--00: 用户管理
 	//	--01: token管理
-	CodeSendVCodeFail        = 130001
-	CodeResetPwdFail         = 130002
-	CodeRegisterUserFail     = 130003
-	CodeLoginFail            = 130004
-	CodeLogoutFail           = 130005
-	CodeAuthRefreshTokenFail = 130101
+	CodeSendVCodeFail              = 130001
+	CodeResetPwdFail               = 130002
+	CodeRegisterUserFail           = 130003
+	CodeLoginFail                  = 130004
+	CodeLogoutFail                 = 130005
+	CodeUserExisted                = 130006
+	CodeUserIsLockdBefore          = 130007
+	CodeUserIsLockdTooManyAttempts = 130008
+	CodeUserVerifyAttemptsRemain   = 130009
+	CodeAuthRefreshTokenFail       = 130101
 )
